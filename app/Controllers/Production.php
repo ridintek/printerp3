@@ -27,7 +27,7 @@ class Production extends BaseController
         sales.reference, operator.fullname AS operator_name,
         biller.name AS biller_name, warehouse.name AS warehouse_name,
         CONCAT(customers.name, ' (', customers.phone, ')') AS customer_name,
-        sale_items.product_name, sales.status, sales.payment_status")
+        sale_items.product_name, sale_items.status, sales.payment_status")
       ->join('sales', 'sales.id = sale_items.sale_id', 'left')
       ->join('biller', 'biller.code = sales.biller', 'left')
       ->join('customers', 'customers.phone = sales.customer', 'left')
@@ -72,7 +72,7 @@ class Production extends BaseController
     }
 
     if ($status) {
-      $dt->whereIn('sales.status', $status);
+      $dt->whereIn('sale_items.status', $status);
     }
 
     if ($paymentStatus) {
@@ -80,7 +80,7 @@ class Production extends BaseController
     }
 
     if ($operatorBy) {
-      $dt->whereIn("sale_items.json->'$.operator_id'", $operatorBy);
+      $dt->whereIn("sale_items.json->>'$.operator_id'", $operatorBy);
     }
 
     $dt->generate();
