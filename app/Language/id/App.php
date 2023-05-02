@@ -81,6 +81,7 @@ return [
   'code'                  => 'Kode',
   'company'               => 'Perusahaan',
   'complete'              => 'Komplit',
+  'completedate'          => 'Tanggal Komplit',
   'completeestimation'    => 'Estimasi Komplit',
   'completeitem'          => 'Komplit Barang',
   'completeddate'         => 'Tanggal Dikomplit',

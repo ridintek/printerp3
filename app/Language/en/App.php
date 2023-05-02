@@ -81,6 +81,7 @@ return [
   'code'                  => 'Code',
   'company'               => 'Company',
   'complete'              => 'Complete',
+  'completedate'          => 'Complete Date',
   'completeestimation'    => 'Complete Estimation',
   'completeitem'          => 'Complete Item',
   'completeddate'         => 'Completed Date',
