@@ -4,9 +4,11 @@
       <div class="card shadow">
         <div class="card-header bg-gradient-dark">
           <div class="card-tools">
+            <?php if (hasAccess('Sale.Add')) : ?>
             <a class="btn btn-tool bg-gradient-success use-tooltip" href="<?= base_url('sale/add') ?>" title="<?= lang('App.add') ?>" data-toggle="modal" data-target="#ModalStatic" data-modal-class="modal-lg modal-dialog-centered modal-dialog-scrollable">
               <i class="fad fa-plus-circle"></i>
             </a>
+            <?php endif; ?>
             <a class="btn btn-tool bg-gradient-warning use-tooltip" href="#" data-widget="control-sidebar" title="<?= lang('App.filter') ?>" data-slide="true">
               <i class="fad fa-filter"></i>
             </a>
