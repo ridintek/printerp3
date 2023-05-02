@@ -111,8 +111,13 @@ class Inventory extends BaseController
       })
       ->editColumn('attachment', function ($data) {
         return renderAttachment($data['attachment']);
-      })
-      ->generate();
+      });
+
+    if (session('login')->warehouse_id) {
+      $dt->where('whfrom.id', session('login')->warehouse_id);
+    }
+
+    $dt->generate();
   }
 
   public function getProductMutations()
@@ -256,8 +261,13 @@ class Inventory extends BaseController
       })
       ->editColumn('attachment', function ($data) {
         return renderAttachment($data['attachment']);
-      })
-      ->generate();
+      });
+
+    if (session('login')->warehouse_id) {
+      $dt->where('warehouse.id', session('login')->warehouse_id);
+    }
+
+    $dt->generate();
   }
 
   public function getStockOpnames()
@@ -306,8 +316,13 @@ class Inventory extends BaseController
       })
       ->editColumn('attachment', function ($data) {
         return renderAttachment($data['attachment']);
-      })
-      ->generate();
+      });
+
+    if (session('login')->warehouse_id) {
+      $dt->where('warehouse.id', session('login')->warehouse_id);
+    }
+
+    $dt->generate();
   }
 
   public function category()
@@ -1455,8 +1470,6 @@ class Inventory extends BaseController
     if (!$opname) {
       $this->response(404, ['message' => 'Stock opname is not found.']);
     }
-
-    
   }
 
   protected function stockopname_suggestion()
