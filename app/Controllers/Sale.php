@@ -79,59 +79,81 @@ class Sale extends BaseController
       ->join('warehouse', 'warehouse.code = sales.warehouse', 'left')
       ->where("sales.date BETWEEN '{$startDate} 00:00:00' AND '{$endDate} 23:59:59'")
       ->editColumn('id', function ($data) {
-        return '
-          <div class="btn-group btn-action">
-            <a class="btn bg-gradient-primary btn-sm dropdown-toggle" href="#" data-toggle="dropdown">
-              <i class="fad fa-gear"></i>
+        $menu = '
+        <div class="btn-group btn-action">
+          <a class="btn bg-gradient-primary btn-sm dropdown-toggle" href="#" data-toggle="dropdown">
+            <i class="fad fa-gear"></i>
+          </a>
+          <div class="dropdown-menu">';
+
+        if (hasAccess(['Sale.Edit', 'Sale.Draft'])) {
+          $menu .= '<a class="dropdown-item" href="' . base_url('sale/edit/' . $data['id']) . '"
+            data-toggle="modal" data-target="#ModalStatic"
+            data-modal-class="modal-lg modal-dialog-centered modal-dialog-scrollable">
+            <i class="fad fa-fw fa-edit"></i> ' . lang('App.edit') . '
+          </a>';
+        }
+
+        $menu .= '<a class="dropdown-item" href="' . base_url('sale/print/' . $data['id']) . '"
+              target="_blank">
+              <i class="fad fa-fw fa-print"></i> ' . lang('App.print') . '
             </a>
-            <div class="dropdown-menu">
-              <a class="dropdown-item" href="' . base_url('sale/edit/' . $data['id']) . '"
-                data-toggle="modal" data-target="#ModalStatic"
-                data-modal-class="modal-lg modal-dialog-centered modal-dialog-scrollable">
-                <i class="fad fa-fw fa-edit"></i> ' . lang('App.edit') . '
-              </a>
-              <a class="dropdown-item" href="' . base_url('sale/print/' . $data['id']) . '"
-                target="_blank">
-                <i class="fad fa-fw fa-print"></i> ' . lang('App.print') . '
-              </a>
-              <a class="dropdown-item" href="' . base_url('sale/print/' . $data['id']) . '?deliverynote=1"
-                target="_blank">
-                <i class="fad fa-fw fa-print"></i> ' . lang('App.deliverynote') . '
-              </a>
-              <a class="dropdown-item" href="' . base_url('sale/view/' . $data['id']) . '"
-                data-toggle="modal" data-target="#ModalStatic"
-                data-modal-class="modal-lg modal-dialog-centered modal-dialog-scrollable">
-                <i class="fad fa-fw fa-edit"></i> ' . lang('App.view') . '
-              </a>
-              <div class="dropdown-divider"></div>
-              <a class="dropdown-item" href="' . base_url('payment/add/sale/' . $data['id']) . '"
-                data-toggle="modal" data-target="#ModalStatic"
-                data-modal-class="modal-dialog-centered modal-dialog-scrollable">
-                <i class="fad fa-fw fa-money-bill"></i> ' . lang('App.addpayment') . '
-              </a>
-              <a class="dropdown-item" href="' . base_url('payment/view/sale/' . $data['id']) . '"
-                data-toggle="modal" data-target="#ModalStatic"
-                data-modal-class="modal-lg modal-dialog-centered modal-dialog-scrollable">
-                <i class="fad fa-fw fa-money-bill"></i> ' . lang('App.viewpayment') . '
-              </a>
-              <div class="dropdown-divider"></div>
-              <a class="dropdown-item" href="' . base_url('finance/validation/manual/sale/' . $data['id']) . '"
-                data-toggle="modal" data-target="#ModalStatic"
-                data-modal-class="modal-dialog-centered modal-dialog-scrollable">
-                <i class="fad fa-fw fa-money-bill"></i> ' . lang('App.manualvalidation') . '
-              </a>
-              <div class="dropdown-divider"></div>
-              <a class="dropdown-item" href="' . base_url('sale/reset/' . $data['id']) . '"
-                data-action="confirm">
-                <i class="fad fa-fw fa-undo"></i> ' . lang('App.resetcomplete') . '
-              </a>
-              <div class="dropdown-divider"></div>
-              <a class="dropdown-item" href="' . base_url('sale/delete/' . $data['id']) . '"
-                data-action="confirm">
-                <i class="fad fa-fw fa-trash"></i> ' . lang('App.delete') . '
-              </a>
-            </div>
-          </div>';
+            <a class="dropdown-item" href="' . base_url('sale/print/' . $data['id']) . '?deliverynote=1"
+              target="_blank">
+              <i class="fad fa-fw fa-print"></i> ' . lang('App.deliverynote') . '
+            </a>
+            <a class="dropdown-item" href="' . base_url('sale/view/' . $data['id']) . '"
+              data-toggle="modal" data-target="#ModalStatic"
+              data-modal-class="modal-lg modal-dialog-centered modal-dialog-scrollable">
+              <i class="fad fa-fw fa-edit"></i> ' . lang('App.view') . '
+            </a>';
+
+        if (hasAccess('Sale.Payment')) {
+          $menu .= '<div class="dropdown-divider"></div>
+          <a class="dropdown-item" href="' . base_url('payment/add/sale/' . $data['id']) . '"
+            data-toggle="modal" data-target="#ModalStatic"
+            data-modal-class="modal-dialog-centered modal-dialog-scrollable">
+            <i class="fad fa-fw fa-money-bill"></i> ' . lang('App.addpayment') . '
+          </a>
+          <a class="dropdown-item" href="' . base_url('payment/view/sale/' . $data['id']) . '"
+              data-toggle="modal" data-target="#ModalStatic"
+              data-modal-class="modal-lg modal-dialog-centered modal-dialog-scrollable">
+              <i class="fad fa-fw fa-money-bill"></i> ' . lang('App.viewpayment') . '
+          </a>';
+        }
+
+        if (hasAccess('PaymentValidation.Manual')) {
+          $menu .= '<div class="dropdown-divider"></div>
+            <a class="dropdown-item" href="' . base_url('finance/validation/manual/sale/' . $data['id']) . '"
+              data-toggle="modal" data-target="#ModalStatic"
+              data-modal-class="modal-dialog-centered modal-dialog-scrollable">
+              <i class="fad fa-fw fa-money-bill"></i> ' . lang('App.manualvalidation') . '
+            </a>';
+        }
+
+        if (hasAccess('Sale.ResetComplete')) {
+          $menu .= '
+            <div class="dropdown-divider"></div>
+            <a class="dropdown-item" href="' . base_url('sale/reset/' . $data['id']) . '"
+              data-action="confirm">
+              <i class="fad fa-fw fa-undo"></i> ' . lang('App.resetcomplete') . '
+            </a>';
+        }
+
+        if (hasAccess('Sale.Delete')) {
+          $menu .= '
+            <div class="dropdown-divider"></div>
+            <a class="dropdown-item" href="' . base_url('sale/delete/' . $data['id']) . '"
+              data-action="confirm">
+              <i class="fad fa-fw fa-trash"></i> ' . lang('App.delete') . '
+            </a>';
+        }
+
+        $menu .= '
+          </div>
+        </div>';
+
+        return $menu;
       })
       ->editColumn('attachment', function ($data) {
         return renderAttachment($data['attachment']);
