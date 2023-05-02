@@ -28,7 +28,7 @@ class Auth
 
     foreach ($columnIds as $columnId) {
       $db = User::select(
-        "id AS user_id, avatar, biller, warehouse, groups,
+        "id AS user_id, avatar, biller, biller_id, warehouse, warehouse_id, groups,
         fullname, username, password, gender, lang, dark_mode, active, json"
       );
 
@@ -53,18 +53,6 @@ class Auth
 
         if (!$row->avatar) {
           $row->avatar = ($row->gender == 'male' ? 'avatarmale' : 'avatarfemale');
-        }
-
-        if ($row->biller) {
-          $row->biller_id = Biller::getRow(['code' => $row->biller])->id;
-        } else {
-          $row->biller_id = null;
-        }
-
-        if ($row->warehouse) {
-          $row->warehouse_id = Warehouse::getRow(['code' => $row->warehouse])->id;
-        } else {
-          $row->warehouse_id = null;
         }
 
         if (isset($userJS->collapse)) {
