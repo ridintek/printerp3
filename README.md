@@ -21,6 +21,7 @@ PrintERP 3 adalah aplikasi Enterprise Resource Planning (ERP) berbasis web milik
   - User Group
   - Supplier
 * Inventory
+  - Cloud Sync
   - Stock Adjustment
   - Stock Sync
   - Internal Use
@@ -30,8 +31,35 @@ PrintERP 3 adalah aplikasi Enterprise Resource Planning (ERP) berbasis web milik
   - Stock Opname
   - Stock Transfer
   - Usage History
+* Maintenance
+  - Equipment Check
+  - Maintenance Log
+  - Maintenance Schedule
+* Notification
 * Procurement
   - Purchase
+* Production
+  - Sale Item
+* QMS
+  - Queue
+  - Counter
+  - Display
+  - Registration
+* Report
+  - Daily Performance
+  - Debt
+  - Income Statement
+  - Inventory Balance
+  - Maintenance
+  - Payment
+  - Receivable
+* Sale
+  - Invoice
+  - Voucher
+* Setting
+  - Permission
+* Ticket
+* TrackingPOD
 
 # Author
 Name | Position
