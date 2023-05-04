@@ -349,7 +349,7 @@ function filterDecimal($num)
  */
 function filterNumber($num)
 {
-  return preg_replace('/([^0-9])/', '', strval($num));
+  return preg_replace('/([^\-\.0-9Ee])/', '', strval($num));
 }
 
 /**
