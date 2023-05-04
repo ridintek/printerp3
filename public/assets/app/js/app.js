@@ -279,8 +279,8 @@ $(document).ready(function () {
             $(fa).removeClass(faClassProgress).addClass(faClass);
             delete this.dataset.progress;
 
-            if (typeof erp.table !== 'undefined') erp.table.draw(false);
-            if (typeof erp.tableModal !== 'undefined') erp.tableModal.draw(false);
+            if (erp.table)      erp.table.draw(false);
+            if (erp.tableModal) erp.tableModal.draw(false);
           },
           url: url
         });
@@ -360,7 +360,8 @@ $(document).ready(function () {
         $(fa).removeClass(faClassProgress).addClass(faClass);
         delete this.dataset.progress;
 
-        if (typeof erp.table !== 'undefined') erp.table.draw(false);
+        if (erp.table)      erp.table.draw(false);
+        if (erp.tableModal) erp.tableModal.draw(false);
       },
       url: url
     })
@@ -412,7 +413,8 @@ $(document).ready(function () {
         $(fa).removeClass(faClassProgress).addClass(faClass);
         delete this.dataset.progress;
 
-        if (typeof erp.table !== 'undefined') erp.table.draw(false);
+        if (erp.table)      erp.table.draw(false);
+        if (erp.tableModal) erp.tableModal.draw(false);
       },
       url: url
     });
