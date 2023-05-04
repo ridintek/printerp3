@@ -77,7 +77,7 @@ class StockOpnameItem
         'quantity'        => $whp->quantity,
         'first_qty'       => $item['quantity'],
         'reject_qty'      => $item['reject'],
-        'last_qty'        => ($item['last'] ?? 0),
+        'last_qty'        => ($item['last'] ?? null),
         'price'           => $price,
         'subtotal'        => $subTotal
       ];
@@ -188,7 +188,56 @@ class StockOpnameItem
     if ($rows = self::get($where)) {
       return $rows[0];
     }
+
     return null;
+  }
+
+  public static function isEqual(int $id)
+  {
+    $item = self::getRow(['id' => $id]);
+
+    if (!$item) {
+      setLastError('Stock opname item is not found.');
+      return false;
+    }
+
+    return ($item->quantity == ($item->last_qty ?? $item->first_qty));
+  }
+
+  public static function isLost(int $id)
+  {
+    $item = self::getRow(['id' => $id]);
+
+    if (!$item) {
+      setLastError('Stock opname item is not found.');
+      return false;
+    }
+
+    return ($item->quantity > ($item->last_qty ?? $item->first_qty));
+  }
+
+  public static function isModified(int $id)
+  {
+    $item = self::getRow(['id' => $id]);
+
+    if (!$item) {
+      setLastError('Stock opname item is not found.');
+      return false;
+    }
+
+    return ($item->last_qty != null);
+  }
+
+  public static function isPlus(int $id)
+  {
+    $item = self::getRow(['id' => $id]);
+
+    if (!$item) {
+      setLastError('Stock opname item is not found.');
+      return false;
+    }
+
+    return ($item->quantity > ($item->last_qty ?? $item->first_qty));
   }
 
   /**

@@ -11,9 +11,21 @@ class StockOpname
    */
   public static function add(array $data, array $items)
   {
-    $data = setCreatedBy($data);
+    if (empty($data['warehouse_id'])) {
+      setLastError('Warehouse is not set.');
+      return false;
+    }
 
+    $warehouse = Warehouse::getRow(['id' => $data['warehouse_id']]);
+
+    if (!$warehouse) {
+      setLastError('Warehouse is not found.');
+      return false;
+    }
+
+    $data = setCreatedBy($data);
     $data['reference'] = OrderRef::getReference('opname');
+    $data['warehouse_code'] = $warehouse->code;
 
     DB::table('stock_opnames')->insert($data);
 
