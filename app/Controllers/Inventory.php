@@ -37,29 +37,43 @@ class Inventory extends BaseController
     $dt
       ->select("id, code, name, parent_code, description")
       ->editColumn('id', function ($data) {
-        return '
+        $menu = '
           <div class="btn-group btn-action">
             <a class="btn bg-gradient-primary btn-sm dropdown-toggle" href="#" data-toggle="dropdown">
               <i class="fad fa-gear"></i>
             </a>
-            <div class="dropdown-menu">
-              <a class="dropdown-item" href="' . base_url('inventory/category/edit/' . $data['id']) . '"
-                data-toggle="modal" data-target="#ModalStatic"
-                data-modal-class="modal-dialog-centered modal-dialog-scrollable">
-                <i class="fad fa-fw fa-edit"></i> ' . lang('App.edit') . '
-              </a>
+            <div class="dropdown-menu">';
+
+        if (hasAccess('ProductCategory.Edit')) {
+          $menu .= '
+            <a class="dropdown-item" href="' . base_url('inventory/category/edit/' . $data['id']) . '"
+              data-toggle="modal" data-target="#ModalStatic"
+              data-modal-class="modal-dialog-centered modal-dialog-scrollable">
+              <i class="fad fa-fw fa-edit"></i> ' . lang('App.edit') . '
+            </a>';
+        }
+
+        $menu .= '
               <a class="dropdown-item" href="' . base_url('inventory/category/view/' . $data['id']) . '"
                 data-toggle="modal" data-target="#ModalStatic"
                 data-modal-class="modal-dialog-centered modal-dialog-scrollable">
                 <i class="fad fa-fw fa-magnifying-glass"></i> ' . lang('App.view') . '
-              </a>
-              <div class="dropdown-divider"></div>
-              <a class="dropdown-item" href="' . base_url('inventory/category/delete/' . $data['id']) . '"
-                data-action="confirm">
-                <i class="fad fa-fw fa-trash"></i> ' . lang('App.delete') . '
-              </a>
+              </a>';
+
+        if (hasAccess('ProductCategory.Delete')) {
+          $menu .= '
+            <div class="dropdown-divider"></div>
+            <a class="dropdown-item" href="' . base_url('inventory/category/delete/' . $data['id']) . '"
+              data-action="confirm">
+              <i class="fad fa-fw fa-trash"></i> ' . lang('App.delete') . '
+            </a>';
+        }
+
+        $menu .= '
             </div>
           </div>';
+
+        return $menu;
       })
       ->generate();
   }
@@ -79,29 +93,43 @@ class Inventory extends BaseController
       ->join('warehouse whto', 'whto.id = internal_uses.to_warehouse_id', 'left')
       ->join('users pic', 'pic.id = internal_uses.created_by', 'left')
       ->editColumn('id', function ($data) {
-        return '
+        $menu = '
           <div class="btn-group btn-action">
             <a class="btn bg-gradient-primary btn-sm dropdown-toggle" href="#" data-toggle="dropdown">
               <i class="fad fa-gear"></i>
             </a>
-            <div class="dropdown-menu">
-              <a class="dropdown-item" href="' . base_url('inventory/internaluse/edit/' . $data['id']) . '"
-                data-toggle="modal" data-target="#ModalStatic"
-                data-modal-class="modal-lg modal-dialog-centered modal-dialog-scrollable">
-                <i class="fad fa-fw fa-edit"></i> ' . lang('App.edit') . '
-              </a>
+            <div class="dropdown-menu">';
+
+        if (hasAccess('InternalUse.Edit')) {
+          $menu .= '
+            <a class="dropdown-item" href="' . base_url('inventory/internaluse/edit/' . $data['id']) . '"
+              data-toggle="modal" data-target="#ModalStatic"
+              data-modal-class="modal-lg modal-dialog-centered modal-dialog-scrollable">
+              <i class="fad fa-fw fa-edit"></i> ' . lang('App.edit') . '
+            </a>';
+        }
+
+        $menu .= '
               <a class="dropdown-item" href="' . base_url('inventory/internaluse/view/' . $data['id']) . '"
                 data-toggle="modal" data-target="#ModalStatic"
                 data-modal-class="modal-lg modal-dialog-centered modal-dialog-scrollable">
                 <i class="fad fa-fw fa-magnifying-glass"></i> ' . lang('App.view') . '
-              </a>
+              </a>';
+
+        if (hasAccess('InternalUse.Delete')) {
+          $menu .= '
               <div class="dropdown-divider"></div>
               <a class="dropdown-item" href="' . base_url('inventory/internaluse/delete/' . $data['id']) . '"
                 data-action="confirm">
                 <i class="fad fa-fw fa-trash"></i> ' . lang('App.delete') . '
-              </a>
+              </a>';
+        }
+
+        $menu .= '
             </div>
           </div>';
+
+        return $menu;
       })
       ->editColumn('grand_total', function ($data) {
         return '<div class="float-right">' . formatNumber($data['grand_total']) . '</div>';
@@ -181,29 +209,43 @@ class Inventory extends BaseController
         categories.name AS category_name, products.cost, products.markon_price, products.quantity")
       ->join('categories', 'categories.id = products.category_id', 'left')
       ->editColumn('id', function ($data) {
-        return '
+        $menu = '
           <div class="btn-group btn-action">
             <a class="btn bg-gradient-primary btn-sm dropdown-toggle" href="#" data-toggle="dropdown">
               <i class="fad fa-gear"></i>
             </a>
-            <div class="dropdown-menu">
-              <a class="dropdown-item" href="' . base_url('inventory/product/edit/' . $data['id']) . '"
-                data-toggle="modal" data-target="#ModalStatic"
-                data-modal-class="modal-lg modal-dialog-centered modal-dialog-scrollable">
-                <i class="fad fa-fw fa-edit"></i> ' . lang('App.edit') . '
-              </a>
+            <div class="dropdown-menu">';
+
+        if (hasAccess('Product.Edit')) {
+          $menu .= '
+            <a class="dropdown-item" href="' . base_url('inventory/product/edit/' . $data['id']) . '"
+              data-toggle="modal" data-target="#ModalStatic"
+              data-modal-class="modal-lg modal-dialog-centered modal-dialog-scrollable">
+              <i class="fad fa-fw fa-edit"></i> ' . lang('App.edit') . '
+            </a>';
+        }
+
+        $menu .= '
               <a class="dropdown-item" href="' . base_url('inventory/product/view/' . $data['id']) . '"
                 data-toggle="modal" data-target="#ModalStatic"
                 data-modal-class="modal-lg modal-dialog-centered modal-dialog-scrollable">
                 <i class="fad fa-fw fa-magnifying-glass"></i> ' . lang('App.view') . '
-              </a>
-              <div class="dropdown-divider"></div>
-              <a class="dropdown-item" href="' . base_url('inventory/product/delete/' . $data['id']) . '"
-                data-action="confirm">
-                <i class="fad fa-fw fa-trash"></i> ' . lang('App.delete') . '
-              </a>
+              </a>';
+
+        if (hasAccess('Product.Delete')) {
+          $menu .= '
+            <div class="dropdown-divider"></div>
+            <a class="dropdown-item" href="' . base_url('inventory/product/delete/' . $data['id']) . '"
+              data-action="confirm">
+              <i class="fad fa-fw fa-trash"></i> ' . lang('App.delete') . '
+            </a>';
+        }
+
+        $menu .= '
             </div>
           </div>';
+
+        return $menu;
       })
       ->editColumn('cid', function ($data) {
         return "<input class=\"checkbox\" type=\"checkbox\" value=\"{$data['cid']}\">";
@@ -232,29 +274,43 @@ class Inventory extends BaseController
       ->join('warehouse', 'warehouse.id = adjustments.warehouse_id', 'left')
       ->join('users creator', 'creator.id = adjustments.created_by', 'left')
       ->editColumn('id', function ($data) {
-        return '
+        $menu = '
           <div class="btn-group btn-action">
             <a class="btn bg-gradient-primary btn-sm dropdown-toggle" href="#" data-toggle="dropdown">
               <i class="fad fa-gear"></i>
             </a>
-            <div class="dropdown-menu">
-              <a class="dropdown-item" href="' . base_url('inventory/stockadjustment/edit/' . $data['id']) . '"
-                data-toggle="modal" data-target="#ModalStatic"
-                data-modal-class="modal-lg modal-dialog-centered modal-dialog-scrollable">
-                <i class="fad fa-fw fa-edit"></i> ' . lang('App.edit') . '
-              </a>
-              <a class="dropdown-item" href="' . base_url('inventory/stockadjustment/view/' . $data['id']) . '"
-                data-toggle="modal" data-target="#ModalStatic"
-                data-modal-class="modal-lg modal-dialog-centered modal-dialog-scrollable">
-                <i class="fad fa-fw fa-magnifying-glass"></i> ' . lang('App.view') . '
-              </a>
-              <div class="dropdown-divider"></div>
-              <a class="dropdown-item" href="' . base_url('inventory/stockadjustment/delete/' . $data['id']) . '"
-                data-action="confirm">
-                <i class="fad fa-fw fa-trash"></i> ' . lang('App.delete') . '
-              </a>
+            <div class="dropdown-menu">';
+
+        if (hasAccess('StockAdjustment.Edit')) {
+          $menu .= '
+            <a class="dropdown-item" href="' . base_url('inventory/stockadjustment/edit/' . $data['id']) . '"
+              data-toggle="modal" data-target="#ModalStatic"
+              data-modal-class="modal-lg modal-dialog-centered modal-dialog-scrollable">
+              <i class="fad fa-fw fa-edit"></i> ' . lang('App.edit') . '
+            </a>';
+        }
+
+        $menu .= '
+          <a class="dropdown-item" href="' . base_url('inventory/stockadjustment/view/' . $data['id']) . '"
+            data-toggle="modal" data-target="#ModalStatic"
+            data-modal-class="modal-lg modal-dialog-centered modal-dialog-scrollable">
+            <i class="fad fa-fw fa-magnifying-glass"></i> ' . lang('App.view') . '
+          </a>';
+
+        if (hasAccess('StockAdjustment.Delete')) {
+          $menu .= '
+            <div class="dropdown-divider"></div>
+            <a class="dropdown-item" href="' . base_url('inventory/stockadjustment/delete/' . $data['id']) . '"
+              data-action="confirm">
+              <i class="fad fa-fw fa-trash"></i> ' . lang('App.delete') . '
+            </a>';
+        }
+
+        $menu .= '
             </div>
           </div>';
+
+        return $menu;
       })
       ->editColumn('mode', function ($data) {
         return renderStatus($data['mode']);
@@ -287,29 +343,49 @@ class Inventory extends BaseController
       ->join('warehouse', 'warehouse.id = stock_opnames.warehouse_id', 'left')
       ->join('users creator', 'creator.id = stock_opnames.created_by', 'left')
       ->editColumn('id', function ($data) {
-        return '
+        $menu = '
           <div class="btn-group btn-action">
             <a class="btn bg-gradient-primary btn-sm dropdown-toggle" href="#" data-toggle="dropdown">
               <i class="fad fa-gear"></i>
             </a>
-            <div class="dropdown-menu">
-              <a class="dropdown-item" href="' . base_url('inventory/stockopname/edit/' . $data['id']) . '"
-                data-toggle="modal" data-target="#ModalStatic"
-                data-modal-class="modal-lg modal-dialog-centered modal-dialog-scrollable">
-                <i class="fad fa-fw fa-edit"></i> ' . lang('App.edit') . '
-              </a>
-              <a class="dropdown-item" href="' . base_url('inventory/stockopname/view/' . $data['id']) . '"
-                data-toggle="modal" data-target="#ModalStatic"
-                data-modal-class="modal-lg modal-dialog-centered modal-dialog-scrollable">
-                <i class="fad fa-fw fa-magnifying-glass"></i> ' . lang('App.view') . '
-              </a>
-              <div class="dropdown-divider"></div>
-              <a class="dropdown-item" href="' . base_url('inventory/stockopname/delete/' . $data['id']) . '"
-                data-action="confirm">
-                <i class="fad fa-fw fa-trash"></i> ' . lang('App.delete') . '
-              </a>
+            <div class="dropdown-menu">';
+
+        if (hasAccess('StockOpname.Edit')) {
+          $menu .= '
+            <a class="dropdown-item" href="' . base_url('inventory/stockopname/edit/' . $data['id']) . '"
+              data-toggle="modal" data-target="#ModalStatic"
+              data-modal-class="modal-lg modal-dialog-centered modal-dialog-scrollable">
+              <i class="fad fa-fw fa-edit"></i> ' . lang('App.edit') . '
+            </a>';
+        }
+
+        $menu .= '
+          <a class="dropdown-item" href="' . base_url('inventory/stockopname/view/' . $data['id']) . '"
+            data-toggle="modal" data-target="#ModalStatic"
+            data-modal-class="modal-lg modal-dialog-centered modal-dialog-scrollable">
+            <i class="fad fa-fw fa-magnifying-glass"></i> ' . lang('App.view') . '
+          </a>';
+
+        if (hasAccess('StockOpname.Delete')) {
+          $menu .= '
+            <div class="dropdown-divider"></div>
+            <a class="dropdown-item" href="' . base_url('inventory/stockopname/delete/' . $data['id']) . '"
+              data-action="confirm">
+              <i class="fad fa-fw fa-trash"></i> ' . lang('App.delete') . '
+            </a>';
+        }
+
+        $menu .= '
             </div>
           </div>';
+
+        return $menu;
+      })
+      ->editColumn('total_lost', function ($data) {
+        return formatNumber($data['total_lost']);
+      })
+      ->editColumn('total_plus', function ($data) {
+        return formatNumber($data['total_plus']);
       })
       ->editColumn('status', function ($data) {
         return renderStatus($data['status']);
@@ -507,6 +583,31 @@ class Inventory extends BaseController
     $this->data['title']    = lang('App.viewproductcategory');
 
     $this->response(200, ['content' => view('Inventory/Category/view', $this->data)]);
+  }
+
+  public function cloudsync()
+  {
+    if ($args = func_get_args()) {
+      $method = __FUNCTION__ . '_' . $args[0];
+
+      if (method_exists($this, $method)) {
+        array_shift($args);
+        return call_user_func_array([$this, $method], $args);
+      }
+    }
+
+    checkPermission('Product.CloudSync');
+
+    $this->data['page'] = [
+      'bc' => [
+        ['name' => lang('App.inventory'), 'slug' => 'inventory', 'url' => '#'],
+        ['name' => lang('App.cloudsync'), 'slug' => 'cloudsync', 'url' => '#']
+      ],
+      'content' => 'Inventory/CloudSync/index',
+      'title' => lang('App.cloudsync')
+    ];
+
+    return $this->buildPage($this->data);
   }
 
   /**
@@ -1329,9 +1430,9 @@ class Inventory extends BaseController
   /**
    * Stock Opname.
    * Stock Qty == Input Qty => 'Excellent'.
-   * Stock Qty < Input Qty  => 'Good' + Adjustment Plus.
-   * Stock Qty > Input Qty  => 'Need Confirm' (Checked).
-   * 'Need Confirm' => First SO Qty == Update SO Qty.
+   * Stock Qty < Input Qty  => 'Good' + Auto Adjustment Plus.
+   * Stock Qty > Input Qty  => 'Checked'.
+   * 'Checked' => First SO Qty == Update SO Qty.
    */
   public function stockopname()
   {
@@ -1370,10 +1471,14 @@ class Inventory extends BaseController
       $data = [
         'date'          => dateTimePHP(getPost('date')),
         'warehouse_id'  => getPost('warehouse'),
-        'cycle'         => (getPost('cycle') ?? 1),
+        'cycle'         => getPost('cycle'),
         'note'          => stripTags(getPost('note')),
         'created_by'    => getPost('pic')
       ];
+
+      if (empty($data['cycle'])) { // Default to cycle 1.
+        $data['cycle'] = 1;
+      }
 
       if (!is_array($itemIds) && !is_array($itemQty)) {
         $this->response(400, ['message' => 'Item tidak ada atau tidak valid.']);
@@ -1461,6 +1566,7 @@ class Inventory extends BaseController
 
   protected function stockopname_edit($id = null)
   {
+    $this->response(400, ['message' => 'Not implemented.']);
   }
 
   protected function stockopname_status($id = null)
@@ -1470,6 +1576,95 @@ class Inventory extends BaseController
     if (!$opname) {
       $this->response(404, ['message' => 'Stock opname is not found.']);
     }
+
+    $soItems = StockOpnameItem::get(['opname_id' => $id]);
+
+    if (!$soItems) {
+      $this->response(404, ['message' => 'Stock Opname items are not found.']);
+    }
+
+    $newStatus  = null;
+    $status     = getPost('status');
+    $itemId     = getPost('item[id]');
+    $itemLast   = getPost('item[last]');
+    $itemLost   = [];
+
+    if ($status == 'confirm') {
+      $newStatus = 'confirmed';
+    }
+
+    if ($status == 'verify') {
+      $newStatus = 'verified';
+    }
+
+    if (empty($newStatus)) {
+      dbgprint('Status empty');
+      return false;
+    }
+
+    $data = [
+      'total_lost'    => 0,
+      'total_plus'    => 0,
+      'total_edited'  => 0,
+      'status'        => $newStatus
+    ];
+
+    DB::transStart();
+
+    foreach ($soItems as $soItem) {
+      for ($a = 0; $a < count($itemId); $a++) {
+        if ($soItem->product_id == $itemId[$a]) {
+          if ($status == 'confirm') {
+            if (!StockOpnameItem::update((int)$soItem->id, ['last_qty' => $itemLast[$a]])) {
+              $this->response(400, ['message' => getLastError()]);
+            }
+          }
+
+          if ($status == 'verify') {
+            if (StockOpnameItem::isLost((int)$soItem->id)) {
+              $itemLost[] = [
+                'id'        => $soItem->product_id,
+                'quantity'  => $soItem->last_qty
+              ];
+
+              $data['total_lost'] += floatval($soItem->subtotal);
+            }
+
+            if (StockOpnameItem::isModified((int)$soItem->id)) {
+              $data['total_edited'] += 1;
+            }
+          }
+
+          break;
+        }
+      }
+    }
+
+    if ($itemLost) {
+      $lostId = StockAdjustment::add([
+        'warehouse_id'  => $opname->warehouse_id,
+        'mode'          => 'overwrite',
+        'note'          => $opname->reference
+      ], $itemLost);
+
+      if (!$lostId) {
+        return false;
+      }
+
+      $data['adjustment_min_id'] = $lostId;
+    }
+
+    if (!StockOpname::update((int)$id, $data)) {
+      $this->response(400, ['message' => getLastError()]);
+    }
+
+    DB::transComplete();
+
+    if (DB::transStatus()) {
+      $this->response(200, ['message' => 'Status has been changed.']);
+    }
+
+    $this->response(400, ['message' => 'Failed']);
   }
 
   protected function stockopname_suggestion()
