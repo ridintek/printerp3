@@ -65,7 +65,7 @@ class StockAdjustment
         }
 
         $res = Stock::add([
-          'date'            => $data['date'],
+          'date'            => ($data['date'] ?? $data['created_at']),
           'adjustment_id'   => $insertId,
           'product_id'      => $product->id,
           'warehouse_id'    => $warehouse->id,
