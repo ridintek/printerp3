@@ -390,11 +390,11 @@
                   </p>
                 </a>
                 <ul class="nav nav-treeview">
-                  <?php if (hasAccess('Product.Sync')) : ?>
+                  <?php if (hasAccess('Product.CloudSync')) : ?>
                     <li class="nav-item">
-                      <a href="#" class="nav-link">
+                      <a href="<?= base_url('inventory/cloudsync') ?>" class="nav-link" data-action="link" data-slug="cloudsync">
                         <i class="nav-icon fad fa-cloud-check"></i>
-                        <p><?= lang('App.sync') ?></p>
+                        <p><?= lang('App.cloudsync') ?></p>
                       </a>
                     </li>
                   <?php endif; ?>
