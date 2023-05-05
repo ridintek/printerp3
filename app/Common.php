@@ -1183,6 +1183,37 @@ function nulling(array $data, array $keys)
 }
 
 /**
+ * Optical Character Recognition. Get readable text from image.
+ * @param string $image Image to read as text.
+ * @return array|false Return array of string data or false if error.
+ */
+function ocr($image)
+{
+  setLastError();
+
+  $exe = "tesseract";
+  $output = [];
+  $retval = 0;
+
+  exec("$exe --version", $output, $retval);
+
+  if ($retval != 0) {
+    setLastError("Tesseract is not found.");
+    return false;
+  }
+
+  if (is_file($image)) {
+    $output = [];
+    exec("$exe $image stdout", $output);
+  } else {
+    setLastError('Image file is not found.');
+    return false;
+  }
+
+  return $output;
+}
+
+/**
  * Add 62 to phone number.
  * @param string $phone Phone number.
  */
