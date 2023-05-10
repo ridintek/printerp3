@@ -1,7 +1,8 @@
 <?php $deliveryNote = (getGet('deliverynote') == 1) ?>
-<?php $biller = \App\Models\Biller::getRow(['code' => $sale->biller]) ?>
-<?php $customer = \App\Models\Customer::getRow(['phone' => $sale->customer]) ?>
-<?php $paymentValidation = \App\Models\PaymentValidation::getRow(['sale' => $sale->reference]) ?>
+<?php $biller = \App\Models\Biller::getRow(['id' => $sale->biller_id]) ?>
+<?php $warehouse = \App\Models\Warehouse::getRow(['id' => $sale->warehouse_id]); ?>
+<?php $customer = \App\Models\Customer::getRow(['id' => $sale->customer_id]) ?>
+<?php $paymentValidation = \App\Models\PaymentValidation::getRow(['sale_id' => $sale->id]) ?>
 <div class="modal-header bg-gradient-dark">
   <h5 class="modal-title"><i class="fad fa-fw fa-magnifying-glass"></i> <?= $title ?></h5>
   <button type="button" class="close" data-dismiss="modal" aria-label="Close">
@@ -42,7 +43,7 @@
               </tr>
               <tr>
                 <td><?= lang('App.productionplace') ?></td>
-                <td><?= \App\Models\Warehouse::getRow(['code' => $sale->warehouse])->name ?></td>
+                <td><?= $warehouse->name ?></td>
               </tr>
               <?php if (!empty($saleJS->cashier_by)) : ?>
                 <tr>
