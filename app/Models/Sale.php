@@ -220,6 +220,42 @@ class Sale
   }
 
   /**
+   * Get sold items by warehouse id.
+   * @param int $warehouseId Warehouse ID.
+   * @param array $options [ start_date, end_date ]
+   */
+  public static function getSoldItems(int $warehouseId, $options = [])
+  {
+    $items = [];
+    $clause = $options;
+    $clause['not_null']     = 'sale_id';
+    $clause['warehouse_id'] = $warehouseId;
+
+    $stocks = Stock::get($clause);
+
+    if ($stocks) {
+      foreach ($stocks as $stock) {
+        $product = Product::getRow(['id' => $stock->product_id]);
+
+        // No sparepart. Sparepart always add in internal use.
+        if ($product->iuse_type == 'sparepart') continue;
+
+        if (!$stock->sale_id) continue; // Sale ID only.
+
+        if ($stock->product_type !== 'standard') continue; // Standard only.
+        if ($stock->status !== 'sent') continue; // Sent only.
+
+        // It's safe to use product code. Because case-sensitive.
+        // array_search('POCT15', ['POCT15A', 'LSPOCT15']) => return false.
+        if (array_search($stock->product_code, array_column($items, 'product_code')) === false) {
+          $items[] = $stock;
+        }
+      }
+    }
+    return $items;
+  }
+
+  /**
    * Select Sale.
    */
   public static function select(string $columns, $escape = true)
