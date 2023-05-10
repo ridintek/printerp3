@@ -182,12 +182,9 @@
   TableFilter.bind('clear', '.filter-clear');
 
   TableFilter.on('clear', () => {
-    $('#filter-biller').val([]).trigger('change');
     $('#filter-warehouse').val([]).trigger('change');
     $('#filter-status').val([]).trigger('change');
-    $('#filter-paymentstatus').val([]).trigger('change');
     $('#filter-createdby').val([]).trigger('change');
-    $('#filter-receivable').iCheck('uncheck');
     $('#filter-startdate').val('');
     $('#filter-enddate').val('');
   });
