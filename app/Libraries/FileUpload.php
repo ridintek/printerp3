@@ -11,7 +11,7 @@ use App\Models\Attachment;
  */
 class FileUpload
 {
-  protected $file = NULL;
+  protected $file = null;
   /**
    * @var array
    */
@@ -39,26 +39,28 @@ class FileUpload
    */
   public function has($filename)
   {
-    $this->isMoved = FALSE;
+    $this->isMoved = false;
 
     if (isset($this->files[$filename]) && $this->files[$filename]['size'] > 0) {
       $this->file = $this->files[$filename];
-      return TRUE;
+      return true;
     }
-    return FALSE;
+
+    return false;
   }
 
   public function getExtension()
   {
     if ($this->file) {
-      if (strpos($this->getName(), '.') !== FALSE) {
+      if (strpos($this->getName(), '.') !== false) {
         $s = explode('.', $this->getName());
         $len = count($s);
 
         return '.' . $s[$len - 1];
       }
     }
-    return NULL;
+
+    return null;
   }
 
   public function getRandomName()
@@ -66,7 +68,8 @@ class FileUpload
     if ($this->file) {
       return bin2hex(random_bytes(16)) . $this->getExtension();
     }
-    return NULL;
+
+    return null;
   }
 
   public function getName()
@@ -74,7 +77,8 @@ class FileUpload
     if ($this->file) {
       return $this->file['name'];
     }
-    return NULL;
+
+    return null;
   }
 
   /**
@@ -101,7 +105,8 @@ class FileUpload
 
       return ceil($this->file['size'] / $acc);
     }
-    return NULL;
+
+    return null;
   }
 
   public function getTempName()
@@ -109,7 +114,8 @@ class FileUpload
     if ($this->file) {
       return $this->file['tmp_name'];
     }
-    return NULL;
+
+    return null;
   }
 
   public function getType()
@@ -117,7 +123,8 @@ class FileUpload
     if ($this->file) {
       return $this->file['type'];
     }
-    return NULL;
+
+    return null;
   }
 
   /**
@@ -129,7 +136,7 @@ class FileUpload
     return $this->isMoved;
   }
 
-  public function move($path, $newName = NULL)
+  public function move($path, $newName = null)
   {
     if ($this->file) {
       $path = rtrim($path, '/') . '/';
@@ -137,11 +144,12 @@ class FileUpload
       $newName = ($newName ?? $this->getName());
 
       if (move_uploaded_file($this->getTempName(), $path . $newName)) {
-        $this->isMoved = TRUE;
-        return TRUE;
+        $this->isMoved = true;
+        return true;
       }
     }
-    return FALSE;
+
+    return false;
   }
 
   /**
@@ -150,7 +158,7 @@ class FileUpload
    * @param string $hashname Update record if present. Use random hashname if omitted.
    * @return string Return stored hashname.
    */
-  public function store($filename = NULL, $hashname = NULL)
+  public function store($filename = null, $hashname = null)
   {
     if ($hashname) {
       $attachment = Attachment::getRow(['hashname' => $hashname]);
