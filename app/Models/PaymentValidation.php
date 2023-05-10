@@ -232,7 +232,7 @@ class PaymentValidation
   public static function validate($option = [])
   {
     $createdAt = ($option['date'] ?? date('Y-m-d H:i:s'));
-    $startDate = date('Y-m-d H:i:s', strtotime('-1 day')); // We retrieve data from 7 days ago.
+    $startDate = date('Y-m-d', strtotime('-1 day')); // We retrieve data from 7 days ago.
     $useManual = false;
 
     // Manual Validation.
@@ -380,8 +380,8 @@ class PaymentValidation
 
           $pvData = [
             'bank_id'           => $bank->id,
-            'transaction_at'    => $dm->created,
-            'transaction_date'  => $dm->created,
+            'transaction_at'    => $dm->system_date,
+            'transaction_date'  => $dm->system_date,
             'description'       => $dm->description,
             'status'            => 'verified'
           ];
@@ -405,7 +405,7 @@ class PaymentValidation
           // Problem double payment. See if there is a double validate.
           $log = [
             'account' => $mb->account,
-            'module'  => $dm->bank_module,
+            'module'  => $mb->module,
             'bank'    => [
               'id'      => $bank->id,
               'name'    => $bank->name,
@@ -414,8 +414,8 @@ class PaymentValidation
             'dm'  => [
               'id'          => $dm->id,
               'amount'      => $dm->amount,
-              'bank_module' => $dm->bank_module,
-              'created'     => $dm->created,
+              'bank_module' => $mb->module,
+              'created'     => $dm->system_date,
               'description' => $dm->description,
               'type'        => $dm->type,
             ],
