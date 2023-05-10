@@ -448,16 +448,16 @@
                   <?php endif; ?>
                   <?php if (hasAccess('ProductTransfer.View')) : ?>
                     <li class="nav-item">
-                      <a href="#" class="nav-link">
-                        <i class="nav-icon fad fa-exchange"></i>
+                      <a href="<?= base_url('inventory/transfer') ?>" class="nav-link" data-action="link" data-slug="transfer">
+                        <i class="nav-icon fad fa-exchange" style="color:#80ff40"></i>
                         <p><?= lang('App.transfer') ?></p>
                       </a>
                     </li>
                   <?php endif; ?>
                   <?php if (hasAccess('Product.History')) : ?>
                     <li class="nav-item">
-                      <a href="#" class="nav-link">
-                        <i class="nav-icon fad fa-box-ballot"></i>
+                      <a href="<?= base_url('inventory/usagehistory') ?>" class="nav-link" data-action="link" data-slug="usagehistory">
+                        <i class="nav-icon fad fa-box-ballot" style="color:#8040ff"></i>
                         <p><?= lang('App.usagehistory') ?></p>
                       </a>
                     </li>
@@ -532,7 +532,7 @@
               </li>
             <?php endif; ?>
             <!-- Production -->
-            <?php if (hasAccess('Sale.Complete')) : ?>
+            <?php if (hasAccess(['Sale.Complete', 'TrackingPOD.View'])) : ?>
               <li class="nav-item">
                 <a href="#" class="nav-link" data-slug="production">
                   <i class="nav-icon fad fa-scissors" style="color:#8080ff"></i>
@@ -543,8 +543,16 @@
                   <?php if (hasAccess('Sale.Complete')) : ?>
                     <li class="nav-item">
                       <a href="<?= base_url('production') ?>" class="nav-link" data-action="link" data-slug="saleitem">
-                        <i class="nav-icon fad fa-box-check" style="color:#80FF80"></i>
+                        <i class="nav-icon fad fa-box-check" style="color:#80ff80"></i>
                         <p><?= lang('App.saleitem') ?></p>
+                      </a>
+                    </li>
+                  <?php endif; ?>
+                  <?php if (hasAccess('TrackingPOD.View')) : ?>
+                    <li class="nav-item">
+                      <a href="<?= base_url('production/trackingpod') ?>" class="nav-link" data-action="link" data-slug="trackingpod">
+                        <i class="nav-icon fad fa-list" style="color:#ff0040"></i>
+                        <p>TrackingPOD</p>
                       </a>
                     </li>
                   <?php endif; ?>
@@ -718,27 +726,6 @@
                   <i class="nav-icon fad fa-ticket"></i>
                   <p><?= lang('App.ticket') ?></p>
                 </a>
-              </li>
-            <?php endif; ?>
-
-            <!-- TrackingPOD -->
-            <?php if (hasAccess('TrackingPOD.View')) : ?>
-              <li class="nav-item">
-                <a href="#" class="nav-link">
-                  <i class="nav-icon fad fa-chart-network"></i>
-                  <p>TrackingPOD <i class="fad fa-angle-right right"></i>
-                  </p>
-                </a>
-                <ul class="nav nav-treeview">
-                  <?php if (hasAccess('TrackingPOD.View')) : ?>
-                    <li class="nav-item">
-                      <a href="#" class="nav-link">
-                        <i class="nav-icon fad fa-list"></i>
-                        <p>TrackingPOD</p>
-                      </a>
-                    </li>
-                  <?php endif; ?>
-                </ul>
               </li>
             <?php endif; ?>
           </ul>
