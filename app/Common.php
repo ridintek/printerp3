@@ -70,8 +70,8 @@ function checkPermission(string $permission = null)
     if ($permission) {
       if ($ajax) {
         if (!hasAccess($permission)) {
-          http_response_code(401);
-          sendJSON(['code' => 401, 'message' => lang('Msg.notAuthorized'), 'title' => lang('Msg.accessDenied')]);
+          http_response_code(403);
+          sendJSON(['code' => 403, 'message' => lang('Msg.notAuthorized'), 'title' => lang('Msg.accessDenied')]);
         }
       }
 
@@ -147,10 +147,9 @@ function mutexRelease($hMutex)
 }
 
 /**
- * Convert JS time to PHP time or vice versa.
+ * Convert PHP time to JS time.
  * @param string $dateTime dateTime.
  * @param int $currentDate Return current date if dateTime is empty.
- * @param string $mode Return mode default 'auto'. Options: auto|js|php
  */
 function dateTimeJS(string $dateTime = null, bool $currentDate = true)
 {
@@ -165,6 +164,11 @@ function dateTimeJS(string $dateTime = null, bool $currentDate = true)
   return str_replace(' ', 'T', $dateTime);
 }
 
+/**
+ * Convert JS time to PHP time.
+ * @param string $dateTime dateTime.
+ * @param int $currentDate Return current date if dateTime is empty.
+ */
 function dateTimePHP(string $dateTime = null, bool $currentDate = true)
 {
   if ($currentDate && empty($dateTime)) {
@@ -633,6 +637,36 @@ function getDailyPerformanceReport($opt)
 }
 
 /**
+ * Get day name from index.
+ * @param int $index Index of the day. 1 = Minggu, 7 = Sabtu.
+ * @example 1 getDayName(2); // Return "senin".
+ */
+function getDayName(int $index): string
+{
+  if ($index == 0) return null;
+
+  $days = ['minggu', 'senin', 'selasa', 'rabu', 'kamis', 'jumat', 'sabtu'];
+  $x = filterDecimal($index);
+  return $days[($x - 1) % 7];
+}
+
+/**
+ * Get days between two period.
+ * @param string $startDate Start Date.
+ * @param string $endDate End Date.
+ * @return int Return days.
+ */
+function getDaysInPeriod($startDate, $endDate)
+{
+  $sdate = new DateTime($startDate);
+  $edate = new DateTime($endDate);
+
+  $diff = $sdate->diff($edate);
+
+  return (int)$diff->format('%r%a');
+}
+
+/**
  * Get total days in a month.
  * @param int $year Year.
  * @param int $month Month.
@@ -675,6 +709,56 @@ function getGet($name)
 function getGetPost($name)
 {
   return Services::request()->getGetPost($name);
+}
+
+/**
+ * Get order stock quantity by current stock, min order and safety stock.
+ * @param float $current_stock Current stock of item.
+ * @param float $min_order_qty Min. order of item.
+ * @param float $safety_stock Safety stock of item.
+ * @example 1 getOrderStock(4, 3, 15); // Return 12.
+ *
+ */
+function getOrderStock($current_stock, $min_order_qty, $safety_stock)
+{
+  $curr_stock  = filterDecimal($current_stock);
+  $min_order   = filterDecimal($min_order_qty);
+  $safe_stock  = filterDecimal($safety_stock);
+  $order_stock = 0;
+
+  if ($curr_stock < $safe_stock) { // Safe stock (current stock < safe_stock)
+    $rest_stock = round($safe_stock - $curr_stock); // 400 - (-10) = 410 < 224 = false
+    $order_stock = (ceil($rest_stock / $min_order) * $min_order); // (410 / 224) * 224
+  }
+  return $order_stock;
+}
+
+/**
+ * Get past month period.
+ * @param int $month How many past month.
+ * @example 1 getPastMonthPeriod(1);
+ * // Return ['start_date' => '2020-01-01', 'end_date' => '2020-01-31', 'days' => 31]
+ */
+function getPastMonthPeriod($month)
+{
+  $mn   = intval($month);
+  $base = strtotime(date('Y-m-') . '01'); // Current year and month with date 1.
+  $y    = date('Y', strtotime('-1 month', $base));
+  $m    = date('n', strtotime('-1 month', $base));
+  $days = 0;
+
+  $start_date = date('Y-m', strtotime("-{$mn} month", $base)) . '-01';
+  $end_date   = date('Y-m', strtotime('-1 month', $base)) . '-' . getDaysInMonth($y, $m);
+
+  for ($a = 1; $a <= $mn; $a++) {
+    $days += getDaysInMonth(date('Y', strtotime("-{$a} month", $base)), date('n', strtotime("-{$a} month", $base)));
+  }
+
+  return [
+    'start_date' => $start_date,
+    'end_date'   => $end_date,
+    'days'       => $days // Total days.
+  ];
 }
 
 /**
