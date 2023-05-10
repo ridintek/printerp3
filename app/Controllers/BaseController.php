@@ -170,10 +170,15 @@ class BaseController extends Controller
 	 * Use attachment.
 	 * @param array $data Data.
 	 * @param string $attachment Attachment to replace (optional).
+	 * @param \Closure $callback Callback for uploaded files.
 	 */
-	protected function useAttachment(array $data, string $attachment = NULL)
+	protected function useAttachment(array $data, string $attachment = null, \Closure $callback = null)
 	{
 		$upload = new FileUpload();
+
+		if (is_callable($callback)) {
+			call_user_func_array($callback, [$upload]);
+		}
 
 		if ($upload->has('attachment')) {
 			if ($upload->getSize('mb') > 2) {
