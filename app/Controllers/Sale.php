@@ -72,11 +72,11 @@ class Sale extends BaseController
         customergroup.name AS customergroup_name,
         sales.status, sales.payment_status, sales.grand_total, sales.paid, sales.balance,
         sales.created_at, sales.attachment")
-      ->join('biller', 'biller.code = sales.biller', 'left')
-      ->join('customers', 'customers.phone = sales.customer', 'left')
+      ->join('biller', 'biller.id = sales.biller_id', 'left')
+      ->join('customers', 'customers.id = sales.customer_id', 'left')
       ->join('customergroup', 'customergroup.id = customers.customer_group_id', 'left')
       ->join('users pic', 'pic.id = sales.created_by', 'left')
-      ->join('warehouse', 'warehouse.code = sales.warehouse', 'left')
+      ->join('warehouse', 'warehouse.id = sales.warehouse_id', 'left')
       ->where("sales.date BETWEEN '{$startDate} 00:00:00' AND '{$endDate} 23:59:59'")
       ->editColumn('id', function ($data) {
         $menu = '
