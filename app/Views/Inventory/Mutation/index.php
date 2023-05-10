@@ -4,7 +4,7 @@
       <div class="card shadow">
         <div class="card-header bg-gradient-dark">
           <div class="card-tools">
-            <a class="btn btn-tool bg-gradient-success" href="<?= base_url('inventory/mutation/add') ?>" data-toggle="modal" data-target="#ModalStatic" data-modal-class="modal-lg modal-dialog-centered modal-dialog-scrollable">
+            <a class="btn btn-tool bg-gradient-success use-tooltip" href="<?= base_url('inventory/mutation/add') ?>" data-toggle="modal" data-target="#ModalStatic" data-modal-class="modal-lg modal-dialog-centered modal-dialog-scrollable" title="<?= lang('App.addproductmutation') ?>">
               <i class="fad fa-plus-circle"></i>
             </a>
           </div>
