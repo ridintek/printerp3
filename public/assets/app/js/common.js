@@ -479,6 +479,13 @@ function initControls() {
         url: base_url + '/select2/customer'
       }
     });
+    $('.select-expense-category').select2({
+      allowClear: true,
+      ajax: {
+        delay: 1000,
+        url: base_url + '/select2/expense/category'
+      }
+    });
     $('.select-operator').select2({
       allowClear: true,
       ajax: {
@@ -649,6 +656,14 @@ function initControls() {
 
     currency.each(function () {
       this.value = formatCurrency(this.value);
+    });
+  }
+
+  if (isFunction('formatNumber')) {
+    let number = $('.number');
+
+    number.each(function () {
+      this.value = formatNumber(this.value);
     });
   }
 }

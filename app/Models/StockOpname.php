@@ -16,12 +16,19 @@ class StockOpname
       return false;
     }
 
+    if (empty($data['cycle'])) {
+      setLastError('Cycle is not set.');
+      return false;
+    }
+
     $warehouse = Warehouse::getRow(['id' => $data['warehouse_id']]);
 
     if (!$warehouse) {
       setLastError('Warehouse is not found.');
       return false;
     }
+
+    $data['cycle'] += 1; // Increment cycle.
 
     $data = setCreatedBy($data);
     $data['reference'] = OrderRef::getReference('opname');

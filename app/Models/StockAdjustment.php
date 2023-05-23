@@ -8,10 +8,11 @@ class StockAdjustment
 {
   /**
    * Add new StockAdjustment.
-   * @param array $data [ *warehouse_id, *mode ]
+   * @param array $data [ date, *warehouse_id, *mode ]
    * @param array $items [ *id, *quantity ]
+   * @param array $opt Options [ start_date, end_date ]
    */
-  public static function add(array $data, array $items)
+  public static function add(array $data, array $items, array $opt = [])
   {
     if (empty($data['warehouse_id'])) {
       setLastError('Warehouse ID is not set.');
@@ -39,21 +40,29 @@ class StockAdjustment
 
       foreach ($items as $item) {
         $product = Product::getRow(['id' => $item['id']]);
+        $currentQty = 0.0;
 
         if (!$product) {
           setLastError("Product {$item['id']} is not found.");
           return false;
         }
 
-        $whProduct = WarehouseProduct::getRow(['product_id' => $product->id, 'warehouse_id' => $warehouse->id]);
+        if (isset($opt['start_date']) || isset($opt['end_date'])) {
+          $currentQty = Stock::totalQuantity((int)$product->id, (int)$warehouse->id, $opt);
+        } else {
+          $whProduct = WarehouseProduct::getRow(['product_id' => $product->id, 'warehouse_id' => $warehouse->id]);
 
-        if (!$whProduct) {
-          setLastError("WarehouseProduct {$product->code}, {$warehouse->code} is not found.");
-          return false;
+          if (!$whProduct) {
+            setLastError("WarehouseProduct {$product->code}, {$warehouse->code} is not found.");
+            return false;
+          }
+
+          $currentQty = floatval($whProduct->quantity);
         }
 
+
         if ($data['mode'] == 'overwrite') {
-          $adjusted = getAdjustedQty((float)$whProduct->quantity, (float)$item['quantity']);
+          $adjusted = getAdjustedQty($currentQty, (float)$item['quantity']);
         } else if ($data['mode'] == 'formula') {
           $adjusted = [
             'quantity'  => $item['quantity'],
@@ -65,7 +74,7 @@ class StockAdjustment
         }
 
         $res = Stock::add([
-          'date'            => ($data['date'] ?? $data['created_at']),
+          'date'            => ($data['date'] ?? date('Y-m-d H:i:s')),
           'adjustment_id'   => $insertId,
           'product_id'      => $product->id,
           'warehouse_id'    => $warehouse->id,

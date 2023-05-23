@@ -81,6 +81,31 @@ class Setting extends BaseController
       ->generate();
   }
 
+  public function holiday()
+  {
+    if ($args = func_get_args()) {
+      $method = __FUNCTION__ . '_' . $args[0];
+
+      if (method_exists($this, $method)) {
+        array_shift($args);
+        return call_user_func_array([$this, $method], $args);
+      }
+    }
+
+    checkPermission('Setting.Holiday');
+
+    $this->data['page'] = [
+      'bc' => [
+        ['name' => lang('App.setting'), 'slug' => 'setting', 'url' => '#'],
+        ['name' => lang('App.holiday'), 'slug' => 'holiday', 'url' => '#']
+      ],
+      'content' => 'Setting/Holiday/index',
+      'title' => lang('App.holiday')
+    ];
+
+    return $this->buildPage($this->data);
+  }
+
   public function permission()
   {
     if ($args = func_get_args()) {

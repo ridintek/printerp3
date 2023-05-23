@@ -111,7 +111,7 @@
                     <td class="text-center"><?= formatNumber($item->first_qty) ?></td>
                     <td class="text-center"><?= formatNumber($item->reject_qty) ?></td>
                     <?php if ($isMinus && $opname->status == 'checked') : ?>
-                      <td><input type="number" name="item[last][]" class="form-control form-control-border form-control-sm" value="<?= filterDecimal($item->first_qty) ?>"></td>
+                      <td><input type="number" name="item[last][]" class="form-control form-control-border form-control-sm" value="<?= filterNumber($item->first_qty) ?>"></td>
                     <?php else : ?>
                       <td class="text-center"><?= ($item->last_qty != null ? formatNumber($item->last_qty) : '-') ?></td>
                     <?php endif; ?>
@@ -123,17 +123,38 @@
                 <?php endforeach; ?>
               </tbody>
             </table>
+            <?php if ($opname->status == 'checked') : ?>
+              <div class="row">
+                <div class="col-md-6">
+                  <div class="form-group">
+                    <label for="attachment"><?= lang('App.attachment') ?></label>
+                    <div class="custom-file">
+                      <input type="file" id="attachment" name="attachment" class="custom-file-input">
+                      <label for="attachment" class="custom-file-label"><?= lang('App.choosefile') ?></label>
+                    </div>
+                  </div>
+                </div>
+                <div class="col-md-6">
+                  <div class="form-group">
+                    <label for="editor"><?= lang('App.note') ?></label>
+                    <div id="editor"></div>
+                    <input type="hidden" name="note">
+                  </div>
+                </div>
+              </div>
+            <?php endif; ?>
           </form>
         </div>
       </div>
     </div>
   </div>
+
 </div>
 <div class="modal-footer">
   <?php if ($opname->status == 'checked' && hasAccess('StockOpname.Confirm')) : ?>
-    <button type="button" class="btn bg-gradient-primary commit-status status-confirm"><i class="fad fa-fw fa-check-circle"></i> <?= lang('App.confirm') ?></button>
+    <button type="button" class="btn bg-gradient-primary commit-status status-confirmed"><i class="fad fa-fw fa-check-circle"></i> <?= lang('App.confirm') ?></button>
   <?php elseif ($opname->status == 'confirmed' && hasAccess('StockOpname.Verify')) : ?>
-    <button type="button" class="btn bg-gradient-success commit-status status-verify"><i class="fad fa-fw fa-box-open-full"></i> <?= lang('App.verify') ?></button>
+    <button type="button" class="btn bg-gradient-success commit-status status-verified"><i class="fad fa-fw fa-box-open-full"></i> <?= lang('App.verify') ?></button>
   <?php endif; ?>
   <button type="button" class="btn bg-gradient-danger" data-dismiss="modal"><i class="fad fa-fw fa-times"></i> <?= lang('App.close') ?></button>
 </div>
@@ -143,13 +164,21 @@
   })();
 
   $(document).ready(function() {
+    let editor = new Quill('#editor', {
+      theme: 'snow'
+    });
+
+    editor.on('text-change', (delta, oldDelta, source) => {
+      $('[name="note"]').val(editor.root.innerHTML);
+    });
+
     $('.commit-status').click(function() {
       let status = '';
 
-      if (this.classList.contains('status-confirm')) {
-        status = 'confirm';
-      } else if (this.classList.contains('status-verify')) {
-        status = 'verify';
+      if (this.classList.contains('status-confirmed')) {
+        status = 'confirmed';
+      } else if (this.classList.contains('status-verified')) {
+        status = 'verified';
       }
 
       $('#status').val(status);

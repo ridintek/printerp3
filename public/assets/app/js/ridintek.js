@@ -189,6 +189,223 @@ export class ProductMutation {
   }
 }
 
+export class ProductPurchase {
+  static _tbody = null;
+  static _mode = 'add';
+
+  static table(table) {
+    this._tbody = $(table).find('tbody');
+
+    if (!this._tbody.length) {
+      console.log('ProductTransfer::table() Cannot find tbody.');
+    }
+
+    return this;
+  }
+
+  static addItem(item, allowDuplicate = false) {
+    if (!this._tbody.length) {
+      return false;
+    }
+
+    if (!allowDuplicate) {
+      let items = this._tbody.find('.item-id');
+
+      for (let i of items) {
+        if (item.code == i.value) {
+          toastr.error('Item has been added before.');
+          return false;
+        }
+      }
+    }
+
+    item.hash = randomString();
+    item.rest_qty = (item.quantity - item.received_qty);
+
+    console.log(item);
+
+    this._tbody.prepend(`
+      <tr>
+        <input type="hidden" name="item[id][]" class="item-id" value="${item.id}">
+        <input type="hidden" name="item[code][]" value="${item.code}">
+        <td>(${item.code}) ${item.name}</td>
+        <td>
+          <div class="card card-dark card-tabs">
+            <div class="card-header bg-gradient-dark p-0 pt-1">
+              <ul class="nav nav-tabs">
+                <li class="nav-item">
+                  <a href="#tab-quantity-${item.hash}" class="nav-link active" data-toggle="pill">${lang.App.quantity}</a>
+                </li>
+                <li class="nav-item">
+                  <a href="#tab-spec-${item.hash}" class="nav-link" data-toggle="pill">${lang.App.spec}</a>
+                </li>
+                <li class="nav-item">
+                  <a href="#tab-cost-${item.hash}" class="nav-link" data-toggle="pill">${lang.App.cost}</a>
+                </li>
+              </ul>
+            </div>
+            <div class="card-body">
+              <div class="tab-content">
+                <div class="tab-pane fade active show" id="tab-quantity-${item.hash}">
+                  <div class="row">
+                    <div class="col-md-4">
+                      <div class="form-group">
+                        <label>${lang.App.quantity}</label>
+                        <input type="number" name="item[quantity][]" class="form-control form-control-border form-control-sm" min="0" value="${filterDecimal(item.quantity)}">
+                      </div>
+                    </div>
+                    <div class="col-md-4">
+                      <div class="form-group">
+                        <label>${lang.Status.received}</label>
+                        <input type="number" name="item[received][]" class="form-control form-control-border form-control-sm" min="0" value="${filterDecimal(item.received_qty ?? 0)}">
+                      </div>
+                    </div>
+                    <div class="col-md-4">
+                      <div class="form-group">
+                        <label>${lang.App.restqty}</label>
+                        <input type="number" class="form-control form-control-border form-control-sm" min="0" value="${filterDecimal(item.rest_qty ?? 0)}" readonly>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div class="tab-pane fade" id="tab-spec-${item.hash}">
+                  <div class="form-group">
+                    <label>${lang.App.spec}</label>
+                    <input name="item[spec][]" class="form-control form-control-border form-control-sm" value="${item.spec}">
+                  </div>
+                </div>
+                <div class="tab-pane fade" id="tab-cost-${item.hash}">
+                  <div class="form-group">
+                    <label>${lang.App.cost}</label>
+                    <input name="item[cost][]" class="form-control form-control-border form-control-sm currency" value="${formatCurrency(item.cost)}">
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </td>
+        <td>${item.unit}</td>
+        <td>${formatNumber(item.current_qty)}</td>
+        <td><a href="#" class="table-row-delete"><i class="fad fa-fw fa-times"></i></a></td>
+      </tr>
+    `);
+  }
+
+  static mode(mode) {
+    this._mode = mode;
+
+    return this;
+  }
+}
+
+export class ProductTransfer {
+  static _tbody = null;
+  static _mode = 'add';
+
+  static table(table) {
+    this._tbody = $(table).find('tbody');
+
+    if (!this._tbody.length) {
+      console.log('ProductTransfer::table() Cannot find tbody.');
+    }
+
+    return this;
+  }
+
+  static addItem(item, allowDuplicate = false) {
+    if (!this._tbody.length) {
+      return false;
+    }
+
+    if (!allowDuplicate) {
+      let items = this._tbody.find('.item-id');
+
+      for (let i of items) {
+        if (item.code == i.value) {
+          toastr.error('Item has been added before.');
+          return false;
+        }
+      }
+    }
+
+    item.hash = randomString();
+    item.rest = (item.quantity - item.received_qty);
+
+    this._tbody.prepend(`
+      <tr>
+        <input type="hidden" name="item[id][]" class="item-id" value="${item.id}">
+        <input type="hidden" name="item[code][]" value="${item.code}">
+        <td>(${item.code}) ${item.name}</td>
+        <td>
+          <div class="card card-dark card-tabs">
+            <div class="card-header bg-gradient-dark p-0 pt-1">
+              <ul class="nav nav-tabs">
+                <li class="nav-item">
+                  <a href="#tab-quantity-${item.hash}" class="nav-link active" data-toggle="pill">${lang.App.quantity}</a>
+                </li>
+                <li class="nav-item">
+                  <a href="#tab-spec-${item.hash}" class="nav-link" data-toggle="pill">${lang.App.spec}</a>
+                </li>
+                <li class="nav-item">
+                  <a href="#tab-markon_price-${item.hash}" class="nav-link" data-toggle="pill">${lang.App.markonprice}</a>
+                </li>
+              </ul>
+            </div>
+            <div class="card-body">
+              <div class="tab-content">
+                <div class="tab-pane fade active show" id="tab-quantity-${item.hash}">
+                  <div class="row">
+                    <div class="col-md-4">
+                      <div class="form-group">
+                        <label>${lang.App.quantity}</label>
+                        <input type="number" name="item[quantity][]" class="form-control form-control-border form-control-sm" min="0" value="${filterDecimal(item.quantity)}">
+                      </div>
+                    </div>
+                    <div class="col-md-4">
+                      <div class="form-group">
+                        <label>${lang.Status.received}</label>
+                        <input type="number" name="item[received][]" class="form-control form-control-border form-control-sm" min="0" value="${filterDecimal(item.received_qty ?? 0)}">
+                      </div>
+                    </div>
+                    <div class="col-md-4">
+                      <div class="form-group">
+                        <label>${lang.App.restqty}</label>
+                        <input type="number" class="form-control form-control-border form-control-sm" min="0" value="${filterDecimal(item.rest_qty ?? 0)}" readonly>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div class="tab-pane fade" id="tab-spec-${item.hash}">
+                  <div class="form-group">
+                    <label>${lang.App.spec}</label>
+                    <input name="item[spec][]" class="form-control form-control-border form-control-sm" value="${item.spec}">
+                  </div>
+                </div>
+                <div class="tab-pane fade" id="tab-markon_price-${item.hash}">
+                  <div class="form-group">
+                    <label>${lang.App.markonprice}</label>
+                    <input name="item[markon_price][]" class="form-control form-control-border form-control-sm currency" value="${formatCurrency(item.markon_price)}">
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </td>
+        <td>${item.unit}</td>
+        <td>${formatNumber(item.current_qty)}</td>
+        <td>${formatNumber(item.destination_qty)}</td>
+        <td><a href="#" class="table-row-delete"><i class="fad fa-fw fa-times"></i></a></td>
+      </tr>
+    `);
+  }
+
+  static mode(mode) {
+    this._mode = mode;
+
+    return this;
+  }
+}
+
 /**
  * QueueConfig
  */
@@ -893,6 +1110,7 @@ export class StockOpname {
     this.tbody.prepend(`
       <tr>
         <input type="hidden" name="item[id][]" class="item-id" value="${item.id}">
+        <input type="hidden" name="item[code][]" value="${item.code}">
         <td>(${item.code}) ${item.name}</td>
         <td>${item.unit}</td>
         <td><input type="number" name="item[quantity][]" class="form-control form-control-border form-control-sm" min="0" value="${filterDecimal(item.quantity)}"></td>

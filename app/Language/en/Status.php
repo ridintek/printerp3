@@ -50,6 +50,7 @@ return [
   'serving'             => 'Serving',
   'skipped'             => 'Skipped',
   'slow'                => 'Slow',
+  'solved'              => 'Solved',
   'sparepart'           => 'Sparepart',
   'success'             => 'Success',
   'trouble'             => 'Trouble',

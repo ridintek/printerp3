@@ -4,25 +4,34 @@
       <div class="card shadow">
         <div class="card-header bg-gradient-dark">
           <div class="card-tools">
-            <a class="btn btn-tool bg-gradient-success" href="<?= base_url('setting/permission/add') ?>" data-toggle="modal" data-target="#ModalStatic" data-modal-class="modal-dialog-centered modal-dialog-scrollable">
-              <i class="fad fa-plus-circle"></i>
-            </a>
           </div>
         </div>
         <div class="card-body">
           <table id="Table" class="table table-bordered table-hover" style="width:100%;">
             <thead>
               <tr>
-                <th></th>
+                <th><?= lang('App.code'); ?></th>
                 <th><?= lang('App.name'); ?></th>
-                <th><?= lang('App.holiday'); ?></th>
+                <th><?= lang('App.subcategory'); ?></th>
+                <th><?= lang('App.assignedat'); ?></th>
+                <th><?= lang('App.assignedby'); ?></th>
+                <th><?= lang('App.fixedat'); ?></th>
+                <th><?= lang('App.pic'); ?></th>
+                <th><?= lang('App.warehouse'); ?></th>
+                <th><?= lang('App.note'); ?></th>
               </tr>
             </thead>
             <tfoot>
               <tr>
-                <th></th>
+                <th><?= lang('App.code'); ?></th>
                 <th><?= lang('App.name'); ?></th>
-                <th><?= lang('App.holiday'); ?></th>
+                <th><?= lang('App.subcategory'); ?></th>
+                <th><?= lang('App.assignedat'); ?></th>
+                <th><?= lang('App.assignedby'); ?></th>
+                <th><?= lang('App.fixedat'); ?></th>
+                <th><?= lang('App.pic'); ?></th>
+                <th><?= lang('App.warehouse'); ?></th>
+                <th><?= lang('App.note'); ?></th>
               </tr>
             </tfoot>
           </table>
@@ -41,10 +50,10 @@
           <?= csrf_token() ?>: '<?= csrf_hash() ?>'
         },
         method: 'POST',
-        url: base_url + '/setting/getHolidays'
+        url: base_url + '/maintenance/getMaintenanceLogs'
       },
       columnDefs: [{
-        targets: [0, 2],
+        targets: [0, 1],
         orderable: false
       }],
       fixedHeader: false,
@@ -53,7 +62,7 @@
         [10, 25, 50, 100, lang.App.all]
       ],
       order: [
-        [1, 'asc']
+        [5, 'desc']
       ],
       processing: true,
       responsive: true,

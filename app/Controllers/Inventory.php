@@ -13,10 +13,14 @@ use App\Models\{
   ProductCategory,
   ProductMutation,
   ProductMutationItem,
+  ProductPurchase,
+  ProductTransfer,
+  ProductTransferItem,
   Stock,
   StockAdjustment,
   StockOpname,
   StockOpnameItem,
+  Unit,
   User,
   Warehouse,
   WarehouseProduct
@@ -171,12 +175,12 @@ class Inventory extends BaseController
             <div class="dropdown-menu">
               <a class="dropdown-item" href="' . base_url('inventory/mutation/edit/' . $data['id']) . '"
                 data-toggle="modal" data-target="#ModalStatic"
-                data-modal-class="modal-lg modal-dialog-centered modal-dialog-scrollable">
+                data-modal-class="modal-xl modal-dialog-centered modal-dialog-scrollable">
                 <i class="fad fa-fw fa-edit"></i> ' . lang('App.edit') . '
               </a>
               <a class="dropdown-item" href="' . base_url('inventory/mutation/view/' . $data['id']) . '"
                 data-toggle="modal" data-target="#ModalStatic"
-                data-modal-class="modal-lg modal-dialog-centered modal-dialog-scrollable">
+                data-modal-class="modal-xl modal-dialog-centered modal-dialog-scrollable">
                 <i class="fad fa-fw fa-magnifying-glass"></i> ' . lang('App.view') . '
               </a>
               <div class="dropdown-divider"></div>
@@ -260,6 +264,168 @@ class Inventory extends BaseController
         return '<span class="float-right">' . formatNumber($data['quantity']) . '</span>';
       })
       ->generate();
+  }
+
+  public function getProductPurchases()
+  {
+    checkPermission('ProductPurchase.View');
+
+    $dt = new DataTables('purchases');
+
+    $dt
+      ->select("purchases.id AS id, purchases.date,
+      purchases.reference, (
+        CASE
+          WHEN suppliers.company IS NOT NULL THEN CONCAT(suppliers.name, ' (', suppliers.company, ')')
+          ELSE suppliers.name
+        END
+      ) AS supplier_name, purchases.status, purchases.payment_status,
+      purchases.grand_total, purchases.paid, (purchases.grand_total - purchases.paid) AS balance,
+      purchases.attachment, purchases.created_at, creator.fullname")
+      ->join('biller', 'biller.id = purchases.biller_id', 'left')
+      ->join('suppliers', 'suppliers.id = purchases.supplier_id', 'left')
+      ->join('users creator', 'creator.id = purchases.created_by', 'left')
+      ->editColumn('id', function ($data) {
+        return '
+          <div class="btn-group btn-action">
+            <a class="btn bg-gradient-primary btn-sm dropdown-toggle" href="#" data-toggle="dropdown">
+              <i class="fad fa-gear"></i>
+            </a>
+            <div class="dropdown-menu">
+              <a class="dropdown-item" href="' . base_url('inventory/purchase/edit/' . $data['id']) . '"
+                data-toggle="modal" data-target="#ModalStatic"
+                data-modal-class="modal-xl modal-dialog-centered modal-dialog-scrollable">
+                <i class="fad fa-fw fa-edit"></i> ' . lang('App.edit') . '
+              </a>
+              <a class="dropdown-item" href="' . base_url('inventory/purchase/view/' . $data['id']) . '"
+                data-toggle="modal" data-target="#ModalStatic"
+                data-modal-class="modal-xl modal-dialog-centered modal-dialog-scrollable">
+                <i class="fad fa-fw fa-magnifying-glass"></i> ' . lang('App.view') . '
+              </a>
+              <div class="dropdown-divider"></div>
+              <a class="dropdown-item" href="' . base_url('inventory/purchase/delete/' . $data['id']) . '"
+                data-action="confirm">
+                <i class="fad fa-fw fa-trash"></i> ' . lang('App.delete') . '
+              </a>
+            </div>
+          </div>';
+      })
+      ->editColumn('status', function ($data) {
+        return renderStatus($data['status']);
+      })
+      ->editColumn('payment_status', function ($data) {
+        return renderStatus($data['payment_status']);
+      })
+      ->editColumn('grand_total', function ($data) {
+        return formatNumber($data['grand_total']);
+      })
+      ->editColumn('paid', function ($data) {
+        return formatNumber($data['paid']);
+      })
+      ->editColumn('balance', function ($data) {
+        return formatNumber($data['balance']);
+      })
+      ->editColumn('attachment', function ($data) {
+        return renderAttachment($data['attachment']);
+      })
+      ->generate();
+  }
+
+  public function getProductPurchasePlans()
+  {
+    checkPermission('ProductPurchase.Plan');
+
+    $today = getDayName(date('w') + 1); // Get today name. Ex. senin, selasa, ...
+
+    $dt = new DataTables('suppliers');
+
+    $dt->select("id, (
+        CASE
+          WHEN suppliers.company IS NOT NULL THEN CONCAT(suppliers.name, ' (', suppliers.company, ')')
+          ELSE suppliers.name
+        END
+      ) AS supplier_name,
+        JSON_UNQUOTE(JSON_EXTRACT(json, '$.visit_days')) AS visit_days,
+        JSON_UNQUOTE(JSON_EXTRACT(json, '$.visit_weeks')) AS visit_weeks")
+      ->like("LOWER(JSON_UNQUOTE(JSON_EXTRACT(json, '$.visit_days')))", $today, 'both')
+      ->editColumn('id', function ($data) {
+        return '<input name="check[]" class="checkbox" type="checkbox" value="' . $data['id'] . '">';
+      });
+
+    $dt->generate();
+  }
+
+  public function getProductTransfers()
+  {
+    checkPermission('ProductTransfer.View');
+
+    $dt = new DataTables('product_transfer');
+
+    $dt
+      ->select("product_transfer.id AS id, product_transfer.date,
+      product_transfer.reference,
+      warehousefrom.name AS warehouse_from_name, warehouseto.name AS warehouse_to_name,
+      product_transfer.items, product_transfer.note,
+      product_transfer.status, product_transfer.payment_status,
+      product_transfer.attachment, product_transfer.created_at, creator.fullname")
+      ->join('warehouse warehousefrom', 'warehousefrom.id = product_transfer.warehouse_id_from', 'left')
+      ->join('warehouse warehouseto', 'warehouseto.id = product_transfer.warehouse_id_to', 'left')
+      ->join('users creator', 'creator.id = product_transfer.created_by', 'left')
+      ->editColumn('id', function ($data) {
+        return '
+          <div class="btn-group btn-action">
+            <a class="btn bg-gradient-primary btn-sm dropdown-toggle" href="#" data-toggle="dropdown">
+              <i class="fad fa-gear"></i>
+            </a>
+            <div class="dropdown-menu">
+              <a class="dropdown-item" href="' . base_url('inventory/transfer/edit/' . $data['id']) . '"
+                data-toggle="modal" data-target="#ModalStatic"
+                data-modal-class="modal-xl modal-dialog-centered modal-dialog-scrollable">
+                <i class="fad fa-fw fa-edit"></i> ' . lang('App.edit') . '
+              </a>
+              <a class="dropdown-item" href="' . base_url('inventory/transfer/view/' . $data['id']) . '"
+                data-toggle="modal" data-target="#ModalStatic"
+                data-modal-class="modal-xl modal-dialog-centered modal-dialog-scrollable">
+                <i class="fad fa-fw fa-magnifying-glass"></i> ' . lang('App.view') . '
+              </a>
+              <div class="dropdown-divider"></div>
+              <a class="dropdown-item" href="' . base_url('inventory/transfer/delete/' . $data['id']) . '"
+                data-action="confirm">
+                <i class="fad fa-fw fa-trash"></i> ' . lang('App.delete') . '
+              </a>
+            </div>
+          </div>';
+      })
+      ->editColumn('status', function ($data) {
+        return renderStatus($data['status']);
+      })
+      ->editColumn('payment_status', function ($data) {
+        return renderStatus($data['payment_status']);
+      })
+      ->editColumn('attachment', function ($data) {
+        return renderAttachment($data['attachment']);
+      })
+      ->generate();
+  }
+
+  public function getProductTransferPlans()
+  {
+    checkPermission('ProductTransfer.Plan');
+
+    $today = getDayName(date('w') + 1); // Get today name. Ex. senin, selasa, ...
+
+    $dt = new DataTables('warehouse');
+
+    $dt->select("id, CONCAT('(', code, ') ', name) AS warehouse_name,
+        JSON_UNQUOTE(JSON_EXTRACT(json, '$.visit_days')) AS visit_days,
+        JSON_UNQUOTE(JSON_EXTRACT(json, '$.visit_weeks')) AS visit_weeks")
+      ->where('active', 1)
+      ->like("LOWER(JSON_UNQUOTE(JSON_EXTRACT(json, '$.visit_days')))", $today, 'both')
+      ->editColumn('id', function ($data) {
+        return '<input name="check[]" class="checkbox" type="checkbox" value="' . $data['id'] . '">';
+      });
+
+    $dt->generate();
   }
 
   public function getStockAdjustments()
@@ -354,7 +520,7 @@ class Inventory extends BaseController
           $menu .= '
             <a class="dropdown-item" href="' . base_url('inventory/stockopname/edit/' . $data['id']) . '"
               data-toggle="modal" data-target="#ModalStatic"
-              data-modal-class="modal-lg modal-dialog-centered modal-dialog-scrollable">
+              data-modal-class="modal-xl modal-dialog-centered modal-dialog-scrollable">
               <i class="fad fa-fw fa-edit"></i> ' . lang('App.edit') . '
             </a>';
         }
@@ -362,7 +528,7 @@ class Inventory extends BaseController
         $menu .= '
           <a class="dropdown-item" href="' . base_url('inventory/stockopname/view/' . $data['id']) . '"
             data-toggle="modal" data-target="#ModalStatic"
-            data-modal-class="modal-lg modal-dialog-centered modal-dialog-scrollable">
+            data-modal-class="modal-xl modal-dialog-centered modal-dialog-scrollable">
             <i class="fad fa-fw fa-magnifying-glass"></i> ' . lang('App.view') . '
           </a>';
 
@@ -397,6 +563,55 @@ class Inventory extends BaseController
     if (session('login')->warehouse_id) {
       $dt->where('warehouse.id', session('login')->warehouse_id);
     }
+
+    $dt->generate();
+  }
+
+  public function getUsageHistories()
+  {
+    checkPermission('Product.History');
+
+    $status     = getPost('status');
+    $warehouse  = getPost('warehouse');
+    $startDate  = (getPost('start_date') ?? date('Y-m-d', strtotime('-7 day')));
+    $endDate    = (getPost('end_date') ?? date('Y-m-d'));
+
+    $dt = new DataTables('stocks');
+    $dt->select("stocks.id, stocks.date,
+      (CASE
+        WHEN stocks.adjustment_id IS NOT NULL THEN adjustments.reference
+        WHEN stocks.internal_use_id IS NOT NULL THEN internal_uses.reference
+        WHEN stocks.pm_id IS NOT NULL THEN product_mutation.reference
+        WHEN stocks.purchase_id IS NOT NULL THEN purchases.reference
+        WHEN stocks.sale_id IS NOT NULL THEN sales.reference
+        WHEN stocks.transfer_id IS NOT NULL THEN product_transfer.reference
+        ELSE 'NOT VALID'
+      END) AS reference, CONCAT('(', products.code, ') ', products.name) AS product_name,
+      warehouse.name AS warehouse_name, categories.name AS category_name, products.type AS product_type,
+      stocks.quantity, stocks.status, creator.fullname AS creator_name")
+      ->join('adjustments', 'adjustments.id = stocks.adjustment_id', 'left')
+      ->join('internal_uses', 'internal_uses.id = stocks.internal_use_id', 'left')
+      ->join('product_mutation', 'product_mutation.id = stocks.pm_id', 'left')
+      ->join('purchases', 'purchases.id = stocks.purchase_id', 'left')
+      ->join('sales', 'sales.id = stocks.sale_id', 'left')
+      ->join('product_transfer', 'product_transfer.id = stocks.transfer_id', 'left')
+      ->join('products', 'products.id = stocks.product_id', 'left')
+      ->join('categories', 'categories.id = products.category_id', 'left')
+      ->join('users creator', 'creator.id = stocks.created_by', 'left')
+      ->join('warehouse', 'warehouse.id = stocks.warehouse_id', 'left')
+      ->editColumn('status', function ($data) {
+        return renderStatus($data['status']);
+      });
+
+    if ($status) {
+      $dt->whereIn('stocks.status', $status);
+    }
+
+    if ($warehouse) {
+      $dt->whereIn('stocks.warehouse_id', $warehouse);
+    }
+
+    $dt->where("stocks.date BETWEEN '{$startDate} 00:00:00' AND '{$endDate} 23:59:59'");
 
     $dt->generate();
   }
@@ -1213,6 +1428,373 @@ class Inventory extends BaseController
     $this->response(400, ['message' => 'Bad request.']);
   }
 
+
+  /**
+   * Product Purchase
+   * status:
+   *  - need_approval
+   *  - approved
+   *  - ordered
+   *  - received / received_partial
+   */
+  public function purchase()
+  {
+    if ($args = func_get_args()) {
+      $method = __FUNCTION__ . '_' . $args[0];
+
+      if (method_exists($this, $method)) {
+        array_shift($args);
+        return call_user_func_array([$this, $method], $args);
+      }
+    }
+
+    checkPermission('ProductPurchase.View');
+
+    $this->data['page'] = [
+      'bc' => [
+        ['name' => lang('App.inventory'), 'slug' => 'inventory', 'url' => '#'],
+        ['name' => lang('App.productpurchase'), 'slug' => 'purchase', 'url' => '#']
+      ],
+      'content' => 'Inventory/Purchase/index',
+      'title' => lang('App.productpurchase')
+    ];
+
+    return $this->buildPage($this->data);
+  }
+
+  protected function purchase_add()
+  {
+    checkPermission('ProductPurchase.Add');
+
+    if (requestMethod() == 'POST') {
+      $billerId     = getPost('biller');
+      $categoryId   = getPost('category');
+      $supplierId   = getPost('supplier');
+      $warehouseId  = getPost('warehouse');
+
+      $data = [
+        'date'          => dateTimePHP(getPost('date')),
+        'biller_id'     => $billerId,
+        'category_id'   => $categoryId,
+        'supplier_id'   => $supplierId,
+        'warehouse_id'  => $warehouseId,
+        'note'          => stripTags(getPost('note')),
+      ];
+
+      $itemId   = getPost('item[id]');
+      $itemCode = getPost('item[code]');
+      $itemCost = getPost('item[cost]');
+      $itemSpec = getPost('item[spec]');
+      $itemQty  = getPost('item[quantity]');
+
+      if (!is_array($itemId) && !is_array($itemQty)) {
+        $this->response(400, ['message' => 'Item tidak ada atau tidak valid.']);
+      }
+
+      for ($a = 0; $a < count($itemId); $a++) {
+        if (empty($itemQty[$a])) {
+          $this->response(400, ['message' => "Quantity untuk {$itemCode[$a]} harus lebih besar dari nol."]);
+        }
+
+        $items[] = [
+          'id'            => intval($itemId[$a]),
+          'purchased_qty' => floatval($itemQty[$a]),
+          'cost'          => filterNumber($itemCost[$a]),
+          'spec'          => stripTags($itemSpec[$a])
+        ];
+      }
+
+      DB::transStart();
+
+      $data = $this->useAttachment($data);
+
+      $insertID = ProductPurchase::add($data, $items);
+
+      if (!$insertID) {
+        $this->response(400, ['message' => getLastError()]);
+      }
+
+      DB::transComplete();
+
+      if (DB::transStatus()) {
+        $this->response(201, ['message' => 'Product Purchase has been added.']);
+      }
+
+      $this->response(400, ['message' => getLastError()]);
+    }
+
+    $this->data['title'] = lang('App.addproductpurchase');
+
+    $this->response(200, ['content' => view('Inventory/Purchase/add', $this->data)]);
+  }
+
+  protected function purchase_delete($id = null)
+  {
+    checkPermission('ProductPurchase.Delete');
+
+    $pt = ProductPurchase::getRow(['id' => $id]);
+
+    if (!$pt) {
+      $this->response(404, ['message' => 'Product Purchase is not found.']);
+    }
+
+    DB::transStart();
+
+    if (!ProductPurchase::delete(['id' => $id])) {
+      $this->response(400, ['message' => getLastError()]);
+    }
+
+    DB::transComplete();
+
+    if (DB::transStatus()) {
+      $this->response(200, ['message' => 'Product Purchase has been deleted.']);
+    }
+
+    $this->response(400, ['message' => 'Failed to delete Product Purchase.']);
+  }
+
+  protected function purchase_edit($id = null)
+  {
+    checkPermission('ProductPurchase.Add');
+
+    $purchase = ProductPurchase::getRow(['id' => $id]);
+
+    if (!$purchase) {
+      $this->response(404, ['message' => 'Product Purchase is not found.']);
+    }
+
+    $stocks  = Stock::get(['purchase_id' => $id]);
+
+    if (!$stocks) {
+      $this->response(404, ['message' => 'Product Purchase item is not found.']);
+    }
+
+    if (requestMethod() == 'POST') {
+      $billerId     = getPost('biller');
+      $categoryId   = getPost('category');
+      $supplierId   = getPost('supplier');
+      $warehouseId  = getPost('warehouse');
+
+      $data = [
+        'date'            => dateTimePHP(getPost('date')),
+        'biller_id'       => $billerId,
+        'category_id'     => $categoryId,
+        'supplier_id'     => $supplierId,
+        'warehouse_id'    => $warehouseId,
+        'grand_total'     => 0,
+        'received_value'  => 0,
+        'note'            => stripTags(getPost('note')),
+      ];
+
+      $itemId     = getPost('item[id]');
+      $itemCode   = getPost('item[code]');
+      $itemCost   = getPost('item[cost]');
+      $itemSpec   = getPost('item[spec]');
+      $itemQty    = getPost('item[quantity]');
+      $itemRcv    = getPost('item[received]');
+
+      if (!is_array($itemId) && !is_array($itemQty)) {
+        $this->response(400, ['message' => 'Item tidak ada atau tidak valid.']);
+      }
+
+      for ($a = 0; $a < count($itemId); $a++) {
+        if (empty($itemQty[$a])) {
+          $this->response(400, ['message' => "Quantity untuk {$itemCode[$a]} harus lebih besar dari nol."]);
+        }
+
+        $items[] = [
+          'id'            => intval($itemId[$a]),
+          'quantity'      => floatval($itemRcv[$a]),
+          'purchased_qty' => floatval($itemQty[$a]),
+          'cost'          => filterNumber($itemCost[$a]),
+          'spec'          => stripTags($itemSpec[$a])
+        ];
+
+        $data['grand_total'] += filterNumber($itemCost[$a]) * floatval($itemQty[$a]);
+        $data['received_value'] += filterNumber($itemCost[$a]) * floatval($itemRcv[$a]);
+      }
+
+      DB::transStart();
+
+      $data = $this->useAttachment($data);
+
+      if (!ProductPurchase::update((int)$id, $data, $items)) {
+        $this->response(400, ['message' => getLastError()]);
+      }
+
+      DB::transComplete();
+
+      if (DB::transStatus()) {
+        $this->response(201, ['message' => 'Product Purchase has been updated.']);
+      }
+
+      $this->response(400, ['message' => getLastError()]);
+    }
+
+    $items = [];
+
+    foreach ($stocks as $stock) {
+      $product  = Product::getRow(['id' => $stock->product_id]);
+      $whp  = WarehouseProduct::getRow(['product_id' => $product->id, 'warehouse_id' => $purchase->warehouse_id]);
+      $unit = Unit::getRow(['id' => $product->unit]);
+
+      $items[] = [
+        'id'            => $stock->product_id,
+        'code'          => $stock->product_code,
+        'name'          => $stock->product_name,
+        'cost'          => $stock->cost,
+        'quantity'      => $stock->purchased_qty,
+        'current_qty'   => floatval($whp->quantity),
+        'received_qty'  => floatval($stock->quantity),
+        'unit'          => $unit->code,
+        'spec'          => $stock->spec
+      ];
+    }
+
+    $this->data['items']    = $items;
+    $this->data['purchase'] = $purchase;
+    $this->data['title']    = lang('App.editproductpurchase');
+
+    $this->response(200, ['content' => view('Inventory/Purchase/edit', $this->data)]);
+  }
+
+  protected function purchase_plan()
+  {
+    if (requestMethod() == 'POST' && isAJAX()) {
+      $warehouses = getPost('check');
+
+      if ($warehouses) {
+        $success = 0;
+
+        DB::transStart();
+
+        foreach ($warehouses as $whId) {
+          // Add product purchase by each warehouse id.
+          if (ProductPurchase::addBySupplierId((int)$whId)) {
+            $success++;
+          } else {
+            $this->response(400, ['message' => getLastError()]);
+          }
+        }
+
+        DB::transComplete();
+
+        if (DB::transStatus()) {
+          $this->response(201, ['message' => "{$success} Product Purchase berhasil ditambahkan."]);
+        }
+
+        $this->response(400, ['message' => getLastError()]);
+      }
+
+      $this->response(400, ['message' => 'Pilih warehouse untuk menambah Purchase Plan.']);
+    }
+
+    $this->data['title'] = lang('App.purchaseplan');
+
+    $this->response(200, ['content' => view('Inventory/Purchase/plan', $this->data)]);
+  }
+
+  protected function purchase_status($id = null)
+  {
+    $purchase = ProductPurchase::getRow(['id' => $id]);
+
+    if (!$purchase) {
+      $this->response(404, ['message' => 'Product Purchase is not found.']);
+    }
+
+    $purchaseItems = Stock::get(['purchase_id' => $id]);
+
+    if (!$purchaseItems) {
+      $this->response(404, ['message' => 'Product Purchase items are not found.']);
+    }
+
+    $date           = date('Y-m-d H:i:s');
+    $status         = getPost('status');
+    $itemId         = getPost('item[id]');
+    $itemRest       = getPost('item[rest]');
+    $hasPartial     = false;
+    $receivedValue  = 0;
+
+    $data = [
+      'status'  => $status
+    ];
+
+    DB::transStart();
+
+    foreach ($purchaseItems as $purchaseItem) {
+      for ($a = 0; $a < count($itemId); $a++) {
+        if ($purchaseItem->product_id == $itemId[$a]) {
+          if ($status == 'received') {
+            $receivedQty = floatval($purchaseItem->quantity + $itemRest[$a]);
+
+            if (!Stock::update((int)$purchaseItem->id, ['quantity' => $receivedQty, 'status' => 'received'])) {
+              $this->response(400, ['message' => getLastError()]);
+            }
+
+            if ($receivedQty < $purchaseItem->purchased_qty) {
+              $hasPartial = true;
+            }
+
+            $receivedValue += floatval($receivedQty * $purchaseItem->cost);
+
+            Product::sync((int)$purchaseItem->product_id);
+          } else {
+            if (!Stock::update((int)$purchaseItem->id, ['quantity' => 0, 'status' => $status])) {
+              $this->response(400, ['message' => getLastError()]);
+            }
+
+            Product::sync((int)$purchaseItem->product_id);
+          }
+
+          break;
+        }
+      }
+    }
+
+    $data['received_value'] = $receivedValue;
+
+    if ($status == 'received') {
+      $data['received_date']  = $date;
+    } else {
+      $data['received_date'] = null;
+    }
+
+    if ($hasPartial) {
+      $data['status'] = 'received_partial';
+    }
+
+    $data = $this->useAttachment($data);
+
+    if (!ProductPurchase::update((int)$id, $data)) {
+      $this->response(400, ['message' => getLastError()]);
+    }
+
+    DB::transComplete();
+
+    if (DB::transStatus()) {
+      $this->response(200, ['message' => 'Status has been changed.']);
+    }
+
+    $this->response(400, ['message' => 'Failed']);
+  }
+
+  protected function purchase_view($id = null)
+  {
+    checkPermission('ProductPurchase.View');
+
+    $purchase = ProductPurchase::getRow(['id' => $id]);
+
+    if (!$purchase) {
+      $this->response(404, ['message' => 'Product Purchase is not found.']);
+    }
+
+    $this->data['purchase'] = $purchase;
+    $this->data['title']    = lang('App.viewproductpurchase');
+
+    $this->response(200, ['content' => view('Inventory/Purchase/view', $this->data)]);
+  }
+
+
   public function stockadjustment()
   {
     if ($args = func_get_args()) {
@@ -1465,6 +2047,7 @@ class Inventory extends BaseController
 
     if (requestMethod() == 'POST') {
       $itemIds    = getPost('item[id]');
+      $itemCodes  = getPost('item[code]');
       $itemQty    = getPost('item[quantity]');
       $itemReject = getPost('item[reject]');
 
@@ -1486,7 +2069,7 @@ class Inventory extends BaseController
 
       for ($a = 0; $a < count($itemIds); $a++) {
         if (empty($itemQty[$a]) && $itemQty[$a] != 0) {
-          $this->response(400, ['message' => "Item {$itemIds[$a]} has invalid quantity."]);
+          $this->response(400, ['message' => "Item {$itemCodes[$a]} has invalid quantity."]);
         }
 
         $items[] = [
@@ -1583,21 +2166,13 @@ class Inventory extends BaseController
       $this->response(404, ['message' => 'Stock Opname items are not found.']);
     }
 
-    $newStatus  = null;
+    $note       = getPost('note');
     $status     = getPost('status');
     $itemId     = getPost('item[id]');
     $itemLast   = getPost('item[last]');
     $itemLost   = [];
 
-    if ($status == 'confirm') {
-      $newStatus = 'confirmed';
-    }
-
-    if ($status == 'verify') {
-      $newStatus = 'verified';
-    }
-
-    if (empty($newStatus)) {
+    if (empty($status)) {
       dbgprint('Status empty');
       return false;
     }
@@ -1606,7 +2181,8 @@ class Inventory extends BaseController
       'total_lost'    => 0,
       'total_plus'    => 0,
       'total_edited'  => 0,
-      'status'        => $newStatus
+      'status'        => $status,
+      'note'          => $note
     ];
 
     DB::transStart();
@@ -1614,13 +2190,18 @@ class Inventory extends BaseController
     foreach ($soItems as $soItem) {
       for ($a = 0; $a < count($itemId); $a++) {
         if ($soItem->product_id == $itemId[$a]) {
-          if ($status == 'confirm') {
-            if (!StockOpnameItem::update((int)$soItem->id, ['last_qty' => $itemLast[$a]])) {
+          if ($status == 'confirmed') {
+            $itemData = [
+              'last_qty'  => $itemLast[$a],
+              'subtotal'  => (($soItem->quantity - $itemLast[$a]) * $soItem->price)
+            ];
+
+            if (!StockOpnameItem::update((int)$soItem->id, $itemData)) {
               $this->response(400, ['message' => getLastError()]);
             }
           }
 
-          if ($status == 'verify') {
+          if ($status == 'verified') {
             if (StockOpnameItem::isLost((int)$soItem->id)) {
               $itemLost[] = [
                 'id'        => $soItem->product_id,
@@ -1642,10 +2223,13 @@ class Inventory extends BaseController
 
     if ($itemLost) {
       $lostId = StockAdjustment::add([
+        'date'          => $opname->date,
         'warehouse_id'  => $opname->warehouse_id,
         'mode'          => 'overwrite',
         'note'          => $opname->reference
-      ], $itemLost);
+      ], $itemLost, [
+        'end_date' => (new \DateTime($opname->date))->format('Y-m-d')
+      ]);
 
       if (!$lostId) {
         return false;
@@ -1653,6 +2237,12 @@ class Inventory extends BaseController
 
       $data['adjustment_min_id'] = $lostId;
     }
+
+    $data = $this->useAttachment($data, null, function ($upload) use ($status) {
+      if ($status == 'confirmed' && !$upload->has('attachment')) {
+        $this->response(400, ['message' => 'Attachment is required.']);
+      }
+    });
 
     if (!StockOpname::update((int)$id, $data)) {
       $this->response(400, ['message' => getLastError()]);
@@ -1741,5 +2331,336 @@ class Inventory extends BaseController
     $this->data['title']  = lang('App.viewstockopname');
 
     $this->response(200, ['content' => view('Inventory/StockOpname/view', $this->data)]);
+  }
+
+  /**
+   * Product Transfer
+   * status:
+   *  - packing
+   *  - sent
+   *  - received / received_partial
+   */
+  public function transfer()
+  {
+    if ($args = func_get_args()) {
+      $method = __FUNCTION__ . '_' . $args[0];
+
+      if (method_exists($this, $method)) {
+        array_shift($args);
+        return call_user_func_array([$this, $method], $args);
+      }
+    }
+
+    checkPermission('ProductTransfer.View');
+
+    $this->data['page'] = [
+      'bc' => [
+        ['name' => lang('App.inventory'), 'slug' => 'inventory', 'url' => '#'],
+        ['name' => lang('App.producttransfer'), 'slug' => 'transfer', 'url' => '#']
+      ],
+      'content' => 'Inventory/Transfer/index',
+      'title' => lang('App.producttransfer')
+    ];
+
+    return $this->buildPage($this->data);
+  }
+
+  protected function transfer_add()
+  {
+    checkPermission('ProductTransfer.Add');
+
+    if (requestMethod() == 'POST') {
+      $warehouseIdFrom  = getPost('warehousefrom');
+      $warehouseIdTo    = getPost('warehouseto');
+
+      $data = [
+        'date'              => dateTimePHP(getPost('date')),
+        'warehouse_id_from' => $warehouseIdFrom,
+        'warehouse_id_to'   => $warehouseIdTo,
+        'note'              => stripTags(getPost('note')),
+      ];
+
+      $itemId           = getPost('item[id]');
+      $itemCode         = getPost('item[code]');
+      $itemMarkonPrice  = getPost('item[markon_price]');
+      $itemSpec         = getPost('item[spec]');
+      $itemQty          = getPost('item[quantity]');
+
+      if (!is_array($itemId) && !is_array($itemQty)) {
+        $this->response(400, ['message' => 'Item tidak ada atau tidak valid.']);
+      }
+
+      for ($a = 0; $a < count($itemId); $a++) {
+        if (empty($itemQty[$a])) {
+          $this->response(400, ['message' => "Quantity untuk {$itemCode[$a]} harus lebih besar dari nol."]);
+        }
+
+        $items[] = [
+          'id'            => intval($itemId[$a]),
+          'quantity'      => floatval($itemQty[$a]),
+          'markon_price'  => filterNumber($itemMarkonPrice[$a]),
+          'spec'          => stripTags($itemSpec[$a])
+        ];
+      }
+
+      DB::transStart();
+
+      $data = $this->useAttachment($data);
+
+      $insertID = ProductTransfer::add($data, $items);
+
+      if (!$insertID) {
+        $this->response(400, ['message' => getLastError()]);
+      }
+
+      DB::transComplete();
+
+      if (DB::transStatus()) {
+        $this->response(201, ['message' => 'Product Transfer has been added.']);
+      }
+
+      $this->response(400, ['message' => getLastError()]);
+    }
+
+    $this->data['title'] = lang('App.addproducttransfer');
+
+    $this->response(200, ['content' => view('Inventory/Transfer/add', $this->data)]);
+  }
+
+  protected function transfer_delete($id = null)
+  {
+    checkPermission('ProductTransfer.Delete');
+
+    $pt = ProductTransfer::getRow(['id' => $id]);
+
+    if (!$pt) {
+      $this->response(404, ['message' => 'Product Transfer is not found.']);
+    }
+
+    DB::transStart();
+
+    if (!ProductTransfer::delete(['id' => $id])) {
+      $this->response(400, ['message' => getLastError()]);
+    }
+
+    DB::transComplete();
+
+    if (DB::transStatus()) {
+      $this->response(200, ['message' => 'Product Transfer has been deleted.']);
+    }
+
+    $this->response(400, ['message' => 'Failed to delete Product Transfer.']);
+  }
+
+  protected function transfer_edit($id = null)
+  {
+    checkPermission('ProductTransfer.Edit');
+
+    $pt = ProductTransfer::getRow(['id' => $id]);
+
+    if (requestMethod() == 'POST' && isAJAX()) {
+      $createdAt        = dateTimePHP(getPost('date'));
+      $createdBy        = getPost('created_by');
+      $warehouseIdFrom  = getPost('warehousefrom');
+      $warehouseIdTo    = getPost('warehouseto');
+      $note             = getPost('note');
+      $item             = getPost('item');
+      $status           = $pt->status;
+
+      $items = [];
+      $productSize = count($item['id']);
+
+      for ($a = 0; $a < $productSize; $a++) {
+        $items[] = [
+          'id'            => floatval($item['id'][$a]),
+          'markon_price'  => filterNumber($item['markon_price'][$a]),
+          'quantity'      => filterNumber($item['quantity'][$a]),
+          'received_qty'  => filterNumber($item['received'][$a]),
+          'spec'          => stripTags($item['spec'][$a]),
+          'status'        => $status
+        ];
+      }
+
+      $data = [
+        'created_at'        => $createdAt,
+        'created_by'        => $createdBy,
+        'warehouse_id_from' => $warehouseIdFrom,
+        'warehouse_id_to'   => $warehouseIdTo,
+        'status'            => $status,
+        'note'              => stripTags($note)
+      ];
+
+      DB::transStart();
+
+      $this->useAttachment($data);
+
+      if (!ProductTransfer::update((int)$id, $data, $items)) {
+        $this->response(400, ['message' => getLastError()]);
+      }
+
+      DB::transComplete();
+
+      if (DB::transStatus()) {
+        $this->response(200, ['message' => 'Product Transfer has been updated.']);
+      }
+
+      $this->response(400, ['message' => 'Failed to update Product Transfer.']);
+    }
+
+    $ptitems = ProductTransferItem::get(['transfer_id' => $id]);
+    $items = [];
+
+    foreach ($ptitems as $ptitem) {
+      $product      = Product::getRow(['id' => $ptitem->product_id]);
+      $whProductFr  = WarehouseProduct::getRow(['product_id' => $product->id, 'warehouse_id' => $pt->warehouse_id_from]);
+      $whProductTo  = WarehouseProduct::getRow(['product_id' => $product->id, 'warehouse_id' => $pt->warehouse_id_to]);
+      $unit         = Unit::getRow(['id' => $product->unit]);
+
+      $items[] = [
+        'id'              => $ptitem->product_id,
+        'code'            => $ptitem->product_code,
+        'name'            => $product->name,
+        'markon_price'    => $ptitem->markon_price,
+        'quantity'        => $ptitem->quantity,
+        'current_qty'     => $whProductFr->quantity,
+        'destination_qty' => $whProductTo->quantity,
+        'received_qty'    => $ptitem->received_qty,
+        'unit'            => $unit->code,
+        'spec'            => $ptitem->spec,
+      ];
+    }
+
+    $this->data['transfer'] = $pt;
+    $this->data['items']    = $items;
+    $this->data['title']    = lang('App.editproducttransfer');
+
+    $this->response(200, ['content' => view('Inventory/Transfer/edit', $this->data)]);
+  }
+
+  protected function transfer_plan()
+  {
+    if (requestMethod() == 'POST' && isAJAX()) {
+      $warehouses = getPost('check');
+
+      if ($warehouses) {
+        $failed  = 0;
+        $success = 0;
+
+        DB::transStart();
+
+        foreach ($warehouses as $whId) {
+          // Add product transfer by each warehouse id.
+          if (ProductTransfer::addByWarehouseId($whId)) {
+            $success++;
+          } else {
+            $failed++;
+          }
+        }
+
+        DB::transComplete();
+
+        if (DB::transStatus()) {
+          $this->response(201, ['message' => "{$success} Product Transfer berhasil ditambahkan. {$failed} gagal ditambahkan."]);
+        }
+
+        $this->response(400, ['message' => getLastError()]);
+      }
+
+      $this->response(400, ['message' => 'Pilih warehouse untuk menambah Transfer Plan.']);
+    }
+
+    $this->data['title'] = lang('App.transferplan');
+
+    $this->response(200, ['content' => view('Inventory/Transfer/plan', $this->data)]);
+  }
+
+  protected function transfer_status($id = null)
+  {
+    $transfer = ProductTransfer::getRow(['id' => $id]);
+
+    if (!$transfer) {
+      $this->response(404, ['message' => 'Product Transfer is not found.']);
+    }
+
+    $transferItems = ProductTransferItem::get(['transfer_id' => $transfer->id]);
+
+    if (!$transferItems) {
+      $this->response(404, ['message' => 'Product Transfer items are not found.']);
+    }
+
+    $items        = [];
+    $receivedQty  = 0;
+    $status       = getPost('status');
+
+    if ($status == 'received') {
+      $receivedQty = $transfer->quantity;
+    }
+
+    foreach ($transferItems as $transferItem) {
+      $items[] = [
+        'id'            => $transferItem->product_id,
+        'quantity'      => $transferItem->quantity,
+        'received_qty'  => $receivedQty,
+        'markon_price'  => $transferItem->markon_price,
+        'spec'          => $transferItem->spec,
+      ];
+    }
+
+    DB::transStart();
+
+    $res = ProductTransfer::update((int)$id, ['status' => $status], $items);
+
+    if (!$res) {
+      $this->response(400, ['message' => getLastError()]);
+    }
+
+    DB::transComplete();
+
+    if (DB::transStatus()) {
+      $this->response(200, ['message' => 'Product Transfer status has been updated.']);
+    }
+
+    $this->response(400, ['message' => 'Failed to update status.']);
+  }
+
+  protected function transfer_view($id = null)
+  {
+    checkPermission('ProductTransfer.View');
+
+    $transfer = ProductTransfer::getRow(['id' => $id]);
+
+    if (!$transfer) {
+      $this->response(404, ['message' => 'Product Transfer is not found.']);
+    }
+
+    $this->data['transfer'] = $transfer;
+    $this->data['title']    = lang('App.viewproducttransfer');
+
+    $this->response(200, ['content' => view('Inventory/Transfer/view', $this->data)]);
+  }
+
+  public function usagehistory()
+  {
+    if ($args = func_get_args()) {
+      $method = __FUNCTION__ . '_' . $args[0];
+
+      if (method_exists($this, $method)) {
+        array_shift($args);
+        return call_user_func_array([$this, $method], $args);
+      }
+    }
+
+    checkPermission('Product.History');
+
+    $this->data['page'] = [
+      'bc' => [
+        ['name' => lang('App.inventory'), 'slug' => 'inventory', 'url' => '#'],
+        ['name' => lang('App.usagehistory'), 'slug' => 'usagehistory', 'url' => '#']
+      ],
+      'content' => 'Inventory/UsageHistory/index',
+      'title' => lang('App.usagehistory')
+    ];
+
+    return $this->buildPage($this->data);
   }
 }

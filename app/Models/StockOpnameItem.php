@@ -27,7 +27,7 @@ class StockOpnameItem
     $status = null;
 
     foreach ($items as $item) {
-      $product = Product::getROw(['id' => $item['id']]);
+      $product = Product::getRow(['id' => $item['id']]);
       $warehouse = Warehouse::getRow(['id' => $opname->warehouse_id]);
       $whp = WarehouseProduct::getRow(['product_id' => $product->id, 'warehouse_id' => $warehouse->id]);
 
@@ -64,6 +64,8 @@ class StockOpnameItem
         } else {
           $status = 'checked';
         }
+
+        // $totalLost += $subTotal;
       } else if (($firstQty + $rejectQty) == $realQty) { // Excellent.
         // Nothing todo.
       }

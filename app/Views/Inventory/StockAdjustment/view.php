@@ -15,7 +15,7 @@
           </tr>
           <tr>
             <td><?= lang('App.date') ?></td>
-            <td><?= formatDate($adjustment->date) ?></td>
+            <td><?= formatDateTime($adjustment->date) ?></td>
           </tr>
           <tr>
             <td><?= lang('App.reference') ?></td>
@@ -35,7 +35,7 @@
           </tr>
           <tr>
             <td><?= lang('App.createdat') ?></td>
-            <td><?= formatDate($adjustment->created_at) ?></td>
+            <td><?= formatDateTime($adjustment->created_at) ?></td>
           </tr>
           <tr>
             <td><?= lang('App.createdby') ?></td>
@@ -44,7 +44,7 @@
           <?php if ($adjustment->updated_at) : ?>
             <tr>
               <td><?= lang('App.updatedat') ?></td>
-              <td><?= formatDate($adjustment->updated_at) ?></td>
+              <td><?= formatDateTime($adjustment->updated_at) ?></td>
             </tr>
           <?php endif; ?>
           <?php if ($adjustment->updated_by) : ?>

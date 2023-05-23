@@ -4,8 +4,8 @@
       <div class="card shadow">
         <div class="card-header bg-gradient-dark">
           <div class="card-tools">
-            <a class="btn btn-tool bg-gradient-success" href="<?= base_url('setting/permission/add') ?>" data-toggle="modal" data-target="#ModalStatic" data-modal-class="modal-dialog-centered modal-dialog-scrollable">
-              <i class="fad fa-plus-circle"></i>
+            <a class="btn btn-tool bg-gradient-success use-tooltip" href="#" title="Report Good">
+              <i class="fad fa-thumbs-up"></i>
             </a>
           </div>
         </div>
@@ -14,15 +14,31 @@
             <thead>
               <tr>
                 <th></th>
+                <th><input class="checkbox-parent" type="checkbox"></th>
+                <th><?= lang('App.code'); ?></th>
                 <th><?= lang('App.name'); ?></th>
-                <th><?= lang('App.holiday'); ?></th>
+                <th><?= lang('App.category'); ?></th>
+                <th><?= lang('App.subcategory'); ?></th>
+                <th><?= lang('App.warehouse'); ?></th>
+                <th><?= lang('App.lastcondition'); ?></th>
+                <th><?= lang('App.lastupdate'); ?></th>
+                <th><?= lang('App.pic'); ?></th>
+                <th><?= lang('App.dailycheck'); ?></th>
               </tr>
             </thead>
             <tfoot>
               <tr>
                 <th></th>
+                <th><input class="checkbox-parent" type="checkbox"></th>
+                <th><?= lang('App.code'); ?></th>
                 <th><?= lang('App.name'); ?></th>
-                <th><?= lang('App.holiday'); ?></th>
+                <th><?= lang('App.category'); ?></th>
+                <th><?= lang('App.subcategory'); ?></th>
+                <th><?= lang('App.warehouse'); ?></th>
+                <th><?= lang('App.lastcondition'); ?></th>
+                <th><?= lang('App.lastupdate'); ?></th>
+                <th><?= lang('App.pic'); ?></th>
+                <th><?= lang('App.dailycheck'); ?></th>
               </tr>
             </tfoot>
           </table>
@@ -41,10 +57,10 @@
           <?= csrf_token() ?>: '<?= csrf_hash() ?>'
         },
         method: 'POST',
-        url: base_url + '/setting/getHolidays'
+        url: base_url + '/maintenance/getMaintenanceReports'
       },
       columnDefs: [{
-        targets: [0, 2],
+        targets: [0, 1],
         orderable: false
       }],
       fixedHeader: false,
@@ -53,7 +69,7 @@
         [10, 25, 50, 100, lang.App.all]
       ],
       order: [
-        [1, 'asc']
+        [3, 'asc']
       ],
       processing: true,
       responsive: true,

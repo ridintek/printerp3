@@ -102,51 +102,6 @@ function checkPermission(string $permission = null)
 }
 
 /**
- * Create mutual exclusion
- * @param string $name Mutex name.
- */
-function mutexCreate(string $name = null)
-{
-  if (!is_dir(WRITEPATH . 'mutex')) {
-    mkdir(WRITEPATH . 'mutex');
-  }
-
-  if (!$name) {
-    $name = 'default';
-  }
-
-  $hFile = fopen(WRITEPATH . 'mutex/' . $name, 'w');
-
-  if ($hFile && flock($hFile, LOCK_EX)) {
-    return $hFile;
-  }
-
-  return false;
-}
-
-/**
- * Release mutual exclusion.
- * @param resource $hMutex Mutex instance.
- */
-function mutexRelease($hMutex)
-{
-  if ($hMutex) {
-    $meta_data = stream_get_meta_data($hMutex); // Get absolute file name from resource/stream.
-    $filename = $meta_data['uri'];
-
-    flock($hMutex, LOCK_UN);
-    fclose($hMutex);
-
-    if (file_exists($filename)) {
-      @unlink($filename);
-      return true;
-    }
-  }
-
-  return false;
-}
-
-/**
  * Convert PHP time to JS time.
  * @param string $dateTime dateTime.
  * @param int $currentDate Return current date if dateTime is empty.
@@ -342,6 +297,7 @@ function formatDateTime(string $dateTime)
 /**
  * Filter number string into float.
  * @param mixed $num Number string.
+ * @deprecated Replaced by filterNumber
  */
 function filterDecimal($num)
 {
@@ -349,11 +305,12 @@ function filterDecimal($num)
 }
 
 /**
- * Filter string into string number.
+ * Filter string into float.
+ * @param mixed $num Number string.
  */
 function filterNumber($num)
 {
-  return preg_replace('/([^\-\.0-9Ee])/', '', strval($num));
+  return (float)preg_replace('/([^\-\.0-9Ee])/', '', strval($num));
 }
 
 /**
@@ -361,8 +318,8 @@ function filterNumber($num)
  */
 function formatCurrency($num)
 {
-  // return 'Rp ' . number_format(filterDecimal($num), 0, ',', '.');
-  return 'Rp ' . number_format(filterDecimal($num), 0);
+  // return 'Rp ' . number_format(filterNumber($num), 0, ',', '.');
+  return 'Rp ' . number_format(filterNumber($num), 0);
 }
 
 /**
@@ -376,7 +333,7 @@ function formatNumber($num)
     $dec = strlen(explode('.', strval($num))[1]);
   }
 
-  return number_format(filterDecimal($num), $dec);
+  return number_format(filterNumber($num), $dec);
 }
 
 /**
@@ -398,7 +355,7 @@ function generateInternalUseUniqueCode(string $category)
 
   $lastItem = DB::table('stocks')->isNotNull('internal_use_id')
     ->like('unique_code', $prefix[$category], 'right')
-    ->orderBy('internal_use_id', 'DESC')->getRow(); // Find Cxxxx or Sxxxx
+    ->orderBy('unique_code', 'DESC')->getRow(); // Find Cxxxx or Sxxxx
 
   if ($lastItem) {
     $lastUniqueCode = $lastItem->unique_code; // Ex. SA0001, CA0001
@@ -646,7 +603,7 @@ function getDayName(int $index): string
   if ($index == 0) return null;
 
   $days = ['minggu', 'senin', 'selasa', 'rabu', 'kamis', 'jumat', 'sabtu'];
-  $x = filterDecimal($index);
+  $x = filterNumber($index);
   return $days[($x - 1) % 7];
 }
 
@@ -713,24 +670,25 @@ function getGetPost($name)
 
 /**
  * Get order stock quantity by current stock, min order and safety stock.
- * @param float $current_stock Current stock of item.
- * @param float $min_order_qty Min. order of item.
- * @param float $safety_stock Safety stock of item.
+ * @param float $currentStock Current stock of item.
+ * @param float $minOrderQty Min. order of item.
+ * @param float $safetyStock Safety stock of item.
  * @example 1 getOrderStock(4, 3, 15); // Return 12.
  *
  */
-function getOrderStock($current_stock, $min_order_qty, $safety_stock)
+function getOrderStock($currentStock, $minOrderQty, $safetyStock)
 {
-  $curr_stock  = filterDecimal($current_stock);
-  $min_order   = filterDecimal($min_order_qty);
-  $safe_stock  = filterDecimal($safety_stock);
-  $order_stock = 0;
+  $currStock  = filterNumber($currentStock);
+  $minOrder   = filterNumber($minOrderQty);
+  $safeStock  = filterNumber($safetyStock);
+  $orderStock = 0;
 
-  if ($curr_stock < $safe_stock) { // Safe stock (current stock < safe_stock)
-    $rest_stock = round($safe_stock - $curr_stock); // 400 - (-10) = 410 < 224 = false
-    $order_stock = (ceil($rest_stock / $min_order) * $min_order); // (410 / 224) * 224
+  if ($currStock < $safeStock) { // Safe stock (current stock < safe_stock)
+    $restStock = round($safeStock - $currStock); // 400 - (-10) = 410 < 224 = false
+    $orderStock = (ceil($restStock / $minOrder) * $minOrder); // (410 / 224) * 224
   }
-  return $order_stock;
+
+  return $orderStock;
 }
 
 /**
@@ -851,7 +809,7 @@ function getLastError(string $defaultMsg = null)
  */
 function getMarkonPrice($cost, $markon)
 {
-  return round(filterDecimal($cost) / (1 - (filterDecimal($markon) / 100)));
+  return round(filterNumber($cost) / (1 - (filterNumber($markon) / 100)));
 }
 
 /**
@@ -869,8 +827,20 @@ function getStockOpnameSuggestion(int $userId, int $warehouseId, int $cycle)
     ->where('warehouses_products.so_cycle', $cycle)
     ->like('products.type', 'standard')
     ->groupBy('products.id')
-    ->orderBy('name', 'ASC')
+    ->orderBy('name', 'DESC')
     ->get();
+}
+
+/**
+ * Get real stock quantity.
+ * @param int $productId Product ID.
+ * @param int $warehouseId Warehouse ID.
+ * @param array $opt Options. [ start_date, end_date ]
+ * @return float Total stock quantity.
+ */
+function getStockQuantity(int $productId, int $warehouseId, array $opt = [])
+{
+  return Stock::totalQuantity($productId, $warehouseId, $opt);
 }
 
 /**
@@ -1251,6 +1221,51 @@ function isWeb2Print($sale_id)
 }
 
 /**
+ * Create mutual exclusion
+ * @param string $name Mutex name.
+ */
+function mutexCreate(string $name = null)
+{
+  if (!is_dir(WRITEPATH . 'mutex')) {
+    mkdir(WRITEPATH . 'mutex');
+  }
+
+  if (!$name) {
+    $name = 'default';
+  }
+
+  $hFile = fopen(WRITEPATH . 'mutex/' . $name, 'w');
+
+  if ($hFile && flock($hFile, LOCK_EX)) {
+    return $hFile;
+  }
+
+  return false;
+}
+
+/**
+ * Release mutual exclusion.
+ * @param resource $hMutex Mutex instance.
+ */
+function mutexRelease($hMutex)
+{
+  if ($hMutex) {
+    $meta_data = stream_get_meta_data($hMutex); // Get absolute file name from resource/stream.
+    $filename = $meta_data['uri'];
+
+    flock($hMutex, LOCK_UN);
+    fclose($hMutex);
+
+    if (file_exists($filename)) {
+      @unlink($filename);
+      return true;
+    }
+  }
+
+  return false;
+}
+
+/**
  * Nulling empty data except zero.
  */
 function nulling(array $data, array $keys)
@@ -1357,7 +1372,7 @@ function renderStatus(string $status)
   ];
   $success = [
     'active', 'approved', 'completed', 'consumable', 'currency', 'increase', 'formula',
-    'good', 'installed', 'paid', 'sent', 'served', 'verified'
+    'good', 'installed', 'paid', 'sent', 'served', 'solved', 'verified'
   ];
   $warning = [
     'called', 'cancelled', 'checked', 'draft', 'inactive', 'packing', 'pending', 'slow', 'sparepart',
@@ -1395,7 +1410,7 @@ function requestMethod()
  */
 function roundDecimal($num)
 {
-  return round(filterDecimal($num));
+  return round(filterNumber($num));
 }
 
 /**

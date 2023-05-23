@@ -50,6 +50,7 @@ return [
   'serving'             => 'Melayani',
   'skipped'             => 'Terlewati',
   'slow'                => 'Lambat',
+  'solved'              => 'Diselesaikan',
   'sparepart'           => 'Suku Cadang',
   'success'             => 'Sukses',
   'trouble'             => 'Masalah',

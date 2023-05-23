@@ -50,7 +50,7 @@ class Stock
     } else if (isset($data['purchase_id'])) {
       $inv = ProductPurchase::getRow(['id' => $data['purchase_id']]);
 
-      $data['purchase'] = $inv->reference;
+      $data['product_purchase'] = $inv->reference;
     } else if (isset($data['sale_id'])) {
       $inv = Sale::getRow(['id' => $data['sale_id']]);
 
@@ -58,7 +58,7 @@ class Stock
     } else if (isset($data['transfer_id'])) {
       $inv = ProductTransfer::getRow(['id' => $data['transfer_id']]);
 
-      $data['transfer'] = $inv->reference;
+      $data['product_transfer'] = $inv->reference;
     }
 
     $product  = Product::getRow(['id' => $data['product_id']]);
@@ -230,17 +230,28 @@ class Stock
    * Get total quantity based by product and warehouse.
    * @param int $productId Product ID.
    * @param int $warehouseId Warehouse ID.
+   * @param array $opt [ start_date, end_date ]
    * @return float Return total quantity.
    */
-  public static function totalQuantity(int $productId, int $warehouseId)
+  public static function totalQuantity(int $productId, int $warehouseId, array $opt = [])
   {
+    $period = '';
+
+    if (isset($opt['start_date']) && isset($opt['end_date'])) {
+      $period = "AND date BETWEEN '{$opt['start_date']} 00:00:00' AND '{$opt['end_date']} 23:59:59'";
+    } else if (isset($opt['start_date'])) {
+      $period = "AND date >= '{$opt['start_date']} 00:00:00}'";
+    } else if (isset($opt['end_date'])) {
+      $period = "AND date <= '{$opt['end_date']} 23:59:50'";
+    }
+
     $result = DB::table('stocks')
       ->select('(COALESCE(stock_recv.total, 0) - COALESCE(stock_sent.total, 0)) AS total')
       ->join(
         "(
         SELECT product_id, SUM(quantity) total FROM stocks
         WHERE product_id = {$productId} AND warehouse_id = {$warehouseId}
-        AND status LIKE 'received') stock_recv",
+        AND status LIKE 'received' {$period}) stock_recv",
         'stock_recv.product_id = stocks.product_id',
         'left'
       )
@@ -248,14 +259,14 @@ class Stock
         "(
         SELECT product_id, SUM(quantity) total FROM stocks
         WHERE product_id = {$productId} AND warehouse_id = {$warehouseId}
-        AND status LIKE 'sent') stock_sent",
+        AND status LIKE 'sent' {$period}) stock_sent",
         'stock_sent.product_id = stocks.product_id',
         'left'
       )
       ->groupBy('stocks.product_id')
       ->getRow(['stocks.product_id' => $productId, 'stocks.warehouse_id' => $warehouseId]);
 
-    return $result?->total;
+    return floatval($result?->total);
   }
 
   /**

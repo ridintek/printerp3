@@ -4,14 +4,15 @@ declare(strict_types=1);
 
 namespace App\Controllers;
 
-use App\Models\{Bank, DB, PaymentValidation, SaleItem, Stock, Test1, Test2};
+use App\Libraries\FileUpload;
+use App\Models\{DB, PaymentValidation, Sale, SaleItem, Stock, Test1, Test2};
 
 class Debug extends BaseController
 {
   public function paymentvalidation()
   {
     $createdAt = ($option['date'] ?? date('Y-m-d H:i:s'));
-    $startDate = date('Y-m-d H:i:s', strtotime('-1 day')); // We retrieve data from 7 days ago.
+    $startDate = date('Y-m-d', strtotime('-1 day')); // We retrieve data from 7 days ago.
     $status = ['pending'];
 
     // Delete old MutasiBank data.
@@ -25,7 +26,8 @@ class Debug extends BaseController
       ->where("created_at >= '{$startDate} 00:00:00'")
       ->get();
 
-    dbgprint($mutasiBanks); die;
+    // dbgprint($mutasiBanks);
+    // die;
 
     $paymentValidations = PaymentValidation::select('*')
       ->whereIn('status', $status)
@@ -147,6 +149,31 @@ class Debug extends BaseController
     echo $msg;
   }
 
+  public function fix_stock_date()
+  {
+    $count = 0;
+    $failedCount = 0;
+    $successCount = 0;
+
+    $stocks = Stock::select('*')->like('date', '0000', 'after')->get();
+
+    foreach ($stocks as $stock) {
+      $sale = Sale::getRow(['id' => $stock->sale_id]);
+
+      if ($sale) {
+        Stock::update((int)$stock->id, ['date' => $sale->date, 'created_at' => $sale->date]);
+        $successCount++;
+      } else {
+        Stock::delete(['id' => $stock->id]);
+        $failedCount++;
+      }
+
+      unset($sale);
+    }
+
+    echo ("Result: {$count}; Success: {$successCount}; Failed: {$failedCount}");
+  }
+
   public function fix_suppliers()
   {
     $suppliers = DB::table('suppliers')->get();
@@ -254,6 +281,23 @@ class Debug extends BaseController
     // $badan = $orang?->badan // Error
 
     echo 'Badan: ' . $badan;
+  }
+
+  public function ocr()
+  {
+    $files = new FileUpload();
+
+    if ($files->has('attachment') && $files->getSize() > 0) {
+      $res = ocr($files->getTempName());
+
+      if ($res) {
+        $this->response(200, ['message' => $res]);
+      }
+
+      $this->response(400, ['message' => getLastError()]);
+    }
+
+    $this->response(400, ['message' => 'Bad request.']);
   }
 
   public function page()

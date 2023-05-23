@@ -369,7 +369,7 @@
                   <?php if (hasAccess('Supplier.View')) : ?>
                     <li class="nav-item">
                       <a href="<?= base_url('humanresource/supplier') ?>" class="nav-link" data-action="link" data-slug="supplier">
-                        <i class="nav-icon fad fa-user-tie-hair" style="color:#ffff80"></i>
+                        <i class="nav-icon fad fa-user-tie-hair" style="color:#e0e040"></i>
                         <p><?= lang('App.supplier') ?></p>
                       </a>
                     </li>
@@ -379,13 +379,13 @@
             <?php endif; ?>
             <!-- Inventory -->
             <?php if (hasAccess([
-              'InternalUse.View', 'Product.History', 'Product.View',
-              'ProductCategory.View', 'ProductMutation.View', 'ProductTransfer.View',
+              'InternalUse.View', 'Product.CloudSync', 'Product.History', 'Product.View',
+              'ProductCategory.View', 'ProductMutation.View', 'ProductPurchase.View', 'ProductTransfer.View',
               'StockAdjustment.View', 'StockOpname.View'
             ])) : ?>
               <li class="nav-item">
                 <a href="#" class="nav-link" data-slug="inventory">
-                  <i class="nav-icon fad fa-box-open-full" style="color:#ffff00"></i>
+                  <i class="nav-icon fad fa-box-open-full" style="color:#e0e040"></i>
                   <p><?= lang('App.inventory') ?> <i class="fad fa-angle-right right"></i>
                   </p>
                 </a>
@@ -417,7 +417,7 @@
                   <?php if (hasAccess('ProductMutation.View')) : ?>
                     <li class="nav-item">
                       <a href="<?= base_url('inventory/mutation') ?>" class="nav-link" data-action="link" data-slug="mutation">
-                        <i class="nav-icon fad fa-cart-flatbed-boxes" style="color:#ffff80"></i>
+                        <i class="nav-icon fad fa-cart-flatbed-boxes" style="color:#ff80ff"></i>
                         <p><?= lang('App.mutation') ?></p>
                       </a>
                     </li>
@@ -433,7 +433,7 @@
                   <?php if (hasAccess('StockAdjustment.View')) : ?>
                     <li class="nav-item">
                       <a href="<?= base_url('inventory/stockadjustment') ?>" class="nav-link" data-action="link" data-slug="stockadjustment">
-                        <i class="nav-icon fad fa-sliders" style="color:#ffff40"></i>
+                        <i class="nav-icon fad fa-sliders" style="color:#e0e040"></i>
                         <p><?= lang('App.stockadjustment') ?></p>
                       </a>
                     </li>
@@ -441,8 +441,16 @@
                   <?php if (hasAccess('StockOpname.View')) : ?>
                     <li class="nav-item">
                       <a href="<?= base_url('inventory/stockopname') ?>" class="nav-link" data-action="link" data-slug="stockopname">
-                        <i class="nav-icon fad fa-box-check" style="color:#ff4080"></i>
+                        <i class="nav-icon fad fa-box-check" style="color:#4040ff"></i>
                         <p><?= lang('App.stockopname') ?></p>
+                      </a>
+                    </li>
+                  <?php endif; ?>
+                  <?php if (hasAccess('ProductPurchase.View')) : ?>
+                    <li class="nav-item">
+                      <a href="<?= base_url('inventory/purchase') ?>" class="nav-link" data-action="link" data-slug="purchase">
+                        <i class="nav-icon fad fa-cart-plus" style="color:#ff4040"></i>
+                        <p><?= lang('App.purchase') ?></p>
                       </a>
                     </li>
                   <?php endif; ?>
@@ -466,34 +474,34 @@
               </li>
             <?php endif; ?>
             <!-- Maintenance -->
-            <?php if (hasAccess(['Maintenance.View', 'MaintenanceReview.View', 'MaintenanceSchedule.View'])) : ?>
+            <?php if (hasAccess(['MaintenanceReport.View', 'MaintenanceLog.View', 'MaintenanceSchedule.View'])) : ?>
               <li class="nav-item">
-                <a href="#" class="nav-link">
-                  <i class="nav-icon fad fa-cog"></i>
+                <a href="#" class="nav-link" data-slug="maintenance">
+                  <i class="nav-icon fad fa-cog" style="color:#ff0040"></i>
                   <p><?= lang('App.maintenance') ?> <i class="fad fa-angle-right right"></i>
                   </p>
                 </a>
                 <ul class="nav nav-treeview">
-                  <?php if (hasAccess('Maintenance.View')) : ?>
+                  <?php if (hasAccess('MaintenanceReport.View')) : ?>
                     <li class="nav-item">
-                      <a href="#" class="nav-link">
-                        <i class="nav-icon fad fa-check-to-slot"></i>
-                        <p><?= lang('App.equipmentcheck') ?></p>
+                      <a href="<?= base_url('maintenance/report') ?>" class="nav-link" data-action="link" data-slug="maintenancereport">
+                        <i class="nav-icon fad fa-check-to-slot" style="color:#80ff40"></i>
+                        <p><?= lang('App.maintenancereport') ?></p>
                       </a>
                     </li>
                   <?php endif; ?>
-                  <?php if (hasAccess('MaintenanceReview.View')) : ?>
+                  <?php if (hasAccess('MaintenanceLog.View')) : ?>
                     <li class="nav-item">
-                      <a href="#" class="nav-link">
-                        <i class="nav-icon fad fa-th"></i>
+                      <a href="<?= base_url('maintenance/log') ?>" class="nav-link" data-action="link" data-slug="maintenancelog">
+                        <i class="nav-icon fad fa-th" style="color:#80ffff"></i>
                         <p><?= lang('App.maintenancelog') ?></p>
                       </a>
                     </li>
                   <?php endif; ?>
                   <?php if (hasAccess('MaintenanceSchedule.View')) : ?>
                     <li class="nav-item">
-                      <a href="#" class="nav-link">
-                        <i class="nav-icon fad fa-calendar"></i>
+                      <a href="<?= base_url('maintenance/schedule') ?>" class="nav-link" data-action="link" data-slug="maintenanceschedule">
+                        <i class="nav-icon fad fa-calendar" style="color:#e0e040"></i>
                         <p><?= lang('App.maintenanceschedule') ?></p>
                       </a>
                     </li>
@@ -509,26 +517,6 @@
                   <p><?= lang('App.notification') ?>
                   </p>
                 </a>
-              </li>
-            <?php endif; ?>
-            <!-- Procurement -->
-            <?php if (hasAccess('ProductPurchase.View')) : ?>
-              <li class="nav-item">
-                <a href="#" class="nav-link">
-                  <i class="nav-icon fad fa-shopping-cart"></i>
-                  <p><?= lang('App.procurement') ?> <i class="fad fa-angle-right right"></i>
-                  </p>
-                </a>
-                <ul class="nav nav-treeview">
-                  <?php if (hasAccess('ProductPurchase.View')) : ?>
-                    <li class="nav-item">
-                      <a href="#" class="nav-link">
-                        <i class="nav-icon fad fa-cart-plus"></i>
-                        <p><?= lang('App.purchase') ?></p>
-                      </a>
-                    </li>
-                  <?php endif; ?>
-                </ul>
               </li>
             <?php endif; ?>
             <!-- Production -->
@@ -579,7 +567,7 @@
                   <?php if (hasAccess('QMS.Counter')) : ?>
                     <li class="nav-item">
                       <a href="<?= base_url('qms/counter') ?>" class="nav-link" data-action="link" data-slug="counter">
-                        <i class="nav-icon fad fa-user-headset" style="color:#ffff80"></i>
+                        <i class="nav-icon fad fa-user-headset" style="color:#e0e040"></i>
                         <p>Counter</p>
                       </a>
                     </li>

@@ -1,5 +1,5 @@
 <div class="modal-header bg-gradient-dark">
-  <h5 class="modal-title"><i class="fad fa-fw fa-user-plus"></i> <?= $title ?></h5>
+  <h5 class="modal-title"><i class="fad fa-fw fa-user-plus"></i> <?= $title ?> (<?=  $product->code ?>)</h5>
   <button type="button" class="close" data-dismiss="modal" aria-label="Close">
     <span aria-hidden="true">&times;</span>
   </button>
@@ -14,14 +14,14 @@
             <div class="row">
               <div class="col-md-6">
                 <div class="form-group">
-                  <label for="date"><?= lang('App.date') ?> *</label>
+                  <label for="date"><?= lang('App.date') ?></label>
                   <input type="datetime-local" id="date" name="date" class="form-control form-control-border form-control-sm">
                 </div>
               </div>
               <div class="col-md-6">
                 <div class="form-group">
-                  <label for="biller"><?= lang('App.biller') ?> *</label>
-                  <select id="biller" name="biller" class="select-biller" data-placeholder="<?= lang('App.biller') ?>" style="width:100%">
+                  <label for="created_by"><?= lang('App.createdby') ?></label>
+                  <select id="created_by" name="created_by" class="select-user" data-placeholder="<?= lang('App.createdby') ?>" style="width:100%">
                   </select>
                 </div>
               </div>
@@ -29,41 +29,20 @@
             <div class="row">
               <div class="col-md-6">
                 <div class="form-group">
-                  <label for="bank"><?= lang('App.bankaccount') ?> *</label>
-                  <select id="bank" name="bank" class="select-bank" data-placeholder="<?= lang('App.bankaccount') ?>" style="width:100%">
+                  <label for="warehouse"><?= lang('App.warehouse') ?> *</label>
+                  <select id="warehouse" name="warehouse" class="select-warehouse" data-placeholder="<?= lang('App.warehouse') ?>" style="width:100%">
                   </select>
                 </div>
               </div>
               <div class="col-md-6">
                 <div class="form-group">
-                  <label for="bankbalance"><?= lang('App.currentbalance') ?></label>
-                  <input id="bankbalance" class="form-control form-control-border form-control-sm float-right" readonly>
-                </div>
-              </div>
-            </div>
-            <div class="row">
-              <div class="col-md-6">
-                <div class="form-group">
-                  <label for="amount"><?= lang('App.amount') ?> *</label>
-                  <input id="amount" name="amount" class="form-control form-control-border form-control-sm currency" value="0">
-                </div>
-              </div>
-              <div class="col-md-6">
-                <div class="form-group">
-                  <label for="category"><?= lang('App.category') ?> *</label>
-                  <select id="category" name="category" class="select" data-placeholder="<?= lang('App.category') ?>" style=" width:100%">
-                    <?php foreach (\App\Models\ExpenseCategory::select('*')->orderBy('name', 'ASC')->get() as $excat) : ?>
-                      <option value="<?= $excat->id ?>"><?= $excat->name ?></option>
-                    <?php endforeach; ?>
-                  </select>
-                </div>
-              </div>
-            </div>
-            <div class="row">
-              <div class="col-md-6">
-                <div class="form-group">
-                  <label for="supplier"><?= lang('App.supplier') ?></label>
-                  <select id="supplier" name="supplier" class="select-supplier" data-placeholder="<?= lang('App.supplier') ?>" style="width:100%">
+                  <label for="condition"><?= lang('App.condition') ?> *</label>
+                  <select id="condition" name="condition" class="select" data-placeholder="<?= lang('App.condition') ?>" style="width:100%">
+                    <option value=""></option>
+                    <option value="good"><?= lang('Status.good') ?></option>
+                    <option value="off"><?= lang('Status.off') ?></option>
+                    <option value="solved"><?= lang('Status.solved') ?></option>
+                    <option value="trouble"><?= lang('Status.trouble') ?></option>
                   </select>
                 </div>
               </div>
@@ -95,6 +74,15 @@
                 </div>
               </div>
             </div>
+            <div class="row">
+              <div class="col-md-12">
+                <div class="form-group">
+                  <label for="editor2"><?= lang('App.teamsupportnote') ?></label>
+                  <div id="editor2"></div>
+                  <input type="hidden" name="note_ts">
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -117,35 +105,16 @@
       theme: 'snow'
     });
 
+    let editor2 = new Quill('#editor2', {
+      theme: 'snow'
+    });
+
     editor.on('text-change', (delta, oldDelta, source) => {
       $('[name="note"]').val(editor.root.innerHTML);
     });
 
-    $('#attachment').change(function() {
-      let src = '';
-
-      if (this.files.length) {
-        src = URL.createObjectURL(this.files[0]);
-      } else {
-        src = base_url + '/assets/app/images/picture.png';
-      }
-
-      $('.attachment-preview').prop('src', src);
-    });
-
-    $('#bank').change(function() {
-      if (!this.value) return false;
-
-      $.ajax({
-        success: (data) => {
-          $('#bankbalance').val(formatCurrency(data.data));
-        },
-        url: base_url + '/finance/bank/balance/' + this.value
-      })
-    });
-
-    $('#biller').change(function() {
-      erp.select2.bank.biller = [this.value];
+    editor2.on('text-change', (delta, oldDelta, source) => {
+      $('[name="note_ts"]').val(editor2.root.innerHTML);
     });
 
     if (erp.biller.id) {
@@ -155,7 +124,7 @@
     initModalForm({
       form: '#form',
       submit: '#submit',
-      url: base_url + '/finance/expense/add'
+      url: base_url + '/maintenance/report/add/<?= $product->id ?>'
     });
   });
 </script>

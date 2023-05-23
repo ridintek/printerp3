@@ -293,7 +293,7 @@ class Humanresource extends BaseController
 
     if (requestMethod() == 'POST') {
       $name   = getPost('name');
-      $phone  = filterNumber(getPost('phone'));
+      $phone  = getPost('phone');
 
       if (empty($name)) {
         $this->response(400, ['message' => 'Name is required.']);
@@ -315,7 +315,7 @@ class Humanresource extends BaseController
         'name'              => trim($name),
         'company'           => getPost('company'),
         'email'             => getPost('email'),
-        'phone'             => $phone,
+        'phone'             => trim($phone),
         'address'           => getPost('address'),
         'city'              => getPost('city'),
         'json'              => json_encode([])
@@ -380,7 +380,7 @@ class Humanresource extends BaseController
 
     if (requestMethod() == 'POST') {
       $name   = getPost('name');
-      $phone  = filterNumber(getPost('phone'));
+      $phone  = getPost('phone');
 
       if (empty($name)) {
         $this->response(400, ['message' => 'Name is required.']);

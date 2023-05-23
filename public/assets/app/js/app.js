@@ -279,7 +279,7 @@ $(document).ready(function () {
             $(fa).removeClass(faClassProgress).addClass(faClass);
             delete this.dataset.progress;
 
-            if (erp.table)      erp.table.draw(false);
+            if (erp.table) erp.table.draw(false);
             if (erp.tableModal) erp.tableModal.draw(false);
           },
           url: url
@@ -360,7 +360,7 @@ $(document).ready(function () {
         $(fa).removeClass(faClassProgress).addClass(faClass);
         delete this.dataset.progress;
 
-        if (erp.table)      erp.table.draw(false);
+        if (erp.table) erp.table.draw(false);
         if (erp.tableModal) erp.tableModal.draw(false);
       },
       url: url
@@ -413,7 +413,7 @@ $(document).ready(function () {
         $(fa).removeClass(faClassProgress).addClass(faClass);
         delete this.dataset.progress;
 
-        if (erp.table)      erp.table.draw(false);
+        if (erp.table) erp.table.draw(false);
         if (erp.tableModal) erp.tableModal.draw(false);
       },
       url: url
@@ -582,6 +582,10 @@ $(document).ready(function () {
 
   $(document).on('keyup', '.currency', function (e) {
     if (e.key != '.') $(this).val(formatCurrency($(this).val())).trigger('change');
+  });
+
+  $(document).on('keyup', '.number', function (e) {
+    if (e.key != '.') $(this).val(formatNumber($(this).val())).trigger('change');
   });
 
   $(document).on('click', '[data-toggle="modal"]', function (e) {

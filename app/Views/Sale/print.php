@@ -296,6 +296,10 @@
   </div>
   <script>
     window.addEventListener("load", window.print());
+    // Protection for editing invoice if user cancel print.
+    window.addEventListener('afterprint', () => {
+      window.close();
+    });
   </script>
 </body>
 
