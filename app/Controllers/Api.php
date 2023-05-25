@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace App\Controllers;
 
+use App\Libraries\FileUpload;
 use App\Models\{
+  BankMutation,
   Biller,
   Customer,
   DB,
@@ -103,54 +105,75 @@ class Api extends BaseController
 
   public function mutasibank_manualValidation()
   {
-    $amount    = getPOST('amount');
-    $accountNo = getPOST('account_no');
-    $invoice   = getPOST('invoice');
-    $note      = getPOST('note');
-    $trDate    = getPOST('transaction_date');
+    $amount   = getPost('amount');
+    $account  = getPost('account');
+    $note     = getPost('note');
+    $trxDate  = getPost('transaction_date');
 
-    $sale = Sale::getRow(['reference' => $invoice]);
+    if ($invcode = getPost('sale')) {
+      $sale = Sale::getRow(['reference' => $invcode]);
 
-    if (!$sale) $this->response(404, ['message' => 'Sale is not valid.']);
+      if (!$sale) {
+        $this->response(404, ['message' => 'Sale is not found.']);
+      }
+    } else if ($invcode = getPost('mutation')) {
+      $mutation = BankMutation::getRow(['reference' => $invcode]);
 
-    if (empty($trDate)) $this->response(400, ['message' => 'Transaction date is invalid.']);
+      if (!$mutation) {
+        $this->response(404, ['message' => 'Bank Mutation is not found.']);
+      }
+    }
 
-    $transDate = new \DateTime($trDate);
+    if (empty($trxDate)) {
+      $this->response(400, ['message' => 'Transaction date is invalid.']);
+    }
 
-    $data = (object)[
-      'account_number' => $accountNo,
-      'data_mutasi' => [
-        (object)[
-          'transaction_date' => ($transDate ? $transDate->format('Y-m-d H:i:s') : date('Y-m-d H:i:s')),
-          'type'             => 'CR',
-          'amount'           => filterDecimal($amount),
-          'description'      => $note
-        ]
-      ]
+    try {
+      $transDate = new \DateTime($trxDate);
+    } catch (\Exception $e) {
+      $this->response(400, ['message' => $e->getMessage()]);
+    }
+
+    // Payment Validation data.
+    $data = [
+      'date'    => $transDate->format('Y-m-d H:i:s'),
+      'account' => $account,
+      'amount'  => $amount,
+      'manual'  => true,
+      'note'    => $note
     ];
 
-    $response = json_encode($data);
+    if (isset($sale)) {
+      $data['sale_id'] = $sale->id;
+    } else if (isset($mutation)) {
+      $data['mutation_id'] = $mutation->id;
+    }
 
-    $validationOptions = [
-      'manual' => TRUE, /* Optional, but required for manual validation. */
-      'sale_id' => $sale->id
-    ];
+    DB::transStart();
 
-    $uploader = new \FileUpload();
+    $uploader = new FileUpload();
 
-    if ($uploader->has('attachment_id')) {
+    if ($uploader->has('attachment')) {
       if ($uploader->getSize('mb') > 2) {
         $this->response(400, ['message' => 'Attachment size is exceed more than 2MB.']);
       }
 
-      $validationOptions['attachment_id'] = $uploader->store();
+      $data['attachment'] = $uploader->store();
     }
 
-    // FIXME
-    if (PaymentValidation::validate(['manual' => true])) {
-      sendJSON(['error' => 0, 'msg' => 'Payment has been validated successfully.']);
+    $data = $this->useAttachment($data);
+
+    if (!PaymentValidation::validate($data)) {
+      $this->response(400, ['message' => getLastError()]);
     }
-    sendJSON(['error' => 1, 'msg' => 'Failed to validate payment.']);
+
+    DB::transComplete();
+
+    if (DB::transStatus()) {
+      $this->response(200, ['message' => 'Payment Validation has been validated.']);
+    }
+
+    $this->response(400, ['message' => 'Failed to validate Payment.']);
   }
 
   public function v1()
@@ -202,43 +225,7 @@ class Api extends BaseController
     $this->response(200, ['data' => $billers, 'message' => 'successS']);
   }
 
-  protected function v1_mutasibank($mode = NULL)
-  {
-    if ($mode == 'accounts') {
-      $this->mutasibank_accounts();
-      die();
-    }
-
-    if ($mode == 'accountStatements') {
-      $this->mutasibank_accountStatements();
-      die();
-    }
-
-    if ($mode == 'manualValidation') {
-      $this->mutasibank_manualValidation();
-      die();
-    }
-
-    DB::transStart();
-
-    // Segala pengecekan dan validasi data di sini.
-    $total = PaymentValidation::validate();
-
-    if (!$total) {
-      $this->response(406, ['message' => getLastError()]);
-    }
-
-    DB::transComplete();
-
-
-    if (DB::transStatus()) {
-      $this->response(200, ['message' => 'Validated', 'data' => ['validated' => $total]]);
-    }
-
-    $this->response(406, ['message' => getLastError()]);
-  }
-
-  protected function v1_product($mode = NULL)
+  protected function v1_product($mode = null)
   {
     if (requestMethod() == 'POST') {
       if (!$mode) {
@@ -457,7 +444,7 @@ class Api extends BaseController
   {
   }
 
-  protected function v1_voucher($mode = NULL)
+  protected function v1_voucher($mode = null)
   {
     if (requestMethod() == 'POST') {
       if (!$mode) {
@@ -644,5 +631,56 @@ class Api extends BaseController
     }
 
     $this->response(404, ['message' => 'Not Found']);
+  }
+
+  protected function v2_mutasibank($mode = null)
+  {
+    if ($mode == 'accounts') {
+      $this->mutasibank_accounts();
+      die();
+    }
+
+    if ($mode == 'accountStatements') {
+      $this->mutasibank_accountStatements();
+      die();
+    }
+
+    if ($mode == 'manualValidation') {
+      $this->mutasibank_manualValidation();
+      die();
+    }
+
+    DB::transStart();
+
+    // Segala pengecekan dan validasi data di sini.
+    $total = PaymentValidation::validate();
+
+    if (!$total) {
+      $this->response(406, ['message' => getLastError()]);
+    }
+
+    DB::transComplete();
+
+
+    if (DB::transStatus()) {
+      $this->response(200, ['message' => 'Validated', 'data' => ['validated' => $total]]);
+    }
+
+    $this->response(406, ['message' => getLastError()]);
+  }
+
+  /**
+   * Sale API.
+   * @param mixed $id Sale ID.
+   * @param string $mode API Mode. [ add, edit, delete ]
+   */
+  protected function v2_sale($id = null, $mode = null)
+  {
+    $invoice = getPost('invoice');
+    $biller   = getPost('biller');
+
+    if ($mode == 'edit') {
+
+    }
   }
 }

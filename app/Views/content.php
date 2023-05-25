@@ -610,8 +610,8 @@
                   <?php endif; ?>
                   <?php if (hasAccess('Report.Debt')) : ?>
                     <li class="nav-item">
-                      <a href="#" class="nav-link">
-                        <i class="nav-icon fad fa-receipt"></i>
+                      <a href="<?= base_url('report/debt') ?>" class="nav-link" data-action="link" data-slug="debt">
+                        <i class="nav-icon fad fa-receipt" style="color:#ff8040"></i>
                         <p><?= lang('App.debt') ?></p>
                       </a>
                     </li>

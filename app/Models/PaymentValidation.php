@@ -228,6 +228,7 @@ class PaymentValidation
   /**
    * Validate payment validation by mutasibank.
    * @param array $option Validate options.
+   * [ manual[true|false], amount, account(6250xxx), (sale_id | mutation_id), attachment ]
    */
   public static function validate($option = [])
   {
@@ -244,20 +245,8 @@ class PaymentValidation
         return false;
       }
 
-      if (empty($option['bank_id'])) {
-        setLastError('Bank is empty.');
-        return false;
-      }
-
-      if (empty($option['biller_id'])) {
-        setLastError('Biller is empty.');
-        return false;
-      }
-
-      $bank = Bank::getRow(['id' => $option['bank_id']]);
-
-      if (!$bank) {
-        setLastError('Bank is not found.');
+      if (empty($option['account'])) {
+        setLastError('Account number is empty.');
         return false;
       }
 
@@ -285,8 +274,8 @@ class PaymentValidation
         return false;
       }
 
-      if (floatval($pv->amount) != floatval($option['amount'])) {
-        setLastError('The amount is not the same as Payment validation.');
+      if (floatval($option['amount']) < floatval($pv->amount)) {
+        setLastError('The amount is less than the total of Payment Validation.');
         return false;
       }
 
@@ -319,10 +308,10 @@ class PaymentValidation
       // Since we need a manual validation.
       // We need a custom mutasibank data manually.
       $data = [
-        'account' => $bank->number,
+        'account' => $option['account'],
         'data'    => json_encode([
           'amount'      => $pv->amount + $pv->unique,
-          'created'     => $createdAt,
+          'system_date' => $createdAt,
           'description' => ($option['note'] ?? ''),
           'type'        => 'CR',
         ]),
@@ -401,46 +390,6 @@ class PaymentValidation
           if (!self::update((int)$pv->id, $pvData)) {
             continue;
           }
-
-          // Problem double payment. See if there is a double validate.
-          $log = [
-            'account' => $mb->account,
-            'module'  => $mb->module,
-            'bank'    => [
-              'id'      => $bank->id,
-              'name'    => $bank->name,
-              'number'  => $bank->number
-            ],
-            'dm'  => [
-              'id'          => $dm->id,
-              'amount'      => $dm->amount,
-              'bank_module' => $mb->module,
-              'created'     => $dm->system_date,
-              'description' => $dm->description,
-              'type'        => $dm->type,
-            ],
-            'pv'  => [
-              'id'          => $pv->id,
-              'date'        => $pv->date,
-              'biller'      => $pv->biller,
-              'biller_id'   => $pv->biller_id,
-              'mutation'    => $pv->mutation,
-              'mutation_id' => $pv->mutation_id,
-              'sale'        => $pv->sale,
-              'sale_id'     => $pv->sale_id,
-              'reference'   => $pv->reference,
-              'amount'      => $pv->amount,
-              'unique'      => $pv->unique,
-              'status'      => $pv->status,
-              'created_at'  => $pv->created_at,
-              'created_by'  => $pv->created_by
-            ],
-            'pvData'      => $pvData,
-            'created_at'  => $createdAt,
-            'created_by'  => $pv->created_by
-          ];
-
-          log_message('notice', json_encode($log, JSON_PRETTY_PRINT));
 
           if ($pv->sale_id) {
             $sale = Sale::getRow(['id' => $pv->sale_id]);

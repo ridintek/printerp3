@@ -32,6 +32,11 @@ class Service extends BaseController
       foreach ($jobs as $job) {
         try {
           echo "\033[1;93mPROCESSING\033[0m: \033[1;95m{$job->class}\033[0m({$job->param})\r\n";
+
+          if (!is_callable($job->class)) {
+            throw new \Exception("Class {$job->class} is not callable or exist");
+          }
+
           // Class method must be static to be call.
           $res = call_user_func_array($job->class, [$job->param]);
 

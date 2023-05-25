@@ -486,6 +486,13 @@ function initControls() {
         url: base_url + '/select2/expense/category'
       }
     });
+    $('.select-income-category').select2({
+      allowClear: true,
+      ajax: {
+        delay: 1000,
+        url: base_url + '/select2/income/category'
+      }
+    });
     $('.select-operator').select2({
       allowClear: true,
       ajax: {

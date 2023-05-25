@@ -101,6 +101,96 @@ class Report extends BaseController
     }
   }
 
+  public function getDebts()
+  {
+    checkPermission('Report.Debt');
+
+    $createdBy      = getPostGet('created_by');
+    $status         = getPostGet('status');
+    $paymentStatus  = getPostGet('payment_status');
+    $supplier       = getPostGet('supplier');
+
+    $startDate  = getPostGet('start_date');
+    $endDate    = getPostGet('end_date');
+
+    $dt = new DataTables('purchases');
+    $dt->select("purchases.id, purchases.date, purchases.reference,
+        (CASE
+          WHEN suppliers.company IS NULL THEN suppliers.name
+          ELSE CONCAT(suppliers.name, ' (', suppliers.company, ')')
+        END) AS supplier_name,
+        purchases.status, purchases.payment_status,
+        purchases.grand_total, purchases.paid, purchases.balance, purchases.due_date,
+        purchases.created_at, creator.fullname AS creator_name, purchases.attachment")
+      ->join('suppliers', 'suppliers.id = purchases.supplier_id', 'left')
+      ->join('users creator', 'creator.id = purchases.created_by', 'left')
+      ->where('purchases.balance < 0')
+      ->editColumn('id', function ($data) {
+        return '
+          <div class="btn-group btn-action">
+            <a class="btn bg-gradient-primary btn-sm dropdown-toggle" href="#" data-toggle="dropdown">
+              <i class="fad fa-gear"></i>
+            </a>
+            <div class="dropdown-menu">
+              <a class="dropdown-item" href="' . base_url('payment/edit/' . $data['id']) . '"
+                data-toggle="modal" data-target="#ModalStatic2"
+                data-modal-class="modal-dialog-centered modal-dialog-scrollable">
+                <i class="fad fa-fw fa-edit"></i> ' . lang('App.edit') . '
+              </a>
+              <div class="dropdown-divider"></div>
+              <a class="dropdown-item" href="' . base_url('payment/delete/' . $data['id']) . '"
+                data-action="confirm">
+                <i class="fad fa-fw fa-trash"></i> ' . lang('App.delete') . '
+              </a>
+            </div>
+          </div>';
+      })
+      ->editColumn('status', function ($data) {
+        return renderStatus($data['status']);
+      })
+      ->editColumn('payment_status', function ($data) {
+        return renderStatus($data['payment_status']);
+      })
+      ->editColumn('grand_total', function ($data) {
+        return '<div class="float-right">' . formatNumber($data['grand_total']) . '</div>';
+      })
+      ->editColumn('paid', function ($data) {
+        return '<div class="float-right">' . formatNumber($data['paid']) . '</div>';
+      })
+      ->editColumn('balance', function ($data) {
+        return '<div class="float-right">' . formatNumber($data['balance']) . '</div>';
+      })
+      ->editColumn('attachment', function ($data) {
+        return renderAttachment($data['attachment']);
+      });
+
+    if ($createdBy) {
+      $dt->whereIn('purchases.created_by', $createdBy);
+    }
+
+    if ($status) {
+      $dt->whereIn('purchases.status', $status);
+    }
+
+    if ($paymentStatus) {
+      $dt->whereIn('purchases.payment_status', $paymentStatus);
+    }
+
+    if ($supplier) {
+      $dt->whereIn('purchases.supplier_id', $supplier);
+    }
+
+    if ($startDate) {
+      $dt->where("purchases.date >= '{$startDate} 00:00:00'");
+    }
+
+    if ($endDate) {
+      $dt->where("purchases.date <= '{$endDate} 23:59:59'");
+    }
+
+    $dt->generate();
+  }
+
   public function getPayments()
   {
     checkPermission('Report.Payment');
@@ -207,11 +297,30 @@ class Report extends BaseController
     Notification::add([
       'title'   => 'Export report',
       'note'    => 'Report has been created: ' . $msg,
-      'scopes'  => json_encode(['users' => [$user->id]]),
+      'scope'   => json_encode(['users' => [$user->id]]),
       'status'  => 'active'
     ]);
 
     WAJob::add(['phone' => $user->phone, 'message' => "Report has been created: {$response}."]);
+  }
+
+  /**
+   * Debt from supplier.
+   */
+  public function debt()
+  {
+    checkPermission('Report.Debt');
+
+    $this->data['page'] = [
+      'bc' => [
+        ['name' => lang('App.report'), 'slug' => 'report', 'url' => '#'],
+        ['name' => lang('App.debt'), 'slug' => 'debt', 'url' => '#']
+      ],
+      'content' => 'Report/Debt/index',
+      'title' => lang('App.debt')
+    ];
+
+    return $this->buildPage($this->data);
   }
 
   /**
@@ -229,13 +338,27 @@ class Report extends BaseController
       $this->response(400, ['message' => 'Param is required.']);
     }
 
-    // PrintERP Job service 'printerp-job' must be run to running the export jobs.
-    // Make sure 'systemctl status printerp-job' is running.
-    $insertId = Jobs::add([
+    $data = [
       'class'     => '\App\Controllers\Report::job_' . $name,
       'callback'  => '\App\Controllers\Report::callback',
       'param'     => $param
-    ]);
+    ];
+
+    $paramJS = getJSON($param);
+
+    if ($paramJS) {
+      if (!empty($paramJS->report_to)) {
+        $user = User::getRow(['phone' => $paramJS->report_to]);
+
+        if ($user) {
+          $data['created_by'] = $user->id;
+        }
+      }
+    }
+
+    // PrintERP Job service 'printerp-job' must be run to running the export jobs.
+    // Make sure 'systemctl status printerp-job' is running.
+    $insertId = Jobs::add($data);
 
     if (!$insertId) {
       $this->response(400, ['message' => getLastError()]);
@@ -367,7 +490,6 @@ class Report extends BaseController
     $r = 2;
 
     foreach ($q->get() as $payment) {
-
       $sheet->setCellValue('A' . $r, $payment->date);
       $sheet->setCellValue('B' . $r, $payment->reference_date);
       $sheet->setCellValue('C' . $r, $payment->reference);

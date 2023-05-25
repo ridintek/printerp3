@@ -51,11 +51,7 @@
               <div class="col-md-6">
                 <div class="form-group">
                   <label for="category"><?= lang('App.category') ?> *</label>
-                  <select id="category" name="category" class="select" data-placeholder="<?= lang('App.category') ?>" style=" width:100%">
-                    <option value=""></option>
-                    <?php foreach (\App\Models\IncomeCategory::select('*')->orderBy('name', 'ASC')->get() as $excat) : ?>
-                      <option value="<?= $excat->code ?>"><?= $excat->name ?></option>
-                    <?php endforeach; ?>
+                  <select id="category" name="category" class="select-income-category" data-placeholder="<?= lang('App.category') ?>" style=" width:100%">
                   </select>
                 </div>
               </div>

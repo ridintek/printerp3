@@ -11,19 +11,19 @@ class Income
    */
   public static function add(array $data)
   {
-    if (isset($data['bank'])) { // Compatibility.
-      $bank = Bank::getRow(['code' => $data['bank']]);
-      $data['bank_id'] = $bank->id;
+    if (isset($data['bank_id'])) {
+      $bank = Bank::getRow(['id' => $data['bank_id']]);
+      $data['bank'] = $bank->code;
     }
 
-    if (isset($data['biller'])) { // Compatibility.
-      $biller = Biller::getRow(['code' => $data['biller']]);
-      $data['biller_id'] = $biller->id;
+    if (isset($data['biller_id'])) {
+      $biller = Biller::getRow(['id' => $data['biller_id']]);
+      $data['biller'] = $biller->code;
     }
 
-    if (isset($data['category'])) { // Compatibility.
-      $category = IncomeCategory::getRow(['code' => $data['category']]);
-      $data['category_id'] = $category->id;
+    if (isset($data['category_id'])) {
+      $category = IncomeCategory::getRow(['id' => $data['category_id']]);
+      $data['category'] = $category->code;
     }
 
     $data = setCreatedBy($data);
@@ -92,19 +92,19 @@ class Income
    */
   public static function update(int $id, array $data)
   {
-    if (isset($data['bank'])) {
-      $bank = Bank::getRow(['code' => $data['bank']]);
-      $data['bank_id'] = $bank->id;
+    if (isset($data['bank_id'])) {
+      $bank = Bank::getRow(['id' => $data['bank_id']]);
+      $data['bank'] = $bank->code;
     }
 
-    if (isset($data['biller'])) {
-      $biller = Biller::getRow(['code' => $data['biller']]);
-      $data['biller_id'] = $biller->id;
+    if (isset($data['biller_id'])) {
+      $biller = Biller::getRow(['id' => $data['biller_id']]);
+      $data['biller'] = $biller->code;
     }
 
-    if (isset($data['category'])) {
-      $category = IncomeCategory::getRow(['code' => $data['category']]);
-      $data['category_id'] = $category->id;
+    if (isset($data['category_id'])) {
+      $category = IncomeCategory::getRow(['id' => $data['category_id']]);
+      $data['category'] = $category->code;
     }
 
     $data = setUpdatedBy($data);

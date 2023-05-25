@@ -11,6 +11,7 @@ use App\Models\{
   Customer,
   DB,
   ExpenseCategory,
+  IncomeCategory,
   Locale,
   Product,
   ProductCategory,
@@ -496,6 +497,9 @@ class Home extends BaseController
       case 'expense':
         $results = $this->select2_expense($submode);
         break;
+      case 'income':
+        $results = $this->select2_income($submode);
+        break;
       case 'product':
         $results = $this->select2_product($submode);
         break;
@@ -651,6 +655,38 @@ class Home extends BaseController
 
     if ($submode == 'category') {
       $q = ExpenseCategory::select("id, name text");
+
+      if ($limit) {
+        $q->limit(intval($limit));
+      } else {
+        $q->limit(30);
+      }
+
+      if ($term && is_string($term)) {
+        $q->groupStart()
+          ->where('id', $term)
+          ->orLike('name', $term, 'both')
+          ->groupEnd();
+      } else if ($term && is_array($term)) {
+        $q->groupStart()
+          ->whereIn('id', $term)
+          ->orWhereIn('name', $term)
+          ->groupEnd();
+      }
+
+      return $q->get();
+    }
+
+    return []; // Reserved for expense list.
+  }
+
+  protected function select2_income($submode = null)
+  {
+    $limit  = getGet('limit');
+    $term   = getGet('term');
+
+    if ($submode == 'category') {
+      $q = IncomeCategory::select("id, name text");
 
       if ($limit) {
         $q->limit(intval($limit));

@@ -933,7 +933,7 @@ class Finance extends BaseController
         'bank_id'     => getPost('bank'),
         'biller_id'   => getPost('biller'),
         'category_id' => getPost('category'),
-        'amount'      => filterDecimal(getPost('amount')),
+        'amount'      => filterNumber(getPost('amount')),
         'note'        => stripTags(getPost('note'))
       ];
 
@@ -1038,21 +1038,19 @@ class Finance extends BaseController
   {
     checkPermission('Income.Edit');
 
-    $income     = Income::getRow(['id' => $id]);
+    $income = Income::getRow(['id' => $id]);
 
     if (!$income) {
       $this->response(404, ['message' => 'Income is not found.']);
     }
 
     if (requestMethod() == 'POST') {
-      $attachment = Attachment::getRow(['hashname' => $income->attachment]);
-
       $data = [
         'date'        => dateTimePHP(getPost('date')),
         'bank_id'     => getPost('bank'),
         'biller_id'   => getPost('biller'),
         'category_id' => getPost('category'),
-        'amount'      => filterDecimal(getPost('amount')),
+        'amount'      => filterNumber(getPost('amount')),
         'note'        => stripTags(getPost('note'))
       ];
 
@@ -1566,27 +1564,32 @@ class Finance extends BaseController
 
     if (requestMethod() == 'POST' && isAJAX()) {
       $date   = dateTimePHP(getPost('date'));
-      $amount = filterDecimal(getPost('amount'));
-      $bank   = getPost('bank');
+      $amount = filterNumber(getPost('amount'));
+      $bankId = getPost('bank');
 
       if (empty($amount)) {
         $this->response(400, ['message' => 'Amount is empty.']);
       }
 
-      if (empty($bank)) {
+      if (empty($bankId)) {
         $this->response(400, ['message' => 'Bank is empty.']);
       }
 
+      $bank = Bank::getRow(['id' => $bankId]);
+
       $option = [
         'date'        => $date,
-        'mutation_id' => $pv->mutation_id,
-        'sale_id'     => $pv->sale_id,
-        'bank_id'     => $bank,
-        'biller_id'   => $pv->biller_id,
+        'account'     => $bank->number,
         'amount'      => $amount, // For validation only.
         'note'        => stripTags(getPost('note')),
         'manual'      => true // Required.
       ];
+
+      if ($pv->mutation_id) {
+        $option['mutation_id'] = $pv->mutation_id;
+      } else if ($pv->sale_id) {
+        $option['sale_id']  = $pv->sale_id;
+      }
 
       DB::transStart();
 

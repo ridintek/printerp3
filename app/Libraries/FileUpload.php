@@ -156,7 +156,7 @@ class FileUpload
    * Store file to attachment table as BLOB.
    * @param string $filename Filename to store. Use default filename if omitted.
    * @param string $hashname Update record if present. Use random hashname if omitted.
-   * @return string Return stored hashname.
+   * @return string|null Return stored hashname.
    */
   public function store($filename = null, $hashname = null)
   {
@@ -164,13 +164,17 @@ class FileUpload
       $attachment = Attachment::getRow(['hashname' => $hashname]);
 
       if ($attachment) {
-        Attachment::update((int)$attachment->id, [
+        $res = Attachment::update((int)$attachment->id, [
           'filename'  => ($filename ?? $this->getName()),
           'hashname'  => $attachment->hashname,
           'mime'      => $this->getType(),
-          'data'      => ($this->getTempName()),
+          'data'      => file_get_contents($this->getTempName()),
           'size'      => $this->getSize()
         ]);
+
+        if (!$res) {
+          return null;
+        }
 
         return $attachment->hashname;
       }
@@ -184,7 +188,9 @@ class FileUpload
       'size'      => $this->getSize()
     ];
 
-    Attachment::add($data);
+    if (!Attachment::add($data)) {
+      return null;
+    }
 
     return $data['hashname'];
   }

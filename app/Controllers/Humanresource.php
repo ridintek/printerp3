@@ -299,8 +299,16 @@ class Humanresource extends BaseController
         $this->response(400, ['message' => 'Name is required.']);
       }
 
+      if (strlen($name) < 4) {
+        $this->response(400, ['message' => "Customer name must be 4 or more."]);
+      }
+
       if (empty($phone)) {
         $this->response(400, ['message' => 'Phone number is required.']);
+      }
+
+      if (strlen($phone) < 10) {
+        $this->response(400, ['message' => 'Phone number must be 10 or more.']);
       }
 
       $customer = Customer::getRow(['phone' => $phone]);
@@ -386,8 +394,16 @@ class Humanresource extends BaseController
         $this->response(400, ['message' => 'Name is required.']);
       }
 
+      if (strlen($name) < 4) {
+        $this->response(400, ['message' => "Customer name must be 4 or more."]);
+      }
+
       if (empty($phone)) {
         $this->response(400, ['message' => 'Phone number is required.']);
+      }
+
+      if (strlen($phone) < 10) {
+        $this->response(400, ['message' => 'Phone number must be 10 or more.']);
       }
 
       $customerData = [
