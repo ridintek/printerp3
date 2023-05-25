@@ -185,7 +185,7 @@ class BaseController extends Controller
 				$this->response(400, ['message' => lang('Msg.attachmentExceed')]);
 			}
 
-			$data['attachment'] = $upload->store(NULL, $attachment);
+			$data['attachment'] = $upload->store(null, $attachment);
 		}
 
 		return $data;
