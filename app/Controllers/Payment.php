@@ -506,7 +506,7 @@ class Payment extends BaseController
     }
 
     if (requestMethod() == 'POST' && isAJAX()) {
-      $data['amount']         = filterDecimal(getPost('amount'));
+      $data['amount']         = filterNumber(getPost('amount'));
       $data['date']           = dateTimePHP(getPost('date'));
       $data['reference']      = $inv->reference;
       $data['reference_date'] = $inv->date;
