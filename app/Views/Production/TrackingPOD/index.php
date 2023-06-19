@@ -15,7 +15,7 @@
           </div>
         </div>
         <div class="card-body">
-          <table id="Table" class="table table-bordered table-hover" style="width:100%;">
+          <table id="Table" class="table table-head-fixed-main table-hover table-striped" style="width:100%;">
             <thead>
               <tr>
                 <th></th>
@@ -24,8 +24,8 @@
                 <th><?= lang('App.startclick'); ?></th>
                 <th><?= lang('App.endclick'); ?></th>
                 <th><?= lang('App.usageclick'); ?></th>
+                <th><?= lang('App.todayclick'); ?></th>
                 <th><?= lang('App.totalreject'); ?></th>
-                <th><?= lang('App.erpclick'); ?></th>
                 <th><?= lang('App.balance'); ?></th>
                 <th><?= lang('App.warehouse'); ?></th>
                 <th><?= lang('App.createdby'); ?></th>
@@ -40,8 +40,8 @@
                 <th><?= lang('App.startclick'); ?></th>
                 <th><?= lang('App.endclick'); ?></th>
                 <th><?= lang('App.usageclick'); ?></th>
+                <th><?= lang('App.todayclick'); ?></th>
                 <th><?= lang('App.totalreject'); ?></th>
-                <th><?= lang('App.erpclick'); ?></th>
                 <th><?= lang('App.balance'); ?></th>
                 <th><?= lang('App.warehouse'); ?></th>
                 <th><?= lang('App.createdby'); ?></th>
@@ -236,6 +236,7 @@
       order: [
         [1, 'desc']
       ],
+      pageLength: 50,
       processing: true,
       responsive: true,
       scrollX: false,

@@ -45,6 +45,7 @@ class Payment extends BaseController
     $expenseId  = getPost('expense_id');
     $incomeId   = getPost('income_id');
     $mutationId = getPost('mutation_id');
+    $purchaseId = getPost('purchase_id');
     $saleId     = getPost('sale_id');
 
     $startDate  = getPost('start_date');
@@ -110,6 +111,10 @@ class Payment extends BaseController
       $dt->where('payments.mutation_id', $mutationId);
     }
 
+    if ($purchaseId) {
+      $dt->where('payments.purchase_id', $purchaseId);
+    }
+
     if ($saleId) {
       $dt->where('payments.sale_id', $saleId);
     }
@@ -134,6 +139,7 @@ class Payment extends BaseController
     $expenseId  = getPost('expense_id');
     $incomeId   = getPost('income_id');
     $mutationId = getPost('mutation_id');
+    $purchaseId = getPost('purchase_id');
     $saleId     = getPost('sale_id');
 
     $startDate  = getPost('start_date');
@@ -203,6 +209,10 @@ class Payment extends BaseController
       $dt->where('payments.mutation_id', $mutationId);
     }
 
+    if ($purchaseId) {
+      $dt->where('payments.purchase_id', $purchaseId);
+    }
+
     if ($saleId) {
       $dt->where('payments.sale_id', $saleId);
     }
@@ -237,11 +247,12 @@ class Payment extends BaseController
 
     switch ($mode) {
       case 'expense':
-        checkPermission('Expense.Payment.Add');
+        checkPermission('Expense.Payment');
 
         $inv = Expense::getRow(['id' => $id]);
         $modeLang = lang('App.expense');
         $data['expense_id'] = $inv->id;
+        $data['biller_id']  = $inv->biller_id;
         $data['type']       = 'sent';
 
         $this->data['inv']    = $inv;
@@ -256,7 +267,7 @@ class Payment extends BaseController
         }
 
         break;
-        // case 'income':
+      case 'income': // NOT USED.
         // $inv = Income::getRow(['id' => $id]);
         // $modeLang = lang('App.income');
         // $data['income']       = $inv->reference;
@@ -271,15 +282,17 @@ class Payment extends BaseController
         // $modeLang = lang('App.bankmutation');
         // $data['mutation']     = $inv->reference;
         // $data['mutation_id']  = $inv->id;
-        // break;
-      case 'purchase': // NOT IMPLEMENTED
-        // $inv = ProductPurchase::getRow(['id' => $id]);
-        // $modeLang = lang('App.productpurchase');
-        // $data['purchase']     = $inv->reference;
-        // $data['purchase_id']  = $inv->id;
-        // $data['type']         = 'sent';
-        // $this->data['amount'] = ($inv->grand_total - $inv->paid - $inv->discount);
-        // $this->data['bank']   = $inv->bank;
+        break;
+      case 'purchase':
+        $inv = ProductPurchase::getRow(['id' => $id]);
+        $modeLang = lang('App.productpurchase');
+        $data['purchase']     = $inv->reference;
+        $data['purchase_id']  = $inv->id;
+        $data['biller_id']  = $inv->biller_id;
+        $data['type']         = 'need_approval';
+        $data['status']       = 'need_approval';
+        $this->data['inv']    = $inv;
+        $this->data['amount'] = ($inv->grand_total - $inv->paid - $inv->discount);
         break;
       case 'sale':
         $inv = Sale::getRow(['id' => $id]);
@@ -288,8 +301,12 @@ class Payment extends BaseController
         $data['biller_id']  = $inv->biller_id;
         $data['type']       = 'received';
 
+        if ($inv->payment_status == 'paid') {
+          $this->response(400, ['message' => 'Sale is already paid.']);
+        }
+
         $this->data['inv']    = $inv;
-        $this->data['amount'] = $inv->grand_total;
+        $this->data['amount'] = ($inv->grand_total - $inv->paid);
         break;
       case 'transfer': // NOT IMPLEMENTED
         // $inv = ProductTransfer::getRow(['id' => $id]);
@@ -304,8 +321,28 @@ class Payment extends BaseController
         $modeLang = '';
     }
 
+    $q = null;
+
+    if (isset($data['mutation_id']) || isset($data['sale_id'])) {
+      $q = PaymentValidation::select('*')
+        ->where('status', 'pending')
+        ->orderBy('date', 'DESC');
+
+      if (isset($data['mutation_id'])) {
+        $q->where('mutation_id', $data['mutation_id']);
+      }
+
+      if (isset($data['sale_id'])) {
+        $q->where('sale_id', $data['sale_id']);
+      }
+
+      if ($q->getRow()) {
+        $this->response(400, ['message' => 'Payment Validation is in pending.']);
+      }
+    }
+
     if (requestMethod() == 'POST' && isAJAX()) {
-      $data['amount']         = filterDecimal(getPost('amount'));
+      $data['amount']         = filterNumber(getPost('amount'));
       $data['date']           = dateTimePHP(getPost('date'));
       $data['reference']      = $inv->reference;
       $data['reference_date'] = $inv->date;
@@ -316,8 +353,20 @@ class Payment extends BaseController
       // Used by Sale. Bank mutation has payment ui itself.
       $skipValidation = (getPost('skip_validation') == 1);
 
+      if (empty($data['bank_id'])) {
+        if (isset($inv->bank_id)) {
+          $data['bank_id'] = $inv->bank_id;
+        }
+      }
+
       if (empty($data['method'])) {
-        $this->response(400, ['message' => 'Please select payment method.']);
+        $bank = Bank::getRow(['id' => $data['bank_id']]);
+
+        if (!$bank) {
+          $this->response(400, ['message' => 'Method id and bank id are empty.']);
+        }
+
+        $data['method'] = $bank->type;
       }
 
       if (empty($data['note'])) {
@@ -352,6 +401,10 @@ class Payment extends BaseController
 
       if (isset($data['expense_id'])) {
         Expense::update((int)$inv->id, ['payment_status' => 'paid']);
+      }
+
+      if (isset($data['purchase_id'])) {
+        ProductPurchase::update((int)$inv->id, ['payment_status' => 'need_approval']);
       }
 
       if (isset($data['sale_id'])) {
@@ -403,12 +456,14 @@ class Payment extends BaseController
         if (!$res) {
           $this->response(400, ['message' => getLastError()]);
         }
-      } else if (!empty($payment->income)) {
-      } else if (!empty($payment->mutation)) {
-      } else if (!empty($payment->purchase)) {
-      } else if (!empty($payment->sale)) {
+      } else if (!empty($payment->income_id)) {
+      } else if (!empty($payment->mutation_id)) {
+        BankMutation::sync(['id' => $payment->mutation_id]);
+      } else if (!empty($payment->purchase_id)) {
+        ProductPurchase::sync(['id' => $payment->purchase_id]);
+      } else if (!empty($payment->sale_id)) {
         Sale::sync(['id' => $payment->sale_id]);
-      } else if (!empty($payment->transfer)) {
+      } else if (!empty($payment->transfer_id)) {
       }
 
       DB::transComplete();

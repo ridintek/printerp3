@@ -12,12 +12,14 @@
         <div class="card">
           <div class="card-body">
             <div class="row">
-              <div class="col-md-6">
-                <div class="form-group">
-                  <label for="date"><?= lang('App.date') ?> *</label>
-                  <input type="datetime-local" id="date" name="date" class="form-control form-control-border form-control-sm">
+              <?php if (hasAccess('Payment.Edit')) : ?>
+                <div class="col-md-6">
+                  <div class="form-group">
+                    <label for="date"><?= lang('App.date') ?> *</label>
+                    <input type="datetime-local" id="date" name="date" class="form-control form-control-border form-control-sm">
+                  </div>
                 </div>
-              </div>
+              <?php endif; ?>
               <div class="col-md-6">
                 <div class="form-group">
                   <label for="method"><?= lang('App.method') ?> *</label>
@@ -40,17 +42,19 @@
                 </div>
               </div>
             </div>
-            <div class="row payment-validation" style="display: none">
-              <div class="col-md-6">
-                <div class="form-group">
-                  <label for="skip_validation"><?= lang('App.paymentvalidation') ?></label>
-                  <div class="input-group">
-                    <input type="checkbox" id="skip_validation" name="skip_validation" value="1">
-                    <label for="skip_validation"><?= lang('App.skippaymentvalidation') ?></label>
+            <?php if (hasAccess('Sale.SkipValidation')) : ?>
+              <div class="row payment-validation" style="display: none">
+                <div class="col-md-6">
+                  <div class="form-group">
+                    <label for="skip_validation"><?= lang('App.paymentvalidation') ?></label>
+                    <div class="input-group">
+                      <input type="checkbox" id="skip_validation" name="skip_validation" value="1">
+                      <label for="skip_validation"><?= lang('App.skippaymentvalidation') ?></label>
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
+            <?php endif; ?>
             <div class="row">
               <div class="col-md-12">
                 <div class="form-group">
@@ -102,8 +106,11 @@
   })();
 
   $(document).ready(function() {
-    erp.select2.bank.biller = ['<?= $inv->biller_id ?>'];
+    if (erp.biller.id) {
+      erp.select2.bank.biller = [erp.biller.id];
+    }
 
+    let amount = <?= floatval($amount) ?>;
     let hasSkipValidation = <?= hasAccess('PaymentValidation.Skip') ? 'true' : 'false' ?>;
 
     let editor = new Quill('#editor', {
@@ -112,6 +119,14 @@
 
     editor.on('text-change', (delta, oldDelta, source) => {
       $('[name="note"]').val(editor.root.innerHTML);
+    });
+
+    $('#amount').change(function() {
+      if (filterNumber(this.value) > amount) {
+        toastr.error('Amount tidak boleh lebih dari nominal.', 'Error Amount');
+        $(this).val(amount).trigger('change');
+        return false;
+      }
     });
 
     $('#attachment').change(function() {

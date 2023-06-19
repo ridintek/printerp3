@@ -5,7 +5,7 @@
   </button>
 </div>
 <div class="modal-body">
-  <table id="ModalTable" class="table table-bordered table-hover">
+  <table id="ModalTable" class="table table-head-fixed table-hover table-striped">
     <thead>
       <tr>
         <th class="col-sm-1"></th>
@@ -47,7 +47,7 @@
 
     let tableData = JSON.parse(`<?= json_encode($params) ?>`);
 
-    tableData.<?= csrf_token() ?> = '<?= csrf_hash() ?>';
+    tableData.__ = __;
 
     erp.tableModal = $('#ModalTable').DataTable({
       ajax: {
@@ -84,6 +84,7 @@
       order: [
         [1, 'desc']
       ],
+      pageLength: 50,
       processing: true,
       responsive: true,
       scrollX: false,

@@ -21,12 +21,7 @@
               <div class="col-md-6">
                 <div class="form-group">
                   <label for="biller"><?= lang('App.biller') ?> *</label>
-                  <select id="biller" name="biller" class="select" data-placeholder="<?= lang('App.biller') ?>" style="width:100%">
-                    <option value=""></option>
-                    <?php foreach (\App\Models\Biller::get(['active' => 1]) as $bl) : ?>
-                      <?php if (!empty(session('login')->biller) && session('login')->biller != $bl->code) continue; ?>
-                      <option value="<?= $bl->code ?>"><?= $bl->name ?></option>
-                    <?php endforeach; ?>
+                  <select id="biller" name="biller" class="select-biller" data-placeholder="<?= lang('App.biller') ?>" style="width:100%">
                   </select>
                 </div>
               </div>
@@ -41,21 +36,16 @@
               <div class="col-md-6">
                 <div class="form-group">
                   <label for="method"><?= lang('App.method') ?> *</label>
-                  <select id="method" name="method" class="select" data-placeholder="<?= lang('App.method') ?>" style=" width:100%">
-                    <option value=""></option>
-                    <?php $bankTypes = \App\Models\Bank::select('type')->distinct()->get(['active' => 1]); ?>
-                    <?php foreach ($bankTypes as $bankType) : ?>
-                      <option value="<?= $bankType->type ?>"><?= lang('App.' . strtolower($bankType->type)) ?></option>
-                    <?php endforeach; ?>
+                  <select id="method" name="method" class="select-bank-type" data-placeholder="<?= lang('App.method') ?>" style=" width:100%">
                   </select>
                 </div>
               </div>
             </div>
-            <div class="row bank-account-to" style="display: none">
+            <div class="row">
               <div class="col-md-6">
                 <div class="form-group">
-                  <label for="bankto"><?= lang('App.bankaccount') ?> *</label>
-                  <select id="bankto" name="bankto" class="select-bank" data-placeholder="<?= lang('App.bankaccountto') ?>" style="width:100%">
+                  <label for="bank"><?= lang('App.bankaccount') ?> *</label>
+                  <select id="bank" name="bank" class="select-bank" data-placeholder="<?= lang('App.bankaccount') ?>" style="width:100%">
                   </select>
                 </div>
               </div>
@@ -63,17 +53,6 @@
                 <div class="form-group">
                   <label for="bankbalance"><?= lang('App.currentbalance') ?></label>
                   <input id="bankbalance" class="form-control form-control-border form-control-sm float-right" readonly>
-                </div>
-              </div>
-            </div>
-            <div class="row payment-validation" style="display: none">
-              <div class="col-md-6">
-                <div class="form-group">
-                  <label for="skip_validation"><?= lang('App.paymentvalidation') ?></label>
-                  <div class="input-group">
-                    <input type="checkbox" id="skip_validation" name="skip_validation">
-                    <label for="skip_validation"><?= lang('App.skippaymentvalidation') ?></label>
-                  </div>
                 </div>
               </div>
             </div>
@@ -85,6 +64,13 @@
                     <input type="file" id="attachment" name="attachment" class="custom-file-input">
                     <label for="attachment" class="custom-file-label"><?= lang('App.choosefile') ?></label>
                   </div>
+                </div>
+              </div>
+            </div>
+            <div class="row">
+              <div class="col-md-12 text-center">
+                <div class="form-group">
+                  <img class="attachment-preview" src="<?= base_url('assets/app/images/picture.png') ?>" style="max-width:300px">
                 </div>
               </div>
             </div>
@@ -113,10 +99,9 @@
   })();
 
   $(document).ready(function() {
-    erp.bank = {}; // Init.
-    erp.bank.biller = $('#biller').val();
-
-    let hasSkipValidation = <?= hasAccess('PaymentValidation.Skip') ? 'true' : 'false' ?>;
+    erp.select2.bank.biller = [<?= $inv->biller_id ?>];
+    erp.select2.bank.type = [0];
+    erp.select2.biller.id = [<?= $inv->biller_id ?>];
 
     let editor = new Quill('#editor', {
       theme: 'snow'
@@ -126,8 +111,22 @@
       $('[name="note"]').val(editor.root.innerHTML);
     });
 
+    $('#attachment').change(function() {
+      let src = '';
+
+      if (this.files.length) {
+        src = URL.createObjectURL(this.files[0]);
+      } else {
+        src = base_url + '/assets/app/images/picture.png';
+      }
+
+      $('.attachment-preview').prop('src', src);
+    });
+
     $('#biller').change(function() {
-      erp.bank.biller = this.value;
+      $('#bank').val('').trigger('change');
+
+      erp.select2.bank.biller = [this.value];
     });
 
     $('#bank').change(function() {
@@ -143,13 +142,12 @@
       });
     });
 
-    // Saat ubah method. Ubah juga bank.
     $('#method').change(function() {
-      erp.bank.type = this.value;
+      erp.select2.bank.type = [this.value];
 
       $('#bank').val('').trigger('change');
 
-      if (this.value == 'Transfer' && hasSkipValidation) {
+      if (this.value == 'Transfer') {
         $('.payment-validation').slideDown();
       } else {
         $('.payment-validation').slideUp();
@@ -172,12 +170,7 @@
       }
     });
 
-    if (!hasSkipValidation) {
-      $('#skip_validation').iCheck('disable');
-    }
-
-    preSelect2('bank', '#bank', '<?= $bank ?>');
-    $('#biller').val('<?= $biller ?>').trigger('change');
+    preSelect2('biller', '#biller', '<?= $inv->biller_id ?>').catch(err => console.warn(err));
 
     initModalForm({
       form: '#form',

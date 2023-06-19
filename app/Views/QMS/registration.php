@@ -18,7 +18,8 @@ $hash = (!empty($hash) ? $hash : bin2hex(random_bytes(4)));
   <link href="<?= base_url('assets/modules/toastr/toastr.min.css'); ?>" rel="stylesheet" />
   <link href="<?= base_url('assets/qms/css/ridintek.css?v=') . $resver; ?>" rel="stylesheet" />
   <script>
-    let base_url = '<?= base_url() ?>';
+    const base_url = '<?= base_url() ?>';
+    const <?= csrf_token() ?> = '<?= csrf_hash() ?>';
   </script>
 </head>
 <style>
@@ -62,7 +63,7 @@ $hash = (!empty($hash) ? $hash : bin2hex(random_bytes(4)));
       <div class="card-body">
         <div id="attention_frame" style="border:5px solid red;color:yellow;font-size:18px;font-weight:bold;padding:5px;">
           <span style="color:red">PERHATIAN !</span> Bagi yang membawa file siap cetak atau design, dimohon untuk mempersiapkannya
-          di Flashdisk atau telah mengirimkan file tersebut melalui email Indoprinting di
+          di Flash drive atau telah mengirimkan file tersebut melalui email Indoprinting di
           <span style="color:white">idp.<?= strtolower($warehouse->name) ?>@gmail.com</span>
           sebelum CS kami memanggil nomor antrian anda. Terima kasih.
         </div><br />
@@ -163,6 +164,7 @@ $hash = (!empty($hash) ? $hash : bin2hex(random_bytes(4)));
   </script>
   <script type="module">
     import {
+      QMS,
       QueueHttp,
       QueueNotify
     } from '<?= base_url('assets/app/js/ridintek.js?v=') . $resver ?>';
@@ -204,33 +206,29 @@ $hash = (!empty($hash) ? $hash : bin2hex(random_bytes(4)));
       };
 
       try {
-        let response = await QueueHttp.send('POST', '<?= base_url('qms/addQueueTicket') ?>', data);
-        if (typeof response === 'object') {
-          $('#loader').fadeOut();
+        let response = await QMS.addQueueTicket(data);
 
-          $('#phone').val('').trigger('change');
-          $('#name').val('');
-
-          let ticket = response.data;
-
-          QueueNotify.audio.success.play();
-
-          show_modal({
-            title: `NO ANTRIAN ${ticket.queue_category_name.toUpperCase()} ${ticket.token}`,
-            body: `<strong>SELAMAT DATANG DI INDOPRINTING</strong><br><br>` +
-              `Terima kasih telah melakukan registrasi pelayanan di INDOPRINTING.<br>` +
-              `Nomor pelayanan anda adalah <strong>${ticket.queue_category_name.toUpperCase()} ${ticket.token}</strong><br>` +
-              `(Tercatat di <strong>DAFTAR TUNGGU</strong> monitor antrian).<br><br>` +
-              `Terima kasih telah menjadi pelanggan INDOPRINTING.`
-          });
-        }
-      } catch (e) {
         $('#loader').fadeOut();
 
         $('#phone').val('').trigger('change');
         $('#name').val('');
 
-        QueueNotify.error(JSON.parse(e).message);
+        let ticket = response.data;
+
+        QueueNotify.audio.success.play();
+
+        show_modal({
+          title: `NO ANTRIAN ${ticket.queue_category_name.toUpperCase()} ${ticket.token}`,
+          body: `<strong>SELAMAT DATANG DI INDOPRINTING</strong><br><br>` +
+            `Terima kasih telah melakukan registrasi pelayanan di INDOPRINTING.<br>` +
+            `Nomor pelayanan anda adalah <strong>${ticket.queue_category_name.toUpperCase()} ${ticket.token}</strong><br>` +
+            `(Tercatat di <strong>DAFTAR TUNGGU</strong> monitor antrian).<br><br>` +
+            `Terima kasih telah menjadi pelanggan INDOPRINTING.`
+        });
+      } catch (e) {
+        console.warn(e);
+        QueueNotify.error(e.message);
+        $('#loader').fadeOut();
       }
     }
 
@@ -267,7 +265,7 @@ $hash = (!empty($hash) ? $hash : bin2hex(random_bytes(4)));
       $('#phone').select2({
         ajax: {
           delay: 1000,
-          url: '<?= base_url('qms/getCustomers') ?>',
+          url: base_url + '/qms/getCustomers',
           dataType: 'json'
         },
         allowClear: true,

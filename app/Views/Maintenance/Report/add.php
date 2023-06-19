@@ -1,5 +1,5 @@
 <div class="modal-header bg-gradient-dark">
-  <h5 class="modal-title"><i class="fad fa-fw fa-user-plus"></i> <?= $title ?> (<?=  $product->code ?>)</h5>
+  <h5 class="modal-title"><i class="fad fa-fw fa-user-plus"></i> <?= $title ?> (<?= $product->code ?>)</h5>
   <button type="button" class="close" data-dismiss="modal" aria-label="Close">
     <span aria-hidden="true">&times;</span>
   </button>
@@ -12,16 +12,18 @@
         <div class="card">
           <div class="card-body">
             <div class="row">
-              <div class="col-md-6">
-                <div class="form-group">
-                  <label for="date"><?= lang('App.date') ?></label>
-                  <input type="datetime-local" id="date" name="date" class="form-control form-control-border form-control-sm">
+              <?php if (hasAccess('MaintenanceReport.Edit')) : ?>
+                <div class="col-md-6">
+                  <div class="form-group">
+                    <label for="date"><?= lang('App.date') ?></label>
+                    <input type="datetime-local" id="date" name="date" class="form-control form-control-border form-control-sm">
+                  </div>
                 </div>
-              </div>
+              <?php endif; ?>
               <div class="col-md-6">
                 <div class="form-group">
                   <label for="created_by"><?= lang('App.createdby') ?></label>
-                  <select id="created_by" name="created_by" class="select-user" data-placeholder="<?= lang('App.createdby') ?>" style="width:100%">
+                  <select id="created_by" name="created_by" class="select-creator" data-placeholder="<?= lang('App.createdby') ?>" style="width:100%">
                   </select>
                 </div>
               </div>
@@ -77,7 +79,7 @@
             <div class="row">
               <div class="col-md-12">
                 <div class="form-group">
-                  <label for="editor2"><?= lang('App.teamsupportnote') ?></label>
+                  <label for="editor2"><?= lang('App.techsupportnote') ?></label>
                   <div id="editor2"></div>
                   <input type="hidden" name="note_ts">
                 </div>
@@ -99,7 +101,26 @@
   })();
 
   $(document).ready(function() {
-    erp.select2.bank.biller = [0];
+    if (!hasAccess('MaintenanceReport.Edit')) {
+      erp.select2.creator.id = [erp.user.id];
+    }
+
+    if (erp.warehouse.id) {
+      erp.select2.warehouse.id = [erp.warehouse.id];
+      preSelect2('warehouse', '#warehouse', erp.warehouse.id).catch(err => console.warn(err));
+    }
+
+    $('#attachment').change(function() {
+      let src = '';
+
+      if (this.files.length) {
+        src = URL.createObjectURL(this.files[0]);
+      } else {
+        src = base_url + '/assets/app/images/picture.png';
+      }
+
+      $('.attachment-preview').prop('src', src);
+    });
 
     let editor = new Quill('#editor', {
       theme: 'snow'
@@ -117,9 +138,7 @@
       $('[name="note_ts"]').val(editor2.root.innerHTML);
     });
 
-    if (erp.biller.id) {
-      preSelect2('biller', '#biller', erp.biller.id);
-    }
+    preSelect2('user', '#created_by', erp.user.id);
 
     initModalForm({
       form: '#form',

@@ -14,7 +14,7 @@ class InternalUse
   public static function add(array $data, array $items)
   {
     $data['counter']      = '';
-    $data['grand_total']  = 0;
+    $data['grand_total']  = 0.0;
     $data['items']        = '';
 
     foreach ($items as $item) {
@@ -25,9 +25,25 @@ class InternalUse
         return false;
       }
 
-      $data['counter']      .= $item['counter'] . '<br>';
-      $data['grand_total']  += floatval(getMarkonPrice($product->cost, $product->markon) * $item['quantity']);
-      $data['items']        .= '- ' . getExcerpt($product->name) . '<br>';
+      $whProduct = WarehouseProduct::getRow([
+        'product_id' => $product->id, 'warehouse_id' => $data['from_warehouse_id']
+      ]);
+
+      if ($whProduct) {
+        if ($whProduct->quantity <= 0) {
+          setLastError("Quantity is zero (0) for {$product->code}.");
+          return false;
+        }
+      }
+
+      if ($data['category'] == 'consumable') {
+        $data['grand_total']  += floatval(getMarkonPrice((float)$product->cost, (float)$product->markon) * $item['quantity']);
+      } else if ($data['category'] == 'sparepart') {
+        $data['grand_total']  += floatval($product->cost * $item['quantity']);
+      }
+
+      $data['counter']  .= $item['counter'] . '<br>';
+      $data['items']    .= '- ' . getExcerpt($product->name) . '<br>';
     }
 
     // Auto complete for consumable category.
@@ -183,8 +199,11 @@ class InternalUse
   {
     if ($items) {
       $data['counter']      = '';
-      $data['grand_total']  = 0;
       $data['items']        = '';
+
+      if (isset($data['category'])) {
+        $data['grand_total'] = 0;
+      }
 
       foreach ($items as $item) {
         $product = Product::getRow(['id' => $item['id']]);
@@ -194,9 +213,16 @@ class InternalUse
           return false;
         }
 
-        $data['counter']      .= $item['counter'] . '<br>';
-        $data['grand_total']  += floatval(getMarkonPrice($product->cost, $product->markon) * $item['quantity']);
-        $data['items']        .= '- ' . getExcerpt($product->name) . '<br>';
+        if (isset($data['category'])) {
+          if ($data['category'] == 'consumable') {
+            $data['grand_total']  += floatval(getMarkonPrice((float)$product->cost, (float)$product->markon) * $item['quantity']);
+          } else if ($data['category'] == 'sparepart') {
+            $data['grand_total']  += floatval($product->cost * $item['quantity']);
+          }
+        }
+
+        $data['counter']  .= $item['counter'] . '<br>';
+        $data['items']    .= '- ' . getExcerpt($product->name) . '<br>';
       }
     }
 

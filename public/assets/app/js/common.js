@@ -472,6 +472,28 @@ function initControls() {
         url: base_url + '/select2/biller'
       }
     });
+    $('.select-creator').select2({
+      allowClear: true,
+      ajax: {
+        data: (params) => {
+          if (erp?.select2?.creator?.id) {
+            params.id = erp.select2.creator.id;
+          }
+
+          if (erp?.select2?.creator?.biller) {
+            params.biller = erp.select2.creator.biller;
+          }
+
+          if (erp?.select2?.creator?.warehouse) {
+            params.warehouse = erp.select2.creator.warehouse;
+          }
+
+          return params;
+        },
+        delay: 1000,
+        url: base_url + '/select2/user'
+      }
+    });
     $('.select-customer').select2({
       allowClear: true,
       ajax: {
@@ -578,22 +600,22 @@ function initControls() {
         url: base_url + '/select2/supplier'
       }
     });
-    $('.select-team-support').select2({
+    $('.select-tech-support').select2({
       allowClear: true,
       ajax: {
         data: (params) => {
-          if (erp?.select2?.teamsupport?.biller) {
-            params.biller = erp.select2.user.biller;
+          if (erp?.select2?.techsupport?.biller) {
+            params.biller = erp.select2.techsupport.biller;
           }
 
-          if (erp?.select2?.teamsupport?.warehouse) {
-            params.warehouse = erp.select2.user.warehouse;
+          if (erp?.select2?.techsupport?.warehouse) {
+            params.warehouse = erp.select2.techsupport.warehouse;
           }
 
           return params;
         },
         delay: 1000,
-        url: base_url + '/select2/teamsupport'
+        url: base_url + '/select2/techsupport'
       }
     });
     $('.select-user').select2({
@@ -747,6 +769,15 @@ function initModalForm(opt = {}) {
             }
           }
 
+          // Pre-select supplier after add from supplier button.
+          if ($('#supplier').length && $('#supplier').length) {
+            try {
+              preSelect2('customer', '#customer', $('#phone').val());
+            } catch (e) {
+              console.warn(e);
+            }
+          }
+
           reDrawDataTable();
 
           if (erp.modal && isArray(erp.modal)) {
@@ -821,10 +852,10 @@ async function preSelect2(mode, elm, id) {
 
     if (isArray(id)) {
       for (let i of id) {
-        params += 'term[]=' + i + '&';
+        params += 'id[]=' + i + '&';
       }
     } else if (isString(id) || isNumber(id)) {
-      params = 'term=' + id;
+      params = 'id[]=' + id;
       params += '&limit=1';
     } else {
       reject(`id type is ${typeof id} is unacceptable.`);
@@ -892,7 +923,28 @@ function separateChar(char) {
       buff = buff + char[a] + ', ';
     }
   }
+
   return buff;
+}
+
+function serialize(obj) {
+  let result = '';
+
+  if (isObject(obj)) {
+    for (let prop in obj) {
+      console.log(prop);
+
+      if (isArray(obj[prop])) {
+        for (let v of obj[prop]) {
+          result += `${prop}[]=${v}&`;
+        }
+      } else {
+        result += `${prop}=${obj[prop]}&`;
+      }
+    }
+  }
+
+  return trimFilter(result);
 }
 
 function showPass(elm, show = false) {
@@ -913,6 +965,27 @@ function showPass(elm, show = false) {
  */
 function strtotime(time) {
   return Date.parse(time);
+}
+
+/**
+ * Trim string as filter string.
+ * @param {string} str String to filter.
+ * @example
+ * // Return '1,2,3,4'
+ * trimFilter('1,2,3,4, ');
+ */
+function trimFilter(str) {
+  str = str.trim(); // First trim.
+  if (str.charAt(0) == '&') {
+    str = str.substring(1).trim();
+  }
+  if (str.charAt(str.length - 1) == '&') {
+    str = str = str.substring(0, str.length - 1).trim();
+  }
+  if (str.charAt(str.length - 1) == ',') {
+    str = str.substring(0, str.length - 1).trim();
+  }
+  return str;
 }
 
 /**

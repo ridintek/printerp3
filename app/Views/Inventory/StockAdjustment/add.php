@@ -12,12 +12,14 @@
         <div class="card">
           <div class="card-body">
             <div class="row">
-              <div class="col-md-6">
-                <div class="form-group">
-                  <label for="date"><?= lang('App.date') ?></label>
-                  <input type="datetime-local" id="date" name="date" class="form-control form-control-border form-control-sm">
+              <?php if (hasAccess('StockAdjustment.Edit')) : ?>
+                <div class="col-md-6">
+                  <div class="form-group">
+                    <label for="date"><?= lang('App.date') ?></label>
+                    <input type="datetime-local" id="date" name="date" class="form-control form-control-border form-control-sm">
+                  </div>
                 </div>
-              </div>
+              <?php endif; ?>
               <div class="col-md-6">
                 <div class="form-group">
                   <label for="warehouse"><?= lang('App.warehouse') ?> *</label>

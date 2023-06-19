@@ -12,12 +12,14 @@
         <div class="card">
           <div class="card-body">
             <div class="row">
-              <div class="col-md-6">
-                <div class="form-group">
-                  <label for="date"><?= lang('App.date') ?></label>
-                  <input id="date" name="date" type="datetime-local" class="form-control form-control-border form-control-sm">
+              <?php if (hasAccess('InternalUse.Edit')) : ?>
+                <div class="col-md-6">
+                  <div class="form-group">
+                    <label for="date"><?= lang('App.date') ?></label>
+                    <input id="date" name="date" type="datetime-local" class="form-control form-control-border form-control-sm">
+                  </div>
                 </div>
-              </div>
+              <?php endif; ?>
               <div class="col-md-6">
                 <div class="form-group">
                   <label for="category"><?= lang('App.category') ?> *</label>
@@ -40,8 +42,8 @@
                     <div class="row">
                       <div class="col-md-6">
                         <div class="form-group">
-                          <label for="teamsupport"><?= lang('App.teamsupport') ?></label>
-                          <select id="teamsupport" name="teamsupport" class="select-team-support" data-placeholder="<?= lang('App.teamsupport') ?>" style="width:100%">
+                          <label for="techsupport"><?= lang('App.techsupport') ?></label>
+                          <select id="techsupport" name="techsupport" class="select-tech-support" data-placeholder="<?= lang('App.techsupport') ?>" style="width:100%">
                           </select>
                         </div>
                       </div>

@@ -18,18 +18,6 @@
                   <input type="datetime-local" id="date" name="date" class="form-control form-control-border form-control-sm">
                 </div>
               </div>
-              <div class="col-md-6">
-                <div class="form-group">
-                  <label for="method"><?= lang('App.method') ?> *</label>
-                  <select id="method" name="method" class="select" data-placeholder="<?= lang('App.method') ?>" style=" width:100%">
-                    <option value=""></option>
-                    <?php $bankTypes = \App\Models\Bank::select('type')->distinct()->get(['active' => 1]); ?>
-                    <?php foreach ($bankTypes as $bankType) : ?>
-                      <option value="<?= $bankType->type ?>"><?= lang('App.' . strtolower($bankType->type)) ?></option>
-                    <?php endforeach; ?>
-                  </select>
-                </div>
-              </div>
             </div>
             <div class="row bank-account" style="display: none">
               <div class="col-md-6">
@@ -43,17 +31,6 @@
                 <div class="form-group">
                   <label for="bankbalance"><?= lang('App.currentbalance') ?></label>
                   <input id="bankbalance" class="form-control form-control-border form-control-sm float-right" readonly>
-                </div>
-              </div>
-            </div>
-            <div class="row payment-validation" style="display: none">
-              <div class="col-md-6">
-                <div class="form-group">
-                  <label for="skip_validation"><?= lang('App.paymentvalidation') ?></label>
-                  <div class="input-group">
-                    <input type="checkbox" id="skip_validation" name="skip_validation">
-                    <label for="skip_validation"><?= lang('App.skippaymentvalidation') ?></label>
-                  </div>
                 </div>
               </div>
             </div>
@@ -108,11 +85,6 @@
   })();
 
   $(document).ready(function() {
-    erp.bank = {}; // Init.
-    erp.bank.biller = '<?= $inv->biller ?>';
-
-    let hasSkipValidation = <?= hasAccess('PaymentValidation.Skip') ? 'true' : 'false' ?>;
-
     let editor = new Quill('#editor', {
       theme: 'snow'
     });
@@ -132,7 +104,8 @@
     });
 
     $('#biller').change(function() {
-      erp.bank.biller_to = this.value;
+      $('#bank').val('').trigger('change');
+      erp.select2.bank.biller = [this.value];
     });
 
     $('#bank').change(function() {
@@ -150,7 +123,7 @@
 
     // Saat ubah method. Ubah juga bank.
     $('#method').change(function() {
-      erp.bank.type = this.value;
+      erp.select2.bank.type = [this.value];
 
       $('#bank').val('').trigger('change');
 

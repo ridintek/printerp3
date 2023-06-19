@@ -469,6 +469,7 @@ $(document).ready(function () {
     let status = $('#filter-status').val();
     let supplier = $('#filter-supplier').val();
     let warehouse = $('#filter-warehouse').val();
+    let whDetail = $('#filter-whdetail');
     let startDate = $('#filter-startdate').val();
     let endDate = $('#filter-enddate').val();
 
@@ -506,6 +507,10 @@ $(document).ready(function () {
 
     if (warehouse) {
       data.warehouse = warehouse;
+    }
+
+    if (whDetail.is(':checked')) {
+      data.warehouse_detail = true;
     }
 
     if (startDate) {

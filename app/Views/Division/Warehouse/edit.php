@@ -154,7 +154,7 @@
                         <td>
                           <select id="pic_<?= strtolower($pcat->code) ?>" class="select-allow-clear" name="maintenance[<?= $a ?>][pic]" style="width:100%" data-placeholder="<?= lang('App.name') ?>">
                             <option value=""></option>
-                            <?php foreach (\App\Models\User::select('*')->whereIn('groups', ['TEAMSUPPORT'])->where('active', 1)->orderBy('fullname', 'asc')->get() as $ts) : ?>
+                            <?php foreach (\App\Models\User::select('*')->whereIn('groups', ['TECHSUPPORT'])->where('active', 1)->orderBy('fullname', 'asc')->get() as $ts) : ?>
                               <option value="<?= $ts->id ?>"><?= $ts->fullname ?></option>
                             <?php endforeach; ?>
                           </select>

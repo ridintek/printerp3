@@ -54,8 +54,8 @@
                     <div class="row">
                       <div class="col-md-6">
                         <div class="form-group">
-                          <label for="teamsupport"><?= lang('App.teamsupport') ?></label>
-                          <select id="teamsupport" name="teamsupport" class="select-team-support" data-placeholder="<?= lang('App.teamsupport') ?>" style="width:100%">
+                          <label for="techsupport"><?= lang('App.techsupport') ?></label>
+                          <select id="techsupport" name="techsupport" class="select-tech-support" data-placeholder="<?= lang('App.techsupport') ?>" style="width:100%">
                           </select>
                         </div>
                       </div>
@@ -267,7 +267,7 @@
     $('#category').val('<?= $internalUse->category ?>').trigger('change');
     $('#status').val('<?= $internalUse->status ?>').trigger('change');
 
-    preSelect2('user', '#teamsupport', '<?= $internalUse->ts_id ?>').catch(err => console.warn(err));
+    preSelect2('user', '#techsupport', '<?= $internalUse->ts_id ?>').catch(err => console.warn(err));
     preSelect2('supplier', '#supplier', '<?= $internalUse->supplier_id ?>').catch(err => console.warn(err));
     preSelect2('warehouse', '#warehousefrom', <?= $internalUse->from_warehouse_id ?>).catch(err => console.warn(err));
     preSelect2('warehouse', '#warehouseto', <?= $internalUse->to_warehouse_id ?>).catch(err => console.warn(err));

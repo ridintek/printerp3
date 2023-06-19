@@ -33,40 +33,8 @@ class TrackingPOD
       return false;
     }
 
-    $klikpod = WarehouseProduct::getRow(['product_id' => $data['pod_id'], 'warehouse_id' => $data['warehouse_id']]);
-
-    if (!$klikpod) {
-      setLastError('Klikpod is not found.');
-
-      return false;
-    }
-
-    $data['erp_click'] = ceil(floatval($klikpod->quantity));
-
-    $lastPOD = self::getRow(['pod_id' => $data['pod_id'], 'warehouse_id' => $data['warehouse_id']]);
-
-    if ($lastPOD) {
-      $data['start_click']  = ceil(floatval($lastPOD->end_click));
-    } else {
-      $data['start_click']  = $data['erp_click'];
-    }
-
-    // Convert to minus.
-    $data['mc_reject']  = floatval($data['mc_reject'] > 0 ? $data['mc_reject'] * -1 : $data['mc_reject']);
-    $data['op_reject']  = floatval($data['erp_click'] - $data['end_click'] - $data['mc_reject']);
-    $data['op_reject']  = floatval($data['op_reject'] < 0 ? $data['op_reject'] : 0);
-
-    $data['cost_click'] = ($product->code == 'KLIKPOD' ? 1000 : 300); // Else 300 for KLIKPODBW.
-    $data['tolerance']  = ($product->code == 'KLIKPOD' ? 10 : 10); // Else 10% for KLIKPODBW.
-
-    $data['tolerance_click']  = round(($data['mc_reject'] + $data['op_reject']) * 0.01 * $data['tolerance']); // 0.01 == 100%
-    $data['usage_click']      = $data['end_click'] - $data['start_click'];
-    $data['balance']          = ($data['mc_reject'] + $data['op_reject']) - $data['tolerance_click'];
-    $data['total_penalty']    = ($data['balance'] < 0 ? $data['balance'] * $data['cost_click'] : 0);
-
-    if ($data['end_click'] != $data['erp_click']) {
+    if ($data['mc_reject'] > 0) {
       // Adjust klikpod reject to add.
-
       $adjustmentData = [
         'date'          => ($data['created_at'] ?? date('Y-m-d H:i:s')),
         'warehouse_id'  => $data['warehouse_id'],
@@ -76,7 +44,7 @@ class TrackingPOD
 
       $items[] = [
         'id'        => $data['pod_id'],
-        'quantity'  => $data['mc_reject'] * -1
+        'quantity'  => $data['mc_reject']
       ];
 
       if (!StockAdjustment::add($adjustmentData, $items)) {
@@ -89,7 +57,11 @@ class TrackingPOD
     DB::table('trackingpod')->insert($data);
 
     if (DB::error()['code'] == 0) {
-      return DB::insertID();
+      $insertId = DB::insertID();
+
+      self::sync((int)$insertId);
+
+      return $insertId;
     }
 
     setLastError(DB::error()['message']);
@@ -111,6 +83,29 @@ class TrackingPOD
     setLastError(DB::error()['message']);
 
     return false;
+  }
+
+  /**
+   * Get total click of KlikPOD.
+   * @param array $where [ warehouse_id, start_date, end_date ]
+   */
+  public static function getTotalKlikPOD($where = [])
+  {
+    $q = Stock::select('SUM(quantity) AS total')->where('product_id', 633);
+
+    if (!empty($where['warehouse_id'])) {
+      $q->where('warehouse_id', $where['warehouse_id']);
+    }
+
+    if (!empty($where['start_date'])) {
+      $q->where("date >= '{$where['start_date']} 00:00:00'");
+    }
+
+    if (!empty($where['end_date'])) {
+      $q->where("date <= '{$where['end_date']} 23:59:59'");
+    }
+
+    return floatval($q->getRow()?->total);
   }
 
   /**
@@ -138,6 +133,72 @@ class TrackingPOD
   public static function select(string $columns, $escape = true)
   {
     return DB::table('trackingpod')->select($columns, $escape);
+  }
+
+  public static function sync(int $id)
+  {
+    $tpod = self::getRow(['id' => $id]);
+
+    if (!$tpod) {
+      return false;
+    }
+
+    $date = date('Y-m-d', strtotime($tpod->date));
+
+    $todayClick = self::getTotalKlikPOD([
+      'warehouse_id'  => $tpod->warehouse_id,
+      'start_date'    => $date,
+      'end_date'      => $date
+    ]);
+
+    $product = Product::getRow(['id' => $tpod->pod_id]);
+
+    if (!$product) {
+      setLastError('Sync: Tracking POD is not found.');
+      return false;
+    }
+
+    $lastPOD = self::select('end_click')->orderBy('date', 'DESC')
+      ->where('pod_id', $tpod->pod_id)
+      ->where('warehouse_id', $tpod->warehouse_id)
+      ->where("date < '{$tpod->date}'")
+      ->getRow();
+
+    if ($lastPOD) {
+      $startClick  = ceil((float)$lastPOD->end_click);
+    } else {
+      $startClick  = ceil((float)$tpod->start_click);
+    }
+
+    $endClick       = floatval($tpod->end_click);
+    $mcReject       = floatval($tpod->mc_reject) * -1; // Make minus.
+    $costClick      = ($product->code == 'KLIKPOD' ? 1000 : 300); // Else 300 for KLIKPODBW.
+    $tolerance      = ($product->code == 'KLIKPOD' ? 10 : 10); // Else 10% for KLIKPODBW.
+    $usageClick     = $endClick - $startClick;
+    $opReject       = ($todayClick - $mcReject - $usageClick); // Minus if not balance.
+    $totalReject    = $mcReject + $opReject;
+    $toleranceClick = $totalReject * $tolerance * 0.01;
+    $balance        = $totalReject - $toleranceClick;
+    $totalPenalty   = ($balance < 0 ? $balance * $costClick : 0);
+
+    $data['start_click']  = $startClick;
+    $data['end_click']    = $endClick;
+    $data['usage_click']  = $usageClick;
+    $data['today_click']  = $todayClick;
+    $data['op_reject']    = $opReject;
+
+    $data['cost_click']       = $costClick;
+    $data['tolerance']        = $tolerance;
+    $data['tolerance_click']  = $toleranceClick;
+
+    $data['balance']        = $balance;
+    $data['total_penalty']  = $totalPenalty;
+
+    if (self::update($id, $data)) {
+      return true;
+    }
+
+    return false;
   }
 
   /**

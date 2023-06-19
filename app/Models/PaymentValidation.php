@@ -129,35 +129,6 @@ class PaymentValidation
   }
 
   /**
-   * Get random unique code.
-   * @deprecated Not valid unique code.
-   */
-  public static function getUniqueCode_()
-  {
-    $pvs = self::get(['status' => 'pending']);
-
-    if ($pvs) {
-      $uqs = [];
-
-      foreach ($pvs as $pv) {
-        $uqs[] = $pv->unique_code;
-      }
-
-      while (1) {
-        $uq = mt_rand(1, 200);
-
-        if (array_search($uq, $uqs) === false) {
-          break;
-        }
-      }
-    } else {
-      $uq = mt_rand(1, 200);
-    }
-
-    return $uq;
-  }
-
-  /**
    * Select PaymentValidation.
    */
   public static function select(string $columns, $escape = true)
@@ -182,6 +153,7 @@ class PaymentValidation
           }
           if ($pv->mutation_id) {
             BankMutation::update((int)$pv->mutation_id, ['status' => 'expired']);
+            BankMutation::sync(['id' => $pv->mutation_id]);
           }
 
           $synced = true;
@@ -385,6 +357,10 @@ class PaymentValidation
 
           if (isset($option['attachment'])) {
             $pvData['attachment'] = $option['attachment'];
+          }
+
+          if (isset($option['created_by'])) {
+            $pvData['created_by'] = $option['created_by'];
           }
 
           if (!self::update((int)$pv->id, $pvData)) {

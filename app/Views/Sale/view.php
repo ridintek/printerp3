@@ -2,7 +2,7 @@
 <?php $biller = \App\Models\Biller::getRow(['id' => $sale->biller_id]) ?>
 <?php $warehouse = \App\Models\Warehouse::getRow(['id' => $sale->warehouse_id]); ?>
 <?php $customer = \App\Models\Customer::getRow(['id' => $sale->customer_id]) ?>
-<?php $paymentValidation = \App\Models\PaymentValidation::getRow(['sale_id' => $sale->id]) ?>
+<?php $paymentValidation = \App\Models\PaymentValidation::select('*')->orderBy('date', 'DESC')->getRow(['sale_id' => $sale->id]) ?>
 <div class="modal-header bg-gradient-dark">
   <h5 class="modal-title"><i class="fad fa-fw fa-magnifying-glass"></i> <?= $title ?></h5>
   <button type="button" class="close" data-dismiss="modal" aria-label="Close">
@@ -180,9 +180,9 @@
                   <td><?= ($operator ? $operator->fullname : '') ?></td>
                   <td><span class="float-left"><?= "({$saleItem->product_code}) $saleItem->product_name" ?></span></td>
                   <td><?= $saleItemJS->spec ?></td>
-                  <td><?= filterDecimal($saleItemJS->w) ?></td>
-                  <td><?= filterDecimal($saleItemJS->l) ?></td>
-                  <td><?= filterDecimal($saleItemJS->sqty) ?></td>
+                  <td><?= formatNumber($saleItemJS->w) ?></td>
+                  <td><?= formatNumber($saleItemJS->l) ?></td>
+                  <td><?= formatNumber($saleItemJS->sqty) ?></td>
                   <?php if (!$deliveryNote) : ?>
                     <td><span class="float-right"><?= formatNumber($saleItem->price) ?></span></td>
                     <td><span class="float-right"><?= formatNumber($saleItem->subtotal) ?></span></td>
@@ -226,6 +226,26 @@
   <div class="row pb-5">
     <?php if (!$deliveryNote) : ?>
       <div class="col-md-8">
+        <div class="row">
+          <div class="col-md-2 bg-gradient-white">
+            <img src="<?= base_url('assets/app/images/logo-bca.png') ?>" style="max-width:100px; width:100%">
+          </div>
+          <div class="col-md-4 text-bold">8030 200234</div>
+          <div class="col-md-2 bg-gradient-white">
+            <img src="<?= base_url('assets/app/images/logo-mandiri.png') ?>" style="max-width:100px; width:100%">
+          </div>
+          <div class="col-md-4 text-bold">1360 0005 5532 3</div>
+        </div>
+        <div class="row">
+          <div class="col-md-2 bg-gradient-white">
+            <img src="<?= base_url('assets/app/images/logo-bni.png') ?>" style="max-width:100px; width:100%">
+          </div>
+          <div class="col-md-4 text-bold">5592 09008</div>
+          <div class="col-md-2 bg-gradient-white">
+            <img src="<?= base_url('assets/app/images/logo-bri.png') ?>" style="max-width:100px; width:100%">
+          </div>
+          <div class="col-md-4 text-bold">0083 01 001092 56 5</div>
+        </div>
       </div>
       <div class="col-md-4">
         <div class="table-responsive">

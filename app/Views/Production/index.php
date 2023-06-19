@@ -13,7 +13,7 @@
           </div>
         </div>
         <div class="card-body">
-          <table id="Table" class="table table-bordered table-hover" style="width:100%;">
+          <table id="Table" class="table table-head-fixed-main table-hover table-striped" style="width:100%;">
             <thead>
               <tr>
                 <th><input class="checkbox-parent" type="checkbox"></th>
@@ -63,11 +63,7 @@
             <div class="col-md-12">
               <div class="form-group">
                 <label for="filter-biller"><?= lang('App.biller') ?></label>
-                <select id="filter-biller" class="select-allow-clear" data-placeholder="<?= lang('App.biller') ?>" style="width:100%" multiple>
-                  <option value=""></option>
-                  <?php foreach (\App\Models\Biller::get(['active' => 1]) as $bl) : ?>
-                    <option value="<?= $bl->code ?>"><?= $bl->name ?></option>
-                  <?php endforeach; ?>
+                <select id="filter-biller" class="select-biller" data-placeholder="<?= lang('App.biller') ?>" style="width:100%" multiple>
                 </select>
               </div>
             </div>
@@ -76,11 +72,7 @@
             <div class="col-md-12">
               <div class="form-group">
                 <label for="filter-warehouse"><?= lang('App.warehouse') ?></label>
-                <select id="filter-warehouse" class="select-allow-clear" data-placeholder="<?= lang('App.warehouse') ?>" style="width:100%" multiple>
-                  <option value=""></option>
-                  <?php foreach (\App\Models\Warehouse::get(['active' => 1]) as $wh) : ?>
-                    <option value="<?= $wh->code ?>"><?= $wh->name ?></option>
-                  <?php endforeach; ?>
+                <select id="filter-warehouse" class="select-warehouse" data-placeholder="<?= lang('App.warehouse') ?>" style="width:100%" multiple>
                 </select>
               </div>
             </div>
@@ -261,6 +253,7 @@
       order: [
         [1, 'desc']
       ],
+      pageLength: 50,
       processing: true,
       responsive: true,
       scrollX: false,

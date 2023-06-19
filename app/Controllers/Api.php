@@ -19,7 +19,8 @@ use App\Models\{
   SaleItem,
   Stock,
   Unit,
-  Voucher,
+    User,
+    Voucher,
   Warehouse,
   WarehouseProduct
 };
@@ -53,7 +54,7 @@ class Api extends BaseController
     }
   }
 
-  public function mutasibank_accounts()
+  protected function mutasibank_accounts()
   {
     $data = [];
 
@@ -134,13 +135,16 @@ class Api extends BaseController
       $this->response(400, ['message' => $e->getMessage()]);
     }
 
+    $user = User::select('id')->like('username', 'W2P', 'none')->getRow();
+
     // Payment Validation data.
     $data = [
-      'date'    => $transDate->format('Y-m-d H:i:s'),
-      'account' => $account,
-      'amount'  => $amount,
-      'manual'  => true,
-      'note'    => $note
+      'date'        => $transDate->format('Y-m-d H:i:s'),
+      'account'     => $account,
+      'amount'      => $amount,
+      'manual'      => true,
+      'note'        => $note,
+      'created_by'  => $user->id
     ];
 
     if (isset($sale)) {
@@ -337,7 +341,9 @@ class Api extends BaseController
       }
 
       if ($customer = Customer::getRow(['id' => $cust])) {
-        $priceGroup = PriceGroup::getRow(['id' => $customer->price_group_id]);
+        if ($customer->price_group_id) {
+          $priceGroup = PriceGroup::getRow(['id' => $customer->price_group_id]);
+        }
       }
 
       if ($priceGroup) {

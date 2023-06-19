@@ -28,7 +28,7 @@
                         <input type="hidden" name="group[<?= $x ?>][category]" value="<?= $category->code ?>">
                         <td><?= $category->name ?></td>
                         <td>
-                          <select class="select-team-support" id="pic_<?= strtolower($category->code) ?>" name="group[<?= $x ?>][pic]" data-placeholder="Pilih TS" style="width:100%">
+                          <select class="select-tech-support" id="pic_<?= strtolower($category->code) ?>" name="group[<?= $x ?>][pic]" data-placeholder="Pilih TS" style="width:100%">
                           </select>
                         </td>
                         <td>

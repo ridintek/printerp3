@@ -41,12 +41,13 @@ class Service extends BaseController
           $res = call_user_func_array($job->class, [$job->param]);
 
           if ($res) {
-            if ($job->callback) { // If has callback.
-              call_user_func_array($job->callback, [$job, $res]);
-            }
-
             echo "\033[1;92mSUCCESS\033[0m: \033[1;95m{$job->class}\033[0m({$job->param})\r\n";
             Jobs::update((int)$job->id, ['response' => $res, 'status' => 'success']);
+
+            if ($job->callback) { // If has callback.
+              $newJob = Jobs::getRow(['id' => $job->id]);
+              call_user_func_array($job->callback, [$newJob, $res]);
+            }
           } else {
             echo "\033[1;91mFAILED\033[0m: \033[1;95m{$job->class}\033[0m({$job->param})\r\n";
             Jobs::update((int)$job->id, ['response' => null, 'status' => 'failed']);

@@ -69,7 +69,7 @@
           <form id="form">
             <?= csrf_field() ?>
             <input id="status" name="status" type="hidden" value="">
-            <table class="table table-hover table-sm table-striped">
+            <table class="table table-head-fixed table-hover table-striped">
               <thead>
                 <tr class="text-center">
                   <th>No</th>
@@ -123,26 +123,24 @@
                 <?php endforeach; ?>
               </tbody>
             </table>
-            <?php if ($opname->status == 'checked') : ?>
-              <div class="row">
-                <div class="col-md-6">
-                  <div class="form-group">
-                    <label for="attachment"><?= lang('App.attachment') ?></label>
-                    <div class="custom-file">
-                      <input type="file" id="attachment" name="attachment" class="custom-file-input">
-                      <label for="attachment" class="custom-file-label"><?= lang('App.choosefile') ?></label>
-                    </div>
-                  </div>
+            <div class="row">
+              <div class="col-md-6">
+                <div class="form-group">
+                  <label for="editor"><?= lang('App.note') ?></label>
+                  <div id="editor"></div>
+                  <input type="hidden" name="note">
                 </div>
-                <div class="col-md-6">
-                  <div class="form-group">
-                    <label for="editor"><?= lang('App.note') ?></label>
-                    <div id="editor"></div>
-                    <input type="hidden" name="note">
+              </div>
+              <div class="col-md-6">
+                <div class="form-group">
+                  <label for="attachment"><?= lang('App.attachment') ?></label>
+                  <div class="custom-file">
+                    <input type="file" id="attachment" name="attachment" class="custom-file-input">
+                    <label for="attachment" class="custom-file-label"><?= lang('App.choosefile') ?></label>
                   </div>
                 </div>
               </div>
-            <?php endif; ?>
+            </div>
           </form>
         </div>
       </div>
@@ -153,7 +151,8 @@
 <div class="modal-footer">
   <?php if ($opname->status == 'checked' && hasAccess('StockOpname.Confirm')) : ?>
     <button type="button" class="btn bg-gradient-primary commit-status status-confirmed"><i class="fad fa-fw fa-check-circle"></i> <?= lang('App.confirm') ?></button>
-  <?php elseif ($opname->status == 'confirmed' && hasAccess('StockOpname.Verify')) : ?>
+  <?php endif; ?>
+  <?php if (inStatus($opname->status, ['checked', 'confirmed']) && hasAccess('StockOpname.Verify')) : ?>
     <button type="button" class="btn bg-gradient-success commit-status status-verified"><i class="fad fa-fw fa-box-open-full"></i> <?= lang('App.verify') ?></button>
   <?php endif; ?>
   <button type="button" class="btn bg-gradient-danger" data-dismiss="modal"><i class="fad fa-fw fa-times"></i> <?= lang('App.close') ?></button>
@@ -171,6 +170,8 @@
     editor.on('text-change', (delta, oldDelta, source) => {
       $('[name="note"]').val(editor.root.innerHTML);
     });
+
+    editor.root.innerHTML = `<?= $opname->note ?>`;
 
     $('.commit-status').click(function() {
       let status = '';

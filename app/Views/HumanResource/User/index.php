@@ -12,7 +12,7 @@
           </div>
         </div>
         <div class="card-body">
-          <table id="Table" class="table table-hover table-sm" style="width:100%;">
+          <table id="Table" class="table table-head-fixed-main table-hover table-striped" style="width:100%;">
             <thead>
               <tr>
                 <th></th>
@@ -69,6 +69,7 @@
       order: [
         [2, 'asc']
       ],
+      pageLength: 50,
       processing: true,
       responsive: true,
       scrollX: false,

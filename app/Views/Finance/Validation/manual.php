@@ -29,7 +29,7 @@
               <div class="col-md-6">
                 <div class="form-group">
                   <label for="amount"><?= lang('App.amount') ?></label>
-                  <input id="amount" name="amount" class="form-control form-control-border form-control-sm currency" value="<?= (isset($sale) ? $sale->grand_total : $mutation->amount) ?>">
+                  <input id="amount" name="amount" class="form-control form-control-border form-control-sm currency" value="<?= formatCurrency($pv->amount) ?>">
                 </div>
               </div>
               <div class="col-md-6">

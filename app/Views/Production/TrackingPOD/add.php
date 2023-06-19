@@ -12,12 +12,14 @@
         <div class="card">
           <div class="card-body">
             <div class="row">
-              <div class="col-md-6">
-                <div class="form-group">
-                  <label for="date"><?= lang('App.date') ?> *</label>
-                  <input type="datetime-local" id="date" name="date" class="form-control form-control-border form-control-sm">
+              <?php if (hasAccess('TrackingPOD.Edit')) : ?>
+                <div class="col-md-6">
+                  <div class="form-group">
+                    <label for="date"><?= lang('App.date') ?> *</label>
+                    <input type="datetime-local" id="date" name="date" class="form-control form-control-border form-control-sm">
+                  </div>
                 </div>
-              </div>
+              <?php endif; ?>
               <div class="col-md-6">
                 <div class="form-group">
                   <label for="warehouse"><?= lang('App.warehouse') ?> *</label>
@@ -71,13 +73,13 @@
                       <div class="col-md-6">
                         <div class="form-group">
                           <label><?= lang('App.endclick') ?></label>
-                          <input type="text" name="endclick[]" class="form-control form-control-border form-control-sm">
+                          <input type="text" name="endclick[]" class="form-control form-control-border form-control-sm number">
                         </div>
                       </div>
                       <div class="col-md-6">
                         <div class="form-group">
                           <label><?= lang('App.rejectmachine') ?></label>
-                          <input type="text" name="rejectmachine[]" class="form-control form-control-border form-control-sm">
+                          <input type="text" name="rejectmachine[]" class="form-control form-control-border form-control-sm number">
                         </div>
                       </div>
                     </div>

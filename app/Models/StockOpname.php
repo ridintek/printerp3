@@ -28,8 +28,6 @@ class StockOpname
       return false;
     }
 
-    $data['cycle'] += 1; // Increment cycle.
-
     $data = setCreatedBy($data);
     $data['reference'] = OrderRef::getReference('opname');
     $data['warehouse_code'] = $warehouse->code;

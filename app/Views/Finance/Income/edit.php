@@ -92,6 +92,8 @@
   })();
 
   $(document).ready(function() {
+    erp.select2.bank.biller = [0];
+
     let editor = new Quill('#editor', {
       theme: 'snow'
     });
@@ -101,6 +103,11 @@
     });
 
     $('#bank').change(function() {
+      if (!this.value.length) {
+        console.warn('Bank id is not set. Get balance aborted.');
+        return false;
+      }
+
       $.ajax({
         success: (data) => {
           $('#bankbalance').val(formatCurrency(data.data));
@@ -109,10 +116,15 @@
       })
     });
 
+    $('#biller').change(function() {
+      erp.select2.bank.biller = [this.value];
+    })
+
     editor.root.innerHTML = `<?= $income->note ?>`;
 
-    preSelect2('biller', '#biller', '<?= $income->biller_id ?>').catch(err => console.warn(err));
-    preSelect2('bank', '#bank', '<?= $income->bank_id ?>').catch(err => console.warn(err));
+    preSelect2('biller', '#biller', '<?= $income->biller_id ?>').then(() => {
+      preSelect2('bank', '#bank', '<?= $income->bank_id ?>').catch(err => console.warn(err));
+    }).catch(err => console.warn(err));
     preSelect2('income/category', '#category', '<?= $income->category_id ?>').catch(err => console.warn(err));
 
     initModalForm({

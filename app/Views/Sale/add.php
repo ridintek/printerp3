@@ -12,12 +12,14 @@
         <div class="card">
           <div class="card-body">
             <div class="row">
-              <div class="col-md-4">
-                <div class="form-group">
-                  <label for="date"><?= lang('App.date') ?></label>
-                  <input type="datetime-local" id="date" name="date" class="form-control form-control-border form-control-sm">
+              <?php if (hasAccess('Sale.Edit')) : ?>
+                <div class="col-md-4">
+                  <div class="form-group">
+                    <label for="date"><?= lang('App.date') ?></label>
+                    <input type="datetime-local" id="date" name="date" class="form-control form-control-border form-control-sm">
+                  </div>
                 </div>
-              </div>
+              <?php endif; ?>
               <div class="col-md-4">
                 <div class="form-group">
                   <label for="biller"><?= lang('App.biller') ?> *</label>
@@ -32,15 +34,13 @@
                   </select>
                 </div>
               </div>
-              <?php if (hasAccess('Sale.Edit')) : ?>
-                <div class="col-md-4">
-                  <div class="form-group">
-                    <label for="created_by"><?= lang('App.createdby') ?></label>
-                    <select id="created_by" name="created_by" class="select-user" data-placeholder="<?= lang('App.createdby') ?>" style="width:100%" placeholder="<?= lang('App.createdby') ?>">
-                    </select>
-                  </div>
+              <div class="col-md-4">
+                <div class="form-group">
+                  <label for="created_by"><?= lang('App.createdby') ?></label>
+                  <select id="created_by" name="created_by" class="select-creator" data-placeholder="<?= lang('App.createdby') ?>" style="width:100%" placeholder="<?= lang('App.createdby') ?>">
+                  </select>
                 </div>
-              <?php endif; ?>
+              </div>
               <div class="col-md-4">
                 <div class="form-group">
                   <label for="customer"><?= lang('App.customer') ?> *</label>
@@ -224,6 +224,11 @@
 
     if (erp.biller.id) {
       erp.select2.biller.id = [erp.biller.id];
+    }
+
+    if (!hasAccess('Sale.Edit')) {
+      erp.select2.creator.id = [erp.user.id];
+      preSelect2('user', '#created_by', erp.user.id);
     }
 
     let customer = <?= getGet('customer') ?? 0 ?>;

@@ -10,8 +10,8 @@
     <div class="row">
       <div class="col-md-12">
         <div class="card">
-          <div class="card-body table-responsive">
-            <table class="table table-condensed table-hover table-striped" id="TableModal">
+          <div class="card-body">
+            <table class="table table-head-fixed table-hover table-striped" id="TableModal">
               <thead>
                 <tr>
                   <th><?= lang('App.createdat') ?></th>
@@ -87,6 +87,7 @@
       order: [
         [0, 'desc']
       ],
+      pageLength: 50,
       processing: true,
       responsive: true,
       rowCallback: (row, data) => {

@@ -51,10 +51,7 @@
               <div class="col-md-6">
                 <div class="form-group">
                   <label for="category"><?= lang('App.category') ?> *</label>
-                  <select id="category" name="category" class="select" data-placeholder="<?= lang('App.category') ?>" style=" width:100%">
-                    <?php foreach (\App\Models\ExpenseCategory::select('*')->orderBy('name', 'ASC')->get() as $excat) : ?>
-                      <option value="<?= $excat->id ?>"><?= $excat->name ?></option>
-                    <?php endforeach; ?>
+                  <select id="category" name="category" class="select-expense-category" data-placeholder="<?= lang('App.category') ?>" style=" width:100%">
                   </select>
                 </div>
               </div>
@@ -112,6 +109,7 @@
 
   $(document).ready(function() {
     erp.select2.bank.biller = [0];
+    erp.select2.bank.type = [];
 
     let editor = new Quill('#editor', {
       theme: 'snow'
@@ -134,6 +132,11 @@
     });
 
     $('#bank').change(function() {
+      if (!this.value.length) {
+        console.warn('Bank id is not set. Get balance aborted.');
+        return false;
+      }
+
       $.ajax({
         success: (data) => {
           $('#bankbalance').val(formatCurrency(data.data));
@@ -150,9 +153,10 @@
 
     editor.root.innerHTML = `<?= $expense->note ?>`;
 
-    $('#category').val('<?= $expense->category_id ?>').trigger('change');
-    preSelect2('bank', '#bank', '<?= $expense->bank_id ?>').catch(err => console.warn(err));
-    preSelect2('biller', '#biller', '<?= $expense->biller_id ?>').catch(err => console.warn(err));
+    preSelect2('biller', '#biller', '<?= $expense->biller_id ?>').then(() => {
+      preSelect2('bank', '#bank', '<?= $expense->bank_id ?>').catch(err => console.warn(err));
+    }).catch(err => console.warn(err));
+    preSelect2('expense/category', '#category', '<?= $expense->category_id ?>').catch(err => console.warn(err));
     preSelect2('supplier', '#supplier', '<?= $expense->supplier_id ?>').catch(err => console.warn(err));
 
     initModalForm({

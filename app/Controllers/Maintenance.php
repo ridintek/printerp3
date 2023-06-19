@@ -48,22 +48,43 @@ class Maintenance extends BaseController
 
   public function getMaintenanceReports()
   {
-    checkPermission('Maintenance.View');
+    checkPermission('MaintenanceReport.View');
+
+    $warehouses = getPost('warehouse');
+    $status     = getPost('status');
+    $pic        = getPost('pic');
+    $startDate  = getPost('start_date');
+    $endDate    = getPost('end_date');
+
+    $param = '';
+
+    if ($startDate) {
+      $param .= '&start_date=' . $startDate;
+    }
+
+    if ($endDate) {
+      $param .= '&end_date=' . $endDate;
+    }
+
+    if ($param) {
+      $param = '?' . trim($param, '&');
+    }
 
     $dt = new DataTables('products');
     $dt
       ->select("products.id AS id, products.id AS cid, products.code, products.name,
         categories.name AS category_name, subcategories.name AS subcategory_name,
         products.warehouses AS warehouse_name,
-        products.json->>'$.condition' AS last_condition,
-        products.json->>'$.updated_at' AS last_update,
+        JSON_UNQUOTE(JSON_EXTRACT(products.json, '$.condition')) AS last_condition,
+        JSON_UNQUOTE(JSON_EXTRACT(products.json, '$.updated_at')) AS last_update,
         pic.fullname AS pic_name,
-        products.json->>'$.updated_at' AS last_check")
+        JSON_UNQUOTE(JSON_EXTRACT(products.json, '$.updated_at')) AS last_check")
       ->join('categories', 'categories.id = products.category_id', 'left')
       ->join('categories subcategories', 'subcategories.id = products.subcategory_id', 'left')
       ->join('users pic', "pic.id = JSON_UNQUOTE(JSON_EXTRACT(products.json, '$.pic_id'))", 'left')
+      ->join('warehouse', 'warehouse.name LIKE products.warehouses', 'left')
       ->whereIn('categories.code', ['AST', 'EQUIP'])
-      ->editColumn('id', function ($data) {
+      ->editColumn('id', function ($data) use ($param) {
         $menu = '
           <div class="btn-group btn-action">
             <a class="btn bg-gradient-primary btn-sm dropdown-toggle" href="#" data-toggle="dropdown">
@@ -71,7 +92,7 @@ class Maintenance extends BaseController
             </a>
             <div class="dropdown-menu">';
 
-        if (hasAccess('Maintenance.Add')) {
+        if (hasAccess('MaintenanceReport.Add')) {
           $menu .= '
             <a class="dropdown-item" href="' . base_url('maintenance/report/add/' . $data['id']) . '"
               data-toggle="modal" data-target="#ModalStatic"
@@ -81,7 +102,7 @@ class Maintenance extends BaseController
         }
 
         $menu .= '
-          <a class="dropdown-item" href="' . base_url('maintenance/report/view/' . $data['id']) . '"
+          <a class="dropdown-item" href="' . base_url('maintenance/report/view/' . $data['id']) . $param . '"
             data-toggle="modal" data-target="#ModalStatic"
             data-modal-class="modal-lg modal-dialog-centered modal-dialog-scrollable">
             <i class="fad fa-fw fa-magnifying-glass"></i> ' . lang('App.view') . '
@@ -100,18 +121,50 @@ class Maintenance extends BaseController
         return renderStatus($data['last_condition']);
       })
       ->editColumn('last_check', function ($data) {
-        $todayCheck = date('Y-m-d', strtotime($data['last_check']));
+        $lastCheck  = (!empty($data['last_check']) ? strtotime($data['last_check']) : null);
+        $todayCheck = ($lastCheck ? date('Y-m-d', $lastCheck) : null);
         $todayDate  = date('Y-m-d');
-        $hasUpdated = ($todayCheck == $todayDate ? TRUE : FALSE);
+        $hasUpdated = ($todayCheck == $todayDate ? true : false);
 
         return ($hasUpdated ? '<div class="text-center"><i class="fad fa-2x fa-check"></i></div>' : '');
-      })
-      ->generate();
+      });
+
+    $userJS = getJSON(session('login')?->json);
+
+    if (isset($userJS->warehouses) && !empty($userJS->warehouses)) {
+      if ($warehouses) {
+        $warehouses = array_merge($warehouses, $userJS->warehouses);
+      } else {
+        $warehouses = $userJS->warehouses;
+      }
+    }
+
+    if (session('login')->warehouse_id) {
+      if ($warehouses) {
+        $warehouses[] = session('login')->warehouse_id;
+      } else {
+        $warehouses = [session('login')->warehouse_id];
+      }
+    }
+
+    if ($status) {
+      $dt->whereIn("JSON_UNQUOTE(JSON_EXTRACT(products.json, '$.condition'))", $status);
+    }
+
+    if ($warehouses) {
+      $dt->whereIn('warehouse.id', $warehouses);
+    }
+
+    if ($pic) {
+      $dt->whereIn("JSON_UNQUOTE(JSON_EXTRACT(products.json, '$.pic_id'))", $pic);
+    }
+
+    $dt->generate();
   }
 
   public function getMaintenanceSchedules()
   {
-    checkPermission('Maintenance.View');
+    checkPermission('MaintenanceSchedule.View');
 
     $dt = new DataTables('warehouse');
 
@@ -188,6 +241,75 @@ class Maintenance extends BaseController
       ->generate();
   }
 
+  public function getProductReport()
+  {
+    $productIds = getPostGet('product');
+    $createdBy  = getPostGet('created_by');
+    $startDate  = getPostGet('start_date') ?? date('Y-m-d', strtotime('-30 day'));
+    $endDate    = getPostGet('end_date') ?? date('Y-m-d');
+
+    checkPermission('MaintenanceReport.View');
+
+    $dt = new DataTables('product_report');
+    $dt
+      ->select("product_report.id, product_report.created_at, product_report.condition,
+        product_report.note, product_report.pic_note, creator.fullname AS creator_name")
+      ->join('users creator', 'creator.id = product_report.created_by', 'left')
+      ->editColumn('id', function ($data) {
+        $menu = '
+          <div class="btn-group btn-action">
+            <a class="btn bg-gradient-primary btn-sm dropdown-toggle" href="#" data-toggle="dropdown">
+              <i class="fad fa-gear"></i>
+            </a>
+            <div class="dropdown-menu">';
+
+        if (hasAccess('MaintenanceReport.Edit')) {
+          $menu .= '
+            <a class="dropdown-item" href="' . base_url('maintenance/report/edit/' . $data['id']) . '"
+              data-toggle="modal" data-target="#ModalStatic2"
+              data-modal-class="modal-dialog-centered modal-dialog-scrollable">
+              <i class="fad fa-fw fa-edit"></i> ' . lang('App.edit') . '
+            </a>';
+        }
+
+        if (hasAccess('MaintenanceReport.Delete')) {
+          $menu .= '
+            <div class="dropdown-divider"></div>
+            <a class="dropdown-item" href="' . base_url('maintenance/report/delete/' . $data['id']) . '"
+              data-action="confirm">
+              <i class="fad fa-fw fa-trash"></i> ' . lang('App.delete') . '
+            </a>';
+        }
+
+        $menu .= '
+            </div>
+          </div>';
+
+        return $menu;
+      })
+      ->editColumn('condition', function ($data) {
+        return renderStatus($data['condition']);
+      });
+
+    if ($productIds) {
+      $dt->whereIn('product_report.product_id', $productIds);
+    }
+
+    if ($createdBy) {
+      $dt->whereIn('product_report.created_by', $createdBy);
+    }
+
+    if ($startDate) {
+      $dt->where("product_report.created_at >= '{$startDate} 00:00:00'");
+    }
+
+    if ($endDate) {
+      $dt->where("product_report.created_at <= '{$endDate} 23:59:59'");
+    }
+
+    $dt->generate();
+  }
+
   public function log()
   {
     if ($args = func_get_args()) {
@@ -240,6 +362,8 @@ class Maintenance extends BaseController
 
   protected function report_add($productId = null)
   {
+    checkPermission('MaintenanceReport.Add');
+
     $product = Product::getRow(['id' => $productId]);
 
     if (!$product) {
@@ -266,6 +390,13 @@ class Maintenance extends BaseController
 
       $warehouse = Warehouse::getRow(['id' => $warehouseId]);
 
+      // Validation.
+      if ($condition == 'good') {
+        if ($lastReport->condition != 'good' && $lastReport->condition != 'solved') {
+          $this->response(400, ['message' => 'Status harus di Solved dahulu sebelum di Good.']);
+        }
+      }
+
       $data = [
         'product_id'    => $productId,
         'warehouse_id'  => $warehouse->id,
@@ -278,7 +409,18 @@ class Maintenance extends BaseController
 
       DB::transStart();
 
-      $data = $this->useAttachment($data);
+      $data = $this->useAttachment($data, null, function ($upload) use ($condition, $lastReport) {
+        if ($upload->has('attachment')) {
+          if ($upload->getSize('mb') > 2) {
+            $this->response(400, ['message' => 'Attachment tidak boleh lebih dari 2MB.']);
+          }
+        }
+
+        // Jika melakukan good.
+        if ($lastReport->condition != 'good' && $condition == 'solved' && !$upload->has('attachment')) {
+          $this->response(400, ['message' => 'Attachment harus disertakan.']);
+        }
+      });
 
       if (!ProductReport::add($data)) {
         $this->response(400, ['message' => getLastError()]);
@@ -286,8 +428,9 @@ class Maintenance extends BaseController
 
       $itemJS = getJSON($product->json);
 
-      $itemJS->note     = $note;
-      $itemJS->pic_note = $noteTS;
+      $itemJS->condition  = $condition;
+      $itemJS->note       = $note;
+      $itemJS->pic_note   = $noteTS;
       $json = json_encode($itemJS);
 
       if (!Product::update((int)$productId, [
@@ -308,40 +451,48 @@ class Maintenance extends BaseController
             $message = "Hi {$user->fullname},\n\n" .
               "Item berikut telah dilakukan perbaikan:\n\n" .
               "*Outlet*: {$warehouse->name}\n" .
-              "*Assigned At*: " . dtLocal($itemJS->assigned_at) . "\n" .
+              "*Assigned At*: " . ($itemJS->assigned_at) . "\n" .
               "*Assigned By*: {$assigner->fullname}\n" .
               "*Item Code*: {$product->code}\n" .
               "*Item Name*: {$product->name}\n" .
-              "*Fixed At*: " . dtLocal($date) . "\n" .
+              "*Fixed At*: " . formatDateTime($date) . "\n" .
               "*Fixed By*: {$pic->fullname}\n" .
               "*User Note*: " . htmlRemove($note) . "\n" .
               "*TS Note*: " . htmlRemove($noteTS) . "\n\n" .
               "Silakan ubah status ke *Good* jika sudah benar.\n\n" .
               "Terima kasih.";
 
-            WAJob::add(['phone' => $user->phone, 'message' => $message]);
+            if ($createdBy == 1) {
+              WAJob::add(['phone' => '082311662064', 'message' => $message]);
+            } else {
+              WAJob::add(['phone' => $user->phone, 'message' => $message]);
+            }
           }
         }
       }
 
       if ($condition == 'good') { // Reset if machine is good.
         // If last status is solved.
-        if (!empty($lastReport) && $lastReport->condition == 'solved') {
+        if ($lastReport && $lastReport->condition == 'solved') {
           // Send report to PIC/TS if status has been good.
           if ($pic && $pic->phone && $assigner) {
             $message = "Hi {$pic->fullname},\n\n" .
               "Terima kasih telah melakukan perbaikan:\n\n" .
               "*Outlet*: {$warehouse->name}\n" .
-              "*Assigned At*: " . dtLocal($itemJS->assigned_at) . "\n" .
+              "*Assigned At*: " . formatDateTime($itemJS->assigned_at) . "\n" .
               "*Assigned By*: {$assigner->fullname}\n" .
               "*Item Code*: {$product->code}\n" .
               "*Item Name*: {$product->name}\n" .
-              "*Fixed At*: " . dtLocal($date) . "\n" .
+              "*Fixed At*: " . formatDateTime($date) . "\n" .
               "*Fixed By*: {$pic->fullname}\n" .
               "*User Note*: " . htmlRemove($note) . "\n" .
               "*TS Note*: " . htmlRemove($noteTS) . "\n";
 
-            WAJob::add(['phone' => $pic->phone, 'message' => $message]);
+            if ($createdBy == 1) {
+              WAJob::add(['phone' => '082311662064', 'message' => $message]);
+            } else {
+              WAJob::add(['phone' => $pic->phone, 'message' => $message]);
+            }
           }
 
           // Send report to CS/TL if status has been good.
@@ -349,19 +500,22 @@ class Maintenance extends BaseController
             $message = "Hi {$user->fullname},\n\n" .
               "Item berikut telah berhasil dilakukan perbaikan:\n\n" .
               "*Outlet*: {$warehouse->name}\n" .
-              "*Assigned At*: " . dtLocal($itemJS->assigned_at) . "\n" .
+              "*Assigned At*: " . formatDateTime($itemJS->assigned_at) . "\n" .
               "*Assigned By*: {$assigner->fullname}\n" .
               "*Item Code*: {$product->code}\n" .
               "*Item Name*: {$product->name}\n" .
-              "*Fixed At*: " . dtLocal($date) . "\n" .
+              "*Fixed At*: " . formatDateTime($date) . "\n" .
               "*Fixed By*: {$pic->fullname}\n" .
               "*User Note*: " . htmlRemove($note) . "\n" .
               "*TS Note*: " . htmlRemove($noteTS) . "\n\n" .
-              "Jangan lupa untuk memberikan review bintang 5 kepada TS pada link berikut:\n\n" .
-              admin_url("machines?code={$product->code}\n\n") .
+              "Jangan lupa untuk memberikan review bintang 5 kepada TS.\n\n" .
               "Terima kasih.";
 
-            WAJob::add(['phone' => $user->phone, 'message' => $message]);
+            if ($createdBy == 1) {
+              WAJob::add(['phone' => '082311662064', 'message' => $message]);
+            } else {
+              WAJob::add(['phone' => $user->phone, 'message' => $message]);
+            }
           }
 
           // Add maintenance log.
@@ -369,7 +523,7 @@ class Maintenance extends BaseController
             'product_id'      => $product->id,
             'product_code'    => $product->code,
             'assigned_at'     => (!empty($itemJS->assigned_at) ? $itemJS->assigned_at : $date),
-            'assigned_by'     => (!empty($itemJS->assigned_by) ? $itemJS->assigned_by : 1),
+            'assigned_by'     => (!empty($itemJS->assigned_by) ? $itemJS->assigned_by : $createdBy),
             'fixed_at'        => $date,
             'pic_id'          => $itemJS->pic_id,
             'warehouse_id'    => $warehouse->id,
@@ -380,7 +534,7 @@ class Maintenance extends BaseController
           ])) {
             $this->response(400, ['message' => getLastError()]);
           }
-        } else if (!empty($lastReport) && $lastReport->condition != 'good') {
+        } else if ($lastReport && $lastReport->condition != 'good') {
           $this->response(400, ['message' => 'Status harus <b>Solved</b> dahulu sebelum di <b>Good</b>.']);
         }
 
@@ -424,7 +578,11 @@ class Maintenance extends BaseController
                       "*User Note*: _" . htmlRemove($note) . "_\n\n" .
                       "Mohon untuk segera diperbaiki. Terima kasih";
 
-                    WAJob::add(['phone' => $user->phone, 'message' => $message]);
+                    if ($createdBy == 1) {
+                      WAJob::add(['phone' => '082311662064', 'message' => $message]);
+                    } else {
+                      WAJob::add(['phone' => $user->phone, 'message' => $message]);
+                    }
                   }
                 }
 
@@ -461,6 +619,178 @@ class Maintenance extends BaseController
     $this->data['product']  = $product;
 
     $this->response(200, ['content' => view('Maintenance/Report/add', $this->data)]);
+  }
+
+  public function report_delete($id = null)
+  {
+    checkPermission('MaintenanceReport.Delete');
+
+    $report = ProductReport::getRow(['id' => $id]);
+
+    if (!$report) {
+      $this->response(404, ['message' => 'Product Report is not found.']);
+    }
+
+    $product = Product::getRow(['id' => $report->product_id]);
+
+    if (!$product) {
+      $this->response(404, ['message' => 'Product is not found.']);
+    }
+
+    if (requestMethod() == 'POST' && isAJAX()) {
+      DB::transStart();
+
+      if (!ProductReport::delete(['id' => $id])) {
+        $this->response(400, ['message' => getLastError()]);
+      }
+
+      $lastReport = ProductReport::select('*')->where('product_id', $product->id)->orderBy('id', 'DESC')->getRow();
+
+      if ($lastReport) {
+        $itemJS = getJSON($product->json);
+
+        $itemJS->condition  = $lastReport->condition;
+        $itemJS->note       = $lastReport->note;
+        $itemJS->pic_note   = $lastReport->pic_note;
+        $json = json_encode($itemJS);
+
+        if (!Product::update((int)$product->id, [
+          'json'      => $json,
+          'json_data' => $json
+        ])) {
+          $this->response(400, ['message' => getLastError()]);
+        }
+      }
+
+      DB::transComplete();
+
+      if (DB::transStatus()) {
+        $this->response(200, ['message' => 'Product Report has been deleted.']);
+      }
+
+      $this->response(400, ['message' => 'Product Report failed to delete.']);
+    }
+  }
+
+  public function report_edit($id = null)
+  {
+    checkPermission('MaintenanceReport.Edit');
+
+    $report = ProductReport::getRow(['id' => $id]);
+
+    if (!$report) {
+      $this->response(404, ['message' => 'Product Report is not found.']);
+    }
+
+    $product = Product::getRow(['id' => $report->product_id]);
+
+    if (!$product) {
+      $this->response(404, ['message' => 'Product is not found.']);
+    }
+
+    if (requestMethod() == 'POST' && isAJAX()) {
+      $date         = dateTimePHP(getPost('date'));
+      $condition    = getPost('condition');
+      $createdBy    = getPost('created_by');
+      $warehouseId  = getPost('warehouse');
+      $note         = getPost('note');
+      $noteTS       = getPost('note_ts');
+
+      if (empty($condition)) {
+        $this->response(400, ['message' => 'Condition harus di isi.']);
+      }
+
+      if (($condition == 'off' || $condition == 'trouble') && empty($note)) {
+        $this->response(400, ['message' => 'Note tidak boleh kosong.']);
+      }
+
+      $warehouse = Warehouse::getRow(['id' => $warehouseId]);
+
+      $lastReport = ProductReport::select('*')->where('product_id', $product->id)->orderBy('id', 'DESC')->getRow();
+
+      $data = [
+        'product_id'    => $product->id,
+        'warehouse_id'  => $warehouse->id,
+        'condition'     => $condition,
+        'note'          => $note,
+        'pic_note'      => $noteTS,
+        'created_at'    => $date,
+        'created_by'    => $createdBy
+      ];
+
+      DB::transStart();
+
+      $data = $this->useAttachment($data, null, function ($upload) use ($condition) {
+        if ($upload->has('attachment')) {
+          if ($upload->getSize('mb') > 2) {
+            $this->response(400, ['message' => 'Attachment tidak boleh lebih dari 2MB.']);
+          }
+        }
+      });
+
+      // If last report is edited. Product get edited too.
+      if ($lastReport->id == $report->id) {
+        $itemJS = getJSON($product->json);
+
+        $itemJS->condition  = $condition;
+        $itemJS->note       = $note;
+        $itemJS->pic_note   = $noteTS;
+        $json = json_encode($itemJS);
+
+        if (!Product::update((int)$product->id, [
+          'json'      => $json,
+          'json_data' => $json
+        ])) {
+          $this->response(400, ['message' => getLastError()]);
+        }
+      }
+
+      if (!ProductReport::update((int)$id, $data)) {
+        $this->response(400, ['message' => getLastError()]);
+      }
+
+      DB::transComplete();
+
+      if (DB::transStatus()) {
+        $this->response(200, ['message' => 'Product Report has been updated.']);
+      }
+
+      $this->response(400, ['message' => 'Failed to edit report.']);
+    }
+
+    $this->data['title']    = lang('App.editmaintenancereport');
+    $this->data['report']   = $report;
+    $this->data['product']  = $product;
+
+    $this->response(200, ['content' => view('Maintenance/Report/edit', $this->data)]);
+  }
+
+  public function report_view($productId = null)
+  {
+    $product = Product::getRow(['id' => $productId]);
+
+    if (!$product) {
+      $this->response(404, ['message' => 'Product is not found.']);
+    }
+
+    $param = [
+      'product' => [$productId]
+    ];
+
+    if ($startDate = getPostGet('start_date')) {
+      $param['start_date'] = $startDate;
+    }
+
+    if ($endDate = getPostGet('end_date')) {
+      $param['end_date'] = $endDate;
+    }
+
+    $this->data['title']    = lang('App.viewmaintenancereport');
+    $this->data['product']  = $product;
+    $this->data['modeLang'] = $product->code;
+    $this->data['param'] = $param;
+
+    $this->response(200, ['content' => view('Maintenance/Report/view', $this->data)]);
   }
 
   public function schedule()

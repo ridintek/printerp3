@@ -210,13 +210,6 @@ class Payment
       return false;
     }
 
-    if (isset($data['type'])) {
-      if (!in_array($data['type'], ['received', 'sent'])) {
-        setLastError('Type must be received or sent.');
-      }
-      return false;
-    }
-
     $data = setUpdatedBy($data);
 
     DB::table('payments')->update($data, ['id' => $id]);

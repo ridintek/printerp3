@@ -28,11 +28,11 @@
             </li>
             <li class="list-group-item">
               <b><i class="fad fa-fw fa-warehouse"></i> <?= lang('App.biller') ?></b>
-              <span class="float-right"><?= ($user->biller ? \App\Models\Biller::getRow(['code' => $user->biller])->name : '-') ?></span>
+              <span class="float-right"><?= ($user->biller_id ? \App\Models\Biller::getRow(['id' => $user->biller_id])->name : '-') ?></span>
             </li>
             <li class="list-group-item">
               <b><i class="fad fa-fw fa-warehouse-alt"></i> <?= lang('App.warehouse') ?></b>
-              <span class="float-right"><?= ($user->warehouse ? \App\Models\Warehouse::getRow(['code' => $user->warehouse])->name : '-') ?></span>
+              <span class="float-right"><?= ($user->warehouse_id ? \App\Models\Warehouse::getRow(['id' => $user->warehouse_id])->name : '-') ?></span>
             </li>
           </ul>
         </div>

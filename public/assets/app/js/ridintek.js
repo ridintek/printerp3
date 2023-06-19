@@ -1,4 +1,92 @@
 
+export class IncomeStatement {
+  static tbody = null;
+
+  static table(table) {
+    this.tbody = $(table).find('tbody');
+
+    if (!this.tbody.length) {
+      console.log('IncomeStatement::table() Cannot find tbody.');
+    }
+
+    return this;
+  }
+
+  static addRow(row, className = '') {
+    if (isObject(row)) {
+      this.tbody.append(`<tr><td class="${className}">${row.key}</td><td class="text-right ${className}">${formatCurrency(row.value, 'Rp')}</td></tr>`);
+    }
+  }
+
+  static clean() {
+    this.tbody.empty();
+
+    return this;
+  }
+
+  static load(opt = {}) {
+    let param = '';
+
+    this.tbody.html(`<tr class="odd"><td colspan="2" class="dataTables_empty">Loading data from server...</td></tr>`);
+
+    if (opt.biller) {
+      for (let b of opt.biller) {
+        param += '&biller[]=' + b;
+      }
+    }
+
+    if (opt.start_date) {
+      param += '&start_date=' + opt.start_date;
+    }
+
+    if (opt.end_date) {
+      param += '&end_date=' + opt.end_date;
+    }
+
+    if (param.charAt(0) == '&') {
+      param = param.slice(1);
+    }
+
+    $.ajax({
+      method: 'GET',
+      success: (response) => {
+        if (isObject(response)) {
+          this.clean();
+
+          for (let row of response.data) {
+            if (row.name) {
+              if (!isArray(row.data)) {
+                this.addRow({
+                  key: row.name,
+                  value: row.amount
+                }, 'text-bold');
+              } else if (isArray(row.data)) {
+                this.addRow({
+                  key: row.name,
+                  value: row.amount
+                }, 'text-bold');
+
+                for (let subRow of row.data) {
+                  this.addRow({
+                    key: '--> ' + subRow.name,
+                    value: subRow.amount
+                  });
+                }
+              }
+            }
+          }
+        }
+      },
+      url: base_url + '/report/getIncomeStatements?' + param
+    });
+  }
+
+  reload() {
+    this.clean();
+    this.load();
+  }
+}
+
 export class InternalUse {
   static tbody = null;
 
@@ -197,7 +285,7 @@ export class ProductPurchase {
     this._tbody = $(table).find('tbody');
 
     if (!this._tbody.length) {
-      console.log('ProductTransfer::table() Cannot find tbody.');
+      console.log('ProductPurchase::table() Cannot find tbody.');
     }
 
     return this;
@@ -411,25 +499,25 @@ export class ProductTransfer {
  */
 export class QueueConfig {
   static clear() {
-    localStorage.clear();
+    sessionStorage.clear();
   }
 
   static delete(name) {
-    return localStorage.removeItem(name);
+    return sessionStorage.removeItem(name);
   }
 
   static get(name) {
-    return localStorage.getItem(name);
+    return sessionStorage.getItem(name);
   }
 
   static getObject(name) {
-    return JSON.parse(localStorage.getItem(name));
+    return JSON.parse(sessionStorage.getItem(name));
   }
 
   static set(name, value) {
     let val = value;
     if (typeof value === 'object') val = JSON.stringify(value);
-    localStorage.setItem(name, val);
+    sessionStorage.setItem(name, val);
   }
 
   static setObject(name, value) {
@@ -455,7 +543,8 @@ export class QueueHttp {
       $.ajax({
         data: data,
         error: (xhr) => {
-          reject(xhr.response);
+          console.log(xhr);
+          reject(xhr.responseJSON);
         },
         headers: this._headers,
         method: method,
@@ -472,26 +561,77 @@ export class QueueHttp {
  * QueueManagementSystem
  */
 export class QMS {
-  static async getDisplayData(warehouseCode) {
+  static async addQueueTicket(data) {
     return new Promise((resolve, reject) => {
-      resolve(QueueHttp.send('GET', base_url + '/qms/getDisplayData/' + warehouseCode));
+      data.__ = __;
+      resolve(QueueHttp.send('POST', base_url + '/qms/addQueueTicket', data));
     });
   }
 
-  static async sendDisplayResponse(ticket_id) {
+  static async callQueueTicket(warehouseId) {
     return new Promise((resolve, reject) => {
       let data = {};
-      data[_x] = _vx;
-      resolve(QueueHttp.send('POST', base_url + '/qms/displayResponse/' + ticket_id, data));
+      data.__ = __;
+      resolve(QueueHttp.send('POST', base_url + '/qms/callQueueTicket/' + warehouseId, data));
+    });
+  }
+
+  static async endQueueTicket(data) {
+    return new Promise((resolve, reject) => {
+      data.__ = __;
+      resolve(QueueHttp.send('POST', base_url + '/qms/endQueueTicket', data));
+    });
+  }
+
+  static async getDisplayData(warehouseId) {
+    return new Promise((resolve, reject) => {
+      resolve(QueueHttp.send('GET', base_url + '/qms/getDisplayData/' + warehouseId));
+    });
+  }
+
+  static async recallQueueTicket(ticketId) {
+    return new Promise((resolve, reject) => {
+      let data = {};
+      data.__ = __;
+      resolve(QueueHttp.send('POST', base_url + '/qms/recallQueueTicket/' + ticketId, data));
+    });
+  }
+
+  static async sendDisplayResponse(ticketId) {
+    return new Promise((resolve, reject) => {
+      let data = {};
+      data.__ = __;
+      resolve(QueueHttp.send('POST', base_url + '/qms/displayResponse/' + ticketId, data));
     });
   }
 
   static async sendReport(data = {}) {
     return new Promise((resolve, reject) => {
-      data[_x] = _vx;
-      console.log('%cSent', 'color:lime');
-      console.log(data);
+      data.__ = __;
       resolve(QueueHttp.send('POST', base_url + '/qms/sendReport', data));
+    });
+  }
+
+  static async serveQueueTicket(ticketId) {
+    return new Promise((resolve, reject) => {
+      let data = {};
+      data.__ = __;
+      resolve(QueueHttp.send('POST', base_url + '/qms/serveQueueTicket/' + ticketId, data));
+    });
+  }
+
+  static async setCounter(counter) {
+    return new Promise((resolve, reject) => {
+      let data = {};
+      data.__ = __;
+      resolve(QueueHttp.send('POST', base_url + '/qms/setCounter/' + counter, data));
+    });
+  }
+
+  static async skipQueueTicket(data) {
+    return new Promise((resolve, reject) => {
+      data.__ = __;
+      resolve(QueueHttp.send('POST', base_url + '/qms/skipQueueTicket', data));
     });
   }
 }

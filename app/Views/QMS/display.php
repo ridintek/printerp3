@@ -20,7 +20,8 @@ $hash = (!empty($hash) ? $hash : bin2hex(random_bytes(4)));
   <link href="<?= base_url('assets/modules/select2/css/select2.min.css'); ?>" rel="stylesheet" />
   <link href="<?= base_url('assets/qms/css/ridintek.css?v=') . $hash; ?>" rel="stylesheet" />
   <script>
-    let base_url = '<?= base_url() ?>';
+    const base_url = '<?= base_url() ?>';
+    const <?= csrf_token() ?> = '<?= csrf_hash() ?>';
   </script>
 </head>
 
@@ -126,24 +127,26 @@ $hash = (!empty($hash) ? $hash : bin2hex(random_bytes(4)));
       QMS
     } from '<?= base_url('assets/app/js/ridintek.js?v=') . $resver ?>';
 
-    window._x = '<?= csrf_token() ?>';
-    window._vx = '<?= csrf_hash() ?>';
     let active = <?= (!empty($active) ? $active : '0'); ?>;
     let bell = new Audio('<?= base_url('assets/qms/audio/airport-notification.mp3'); ?>');
     let counter_table = null;
     let waiting_table = null;
     let skip_table = null
     let on_call = false;
-    let warehouse = '<?= $warehouse->code ?>';
+    let warehouse = '<?= $warehouse->id ?>';
 
     async function DisplayMessage() {
       try {
         let displayData = await QMS.getDisplayData(warehouse);
+        let queueCall     = displayData.data.call;
+        let queueCounter  = displayData.data.counter;
+        let queueList     = displayData.data.queue_list;
+        let queueSkipList = displayData.data.skip_list;
 
         console.log(displayData);
 
-        if (!displayData.data.call.error && !on_call) {
-          let call = displayData.data.call.data;
+        if (queueCall.code == 200 && !on_call) {
+          let call = queueCall.data;
 
           bell.play();
           on_call = true;
@@ -173,8 +176,8 @@ $hash = (!empty($hash) ? $hash : bin2hex(random_bytes(4)));
           }, 10 * 1000);
         }
 
-        if (!displayData.data.counter.error) {
-          let counters = displayData.data.counter.data;
+        if (queueCounter.code == 200) {
+          let counters = queueCounter.data;
 
           counter_table.bootstrapTable('removeAll');
 
@@ -189,8 +192,8 @@ $hash = (!empty($hash) ? $hash : bin2hex(random_bytes(4)));
           counter_table.bootstrapTable('removeAll');
         }
 
-        if (!displayData.data.queue_list.error) {
-          let queue_list = displayData.data.queue_list.data;
+        if (queueList.code == 200) {
+          let queue_list = queueList.data;
           let count = 1;
 
           waiting_table.bootstrapTable('removeAll');
@@ -209,8 +212,8 @@ $hash = (!empty($hash) ? $hash : bin2hex(random_bytes(4)));
           waiting_table.bootstrapTable('removeAll');
         }
 
-        if (!displayData.data.skip_list.error) {
-          let skip_list = displayData.data.skip_list.data;
+        if (queueSkipList.code == 200) {
+          let skip_list = queueSkipList.data;
           let count = 1;
 
           skip_table.bootstrapTable('removeAll');

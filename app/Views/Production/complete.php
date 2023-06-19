@@ -38,14 +38,14 @@
           <div class="card-body">
             <div class="row">
               <div class="col-md-12">
-                <table id="table-saleitem" class="table table-hover table-sm table-striped">
+                <table id="table-saleitem" class="table table-head-fixed table-hover table-striped">
                   <thead>
                     <tr>
                       <th><?= lang('App.invoice') ?></th>
                       <th><?= lang('App.name') ?></th>
                       <th><?= lang('App.quantity') ?></th>
                       <th><?= lang('App.completedqty') ?></th>
-                      <th><?= lang('App.quantity') ?></th>
+                      <th><?= lang('App.complete') ?></th>
                       <th></th>
                     </tr>
                   </thead>

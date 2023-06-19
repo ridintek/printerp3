@@ -119,7 +119,7 @@
                     <td><?= \App\Models\Unit::getRow(['id' => $product->unit])->code ?></td>
                     <?php if ($restQty && inStatus($purchase->status, ['ordered', 'received_partial'])) : ?>
                       <td><input name="item[spec][]" class="form-control form-control-border form-control-sm" value="<?= $item->spec ?>"></td>
-                    <?php else: ?>
+                    <?php else : ?>
                       <td class="text-center"><?= $item->spec ?></td>
                     <?php endif; ?>
                     <td class="text-center"><?= formatNumber($item->cost) ?></td>
@@ -159,7 +159,7 @@
   <?php if ($purchase->status == 'need_approval' && hasAccess('ProductPurchase.Approve')) : ?>
     <button type="button" class="btn bg-gradient-success commit-status status-approved"><i class="fad fa-fw fa-check-circle"></i> <?= lang('App.approve') ?></button>
   <?php endif; ?>
-  <?php if ($purchase->status != 'need_approval' && hasAccess('ProductPurchase.Approve')) : ?>
+  <?php if ($purchase->status != 'need_approval' && hasAccess('ProductPurchase.Disapprove')) : ?>
     <button type="button" class="btn bg-gradient-warning commit-status status-need_approval"><i class="fad fa-fw fa-undo"></i> <?= lang('Status.need_approval') ?></button>
   <?php endif; ?>
   <?php if ($purchase->status == 'approved' && hasAccess('ProductPurchase.Order')) : ?>
@@ -167,6 +167,15 @@
   <?php endif; ?>
   <?php if (inStatus($purchase->status, ['ordered', 'received_partial']) && hasAccess('ProductPurchase.Receive')) : ?>
     <button type="button" class="btn bg-gradient-success commit-status status-received"><i class="fad fa-fw fa-box-check"></i> <?= lang('App.receive') ?></button>
+  <?php endif; ?>
+  <?php if ($purchase->payment_status == 'need_approval' && hasAccess('ProductPurchase.ApprovePayment')) : ?>
+    <button type="button" class="btn bg-gradient-success commit-status status-approve_payment"><i class="fad fa-fw fa-box-check"></i> <?= lang('App.approvepayment') ?></button>
+  <?php endif; ?>
+  <?php if ($purchase->payment_status != 'need_approval' && hasAccess('ProductPurchase.DisapprovePayment')) : ?>
+    <button type="button" class="btn bg-gradient-success commit-status status-approve_payment"><i class="fad fa-fw fa-box-check"></i> <?= lang('App.approvepayment') ?></button>
+  <?php endif; ?>
+  <?php if ($purchase->payment_status == 'approved' && hasAccess('ProductPurchase.CommitPayment')) : ?>
+    <button type="button" class="btn bg-gradient-success commit-status status-commit_payment"><i class="fad fa-fw fa-box-check"></i> <?= lang('App.commitpayment') ?></button>
   <?php endif; ?>
   <button type="button" class="btn bg-gradient-danger" data-dismiss="modal"><i class="fad fa-fw fa-times"></i> <?= lang('App.close') ?></button>
 </div>
@@ -183,6 +192,10 @@
         status = 'need_approval';
       } else if (this.classList.contains('status-approved')) {
         status = 'approved';
+      } else if (this.classList.contains('status-approve_payment')) {
+        status = 'approve_payment';
+      } else if (this.classList.contains('status-commit_payment')) {
+        status = 'commit_payment';
       } else if (this.classList.contains('status-ordered')) {
         status = 'ordered';
       } else if (this.classList.contains('status-received')) {

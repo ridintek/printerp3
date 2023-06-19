@@ -66,7 +66,7 @@
               <div class="col-md-6">
                 <div class="form-group">
                   <label for="bankfrom"><?= lang('App.from') ?> *</label>
-                  <select id="bankfrom" name="bankfrom" class="select-bank-from" data-placeholder="<?= lang('App.bankaccount') ?>" style="width:100%">
+                  <select id="bankfrom" name="bankfrom" class="select-bank" data-placeholder="<?= lang('App.bankaccount') ?>" style="width:100%">
                   </select>
                 </div>
               </div>
@@ -81,7 +81,7 @@
               <div class="col-md-6">
                 <div class="form-group">
                   <label for="bankto"><?= lang('App.to') ?> *</label>
-                  <select id="bankto" name="bankto" class="select-bank-to" data-placeholder="<?= lang('App.bankaccount') ?>" style="width:100%">
+                  <select id="bankto" name="bankto" class="select-bank" data-placeholder="<?= lang('App.bankaccount') ?>" style="width:100%">
                   </select>
                 </div>
               </div>
@@ -120,6 +120,11 @@
   $(document).ready(function() {
     let bankToVal = '';
     let bankFromVal = '';
+
+    if (erp.biller.id) {
+      erp.select2.biller.id = [erp.biller.id];
+      erp.select2.bank.biller = [erp.biller.id];
+    }
 
     let editor = new Quill('#editor', {
       theme: 'snow'
@@ -171,6 +176,10 @@
         },
         url: base_url + '/finance/bank/balance/' + this.value
       })
+    });
+
+    $('#biller').change(function () {
+      erp.select2.bank.biller = [this.value];
     });
 
     if (erp.biller.id) {

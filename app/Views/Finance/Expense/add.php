@@ -12,12 +12,14 @@
         <div class="card">
           <div class="card-body">
             <div class="row">
-              <div class="col-md-6">
-                <div class="form-group">
-                  <label for="date"><?= lang('App.date') ?> *</label>
-                  <input type="datetime-local" id="date" name="date" class="form-control form-control-border form-control-sm">
+              <?php if (hasAccess('Expense.Edit')) : ?>
+                <div class="col-md-6">
+                  <div class="form-group">
+                    <label for="date"><?= lang('App.date') ?> *</label>
+                    <input type="datetime-local" id="date" name="date" class="form-control form-control-border form-control-sm">
+                  </div>
                 </div>
-              </div>
+              <?php endif; ?>
               <div class="col-md-6">
                 <div class="form-group">
                   <label for="biller"><?= lang('App.biller') ?> *</label>
@@ -51,10 +53,7 @@
               <div class="col-md-6">
                 <div class="form-group">
                   <label for="category"><?= lang('App.category') ?> *</label>
-                  <select id="category" name="category" class="select" data-placeholder="<?= lang('App.category') ?>" style=" width:100%">
-                    <?php foreach (\App\Models\ExpenseCategory::select('*')->orderBy('name', 'ASC')->get() as $excat) : ?>
-                      <option value="<?= $excat->id ?>"><?= $excat->name ?></option>
-                    <?php endforeach; ?>
+                  <select id="category" name="category" class="select-expense-category" data-placeholder="<?= lang('App.category') ?>" style=" width:100%">
                   </select>
                 </div>
               </div>
@@ -112,6 +111,7 @@
 
   $(document).ready(function() {
     erp.select2.bank.biller = [0];
+    erp.select2.bank.type = [];
 
     let editor = new Quill('#editor', {
       theme: 'snow'

@@ -292,8 +292,14 @@ class Humanresource extends BaseController
     checkPermission('Customer.Add');
 
     if (requestMethod() == 'POST') {
-      $name   = getPost('name');
-      $phone  = getPost('phone');
+      $name       = getPost('name');
+      $phone      = getPost('phone');
+      $company    = getPost('company');
+      $email      = getPost('email');
+      $address    = getPost('address');
+      $city       = getPost('city');
+      $group      = getPost('group');
+      $priceGroup = getPost('pricegroup');
 
       if (empty($name)) {
         $this->response(400, ['message' => 'Name is required.']);
@@ -318,15 +324,15 @@ class Humanresource extends BaseController
       }
 
       $customerData = [
-        'customer_group_id' => getPost('group'),
-        'price_group_id'    => getPost('pricegroup'),
+        'customer_group_id' => $group,
+        'group_name'        => 'PrintERP3',
+        'price_group_id'    => $priceGroup,
         'name'              => trim($name),
-        'company'           => getPost('company'),
-        'email'             => getPost('email'),
+        'company'           => $company,
+        'email'             => $email,
         'phone'             => trim($phone),
-        'address'           => getPost('address'),
-        'city'              => getPost('city'),
-        'json'              => json_encode([])
+        'address'           => $address,
+        'city'              => $city,
       ];
 
       DB::transStart();

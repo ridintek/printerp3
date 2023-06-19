@@ -4,7 +4,7 @@
       <div class="card shadow">
         <div class="card-header bg-gradient-dark">
           <div class="card-tools">
-            <a id="export" class="btn btn-tool bg-gradient-success" href="<?= base_url('report/export/getPayments') ?>" data-action="export">
+            <a id="export" class="btn btn-tool bg-gradient-success" href="<?= base_url('report/export/payment') ?>" data-action="export">
               <i class="fad fa-download"></i>
             </a>
             <a class="btn btn-tool bg-gradient-warning" href="#" data-widget="control-sidebar" data-toggle="tooltip" title="Filter" data-slide="true">
@@ -13,7 +13,7 @@
           </div>
         </div>
         <div class="card-body">
-          <table id="Table" class="table table-bordered table-hover" style="width:100%;">
+          <table id="Table" class="table table-head-fixed-main table-hover table-striped" style="width:100%;">
             <thead>
               <tr>
                 <th></th>
@@ -193,7 +193,7 @@
           return data;
         },
         method: 'POST',
-        url: base_url + '/report/getPayments'
+        url: base_url + '/report/getPayment'
       },
       columnDefs: [{
         targets: [0, 13],
@@ -224,6 +224,7 @@
       order: [
         [1, 'desc']
       ],
+      pageLength: 50,
       processing: true,
       responsive: true,
       scrollX: false,

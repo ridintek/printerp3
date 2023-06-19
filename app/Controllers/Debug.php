@@ -5,10 +5,35 @@ declare(strict_types=1);
 namespace App\Controllers;
 
 use App\Libraries\FileUpload;
-use App\Models\{DB, PaymentValidation, Sale, SaleItem, Stock, Test1, Test2};
+use App\Models\{
+  DB, Expense,
+  PaymentValidation, QueueTicket,
+  Sale, SaleItem, Stock, Test1, Test2, TrackingPOD
+};
 
 class Debug extends BaseController
 {
+  public function qms()
+  {
+    $r = QueueTicket::getTodayLastTicket(['queue_category_id' => 1, 'warehouse_id' => 5]);
+
+    dbgprint($r);
+  }
+
+  public function trackingpod()
+  {
+    $total = TrackingPOD::getTotalKlikPOD(['warehouse_id' => 2, 'start_date' => '2023-06-07', 'end_date' => '2023-06-07']);
+
+    dbgprint($total);
+  }
+
+  public function beginningqty()
+  {
+    $r = Stock::beginningQty(['product_id' => 225, 'warehouse_id' => 2], '2023-05-01');
+
+    dbgprint($r);
+  }
+
   public function paymentvalidation()
   {
     $createdAt = ($option['date'] ?? date('Y-m-d H:i:s'));
@@ -118,6 +143,38 @@ class Debug extends BaseController
     // echo $dt->format('Y-m-d H:i:s');
   }
 
+  public function dbtrans()
+  {
+    DB::transStart();
+
+    $insertId = Test1::add(['name' => 'RIYAN']);
+
+    if (!$insertId) {
+      $this->response(400, ['message' => 'error 1: ' . getLastError()]);
+    }
+
+    $insertId2 = Test2::add(['test1_id' => $insertId, 'name' => 'WIDIYANTO']);
+
+    if (!$insertId2) {
+      $this->response(400, ['message' => 'error 2: ' . getLastError()]);
+    }
+
+    DB::transComplete();
+
+    if (DB::transStatus()) {
+      echo "Success";
+    } else {
+      echo "FAILED: {$insertId}:{$insertId2} => " . DB::error()['message'];
+    }
+  }
+
+  public function expense()
+  {
+    $expense = Expense::get(['biller_id' => [2, 3]]);
+
+    dbgprint($expense);
+  }
+
   public function fix_duplicate_sales()
   {
     $duplicates = DB::table('sales')
@@ -208,29 +265,17 @@ class Debug extends BaseController
     echo $msg;
   }
 
-  public function dbtrans()
+  public function incomestatement()
   {
-    DB::transStart();
+    $opt = [
+      'biller_id' => [5],
+      'start_date'  => '2023-05-01',
+      'end_date'    => '2023-05-24'
+    ];
 
-    $insertId = Test1::add(['name' => 'RIYAN']);
+    $incomeStatement = getIncomeStatementReport($opt);
 
-    if (!$insertId) {
-      $this->response(400, ['message' => 'error 1: ' . getLastError()]);
-    }
-
-    $insertId2 = Test2::add(['test1_id' => $insertId, 'name' => 'WIDIYANTO']);
-
-    if (!$insertId2) {
-      $this->response(400, ['message' => 'error 2: ' . getLastError()]);
-    }
-
-    DB::transComplete();
-
-    if (DB::transStatus()) {
-      echo "Success";
-    } else {
-      echo "FAILED: {$insertId}:{$insertId2} => " . DB::error()['message'];
-    }
+    dbgprint($incomeStatement);
   }
 
   public function invoice()
@@ -324,5 +369,12 @@ class Debug extends BaseController
     echo ('<pre>');
     print_r(session('login'));
     echo ('</pre>');
+  }
+
+  public function socycle()
+  {
+    $res = getNewSOCycle(5, 2);
+
+    dbgprint($res);
   }
 }

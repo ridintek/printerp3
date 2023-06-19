@@ -1,7 +1,7 @@
 <?php $deliveryNote = (getGet('deliverynote') == 1) ?>
-<?php $biller = \App\Models\Biller::getRow(['code' => $sale->biller]) ?>
+<?php $biller = \App\Models\Biller::getRow(['id' => $sale->biller_id]) ?>
 <?php $customer = \App\Models\Customer::getRow(['id' => $sale->customer_id]) ?>
-<?php $paymentValidation = \App\Models\PaymentValidation::getRow(['sale' => $sale->reference]) ?>
+<?php $paymentValidation = \App\Models\PaymentValidation::getRow(['sale_id' => $sale->id]) ?>
 <!DOCTYPE html>
 <html lang="en">
 
@@ -182,9 +182,9 @@
                   <tr>
                     <td><span class="float-left"><?= "({$saleItem->product_code}) $saleItem->product_name" ?></span></td>
                     <td><?= $saleItemJS->spec ?></td>
-                    <td><?= filterDecimal($saleItemJS->w) ?></td>
-                    <td><?= filterDecimal($saleItemJS->l) ?></td>
-                    <td><?= filterDecimal($saleItemJS->sqty) ?></td>
+                    <td><?= filterNumber($saleItemJS->w) ?></td>
+                    <td><?= filterNumber($saleItemJS->l) ?></td>
+                    <td><?= filterNumber($saleItemJS->sqty) ?></td>
                     <?php if (!$deliveryNote) : ?>
                       <td><span class="float-right"><?= formatNumber($saleItem->price) ?></span></td>
                       <td><span class="float-right"><?= formatNumber($saleItem->subtotal) ?></span></td>

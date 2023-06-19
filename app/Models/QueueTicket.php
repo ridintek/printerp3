@@ -16,7 +16,7 @@ class QueueTicket
   /**
    * Add new QueueTicket.
    */
-  public static function add(array $data)
+  public static function addQueue(array $data)
   {
     if (empty($data['phone'])) {
       setLastError('Phone number is empty.');
@@ -59,8 +59,8 @@ class QueueTicket
     if (!$customer) {
       $insertID = Customer::add([
         'company'             => '',
-        'customer_group_id'   => 1,
-        'customer_group_name' => 'Reguler',
+        'customer_group_id'   => 1, // Reguler
+        'group_name'          => 'QMS',
         'name'                => $data['name'],
         'phone'               => $data['phone']
       ]);
@@ -75,24 +75,26 @@ class QueueTicket
     unset($data['name'], $data['phone']);
 
     // Begin Prevent Duplicate entries.
-    $lastTicket = self::getTodayLastQueueTicket([
-      'queue_category_id' => $data['queue_category_id'],
-      'warehouse_id'      => $data['warehouse_id']
+    $lastTicket = self::select('*')->orderBy('date', 'DESC')->getRow([
+      'customer_id'   => $customer->id,
+      'status'        => self::STATUS_WAITING,
+      'warehouse_id'  => $data['warehouse_id']
     ]);
 
-    if ($lastTicket && $lastTicket->customer_id == $customer->id) {
-      setLastError('Anda sudah mengambil tiket sebelumnya.');
+
+    if ($lastTicket) {
+      setLastError("Anda sudah mengambil tiket sebelumnya.<br> No tiket terakhir anda {$lastTicket->token}.");
       return false;
     }
     // End Prevent Duplicate entries.
 
     // Begin get estimated call date.
-    $servingQueues = self::select('*')->like('date', date('Y-m-d'), 'right')->get([
+    $servingQueues = self::select('*')->like('date', date('Y-m-d'), 'after')->get([
       'status' => self::STATUS_SERVING,
       'warehouse_id' => $data['warehouse_id']
     ]);
 
-    $waitingQueues = self::select('*')->like('date', date('Y-m-d'), 'right')->get([
+    $waitingQueues = self::select('*')->like('date', date('Y-m-d'), 'after')->get([
       'status' => self::STATUS_WAITING,
       'warehouse_id' => $data['warehouse_id'],
     ]);
@@ -127,7 +129,7 @@ class QueueTicket
     $data['queue_category_name']  = $category->name;
     $data['status']               = self::STATUS_WAITING;
     $data['status2']              = self::toStatus(self::STATUS_WAITING);
-    $data['token']                = self::generateNewQueueTicketToken($data);
+    $data['token']                = self::generateNewTicketToken($data);
 
     $data['date'] = date('Y-m-d H:i:s');
 
@@ -144,25 +146,31 @@ class QueueTicket
 
   /**
    * Call a queue ticket.
-   * @param array $data [user_id*, warehouse*]
+   * @param array $data [ *user_id, *warehouse_id ]
    */
-  public static function callQueue($data)
+  public static function callQueue(array $data)
   {
-    $warehouse = Warehouse::getRow(['code' => $data['warehouse']]);
+    $warehouse = Warehouse::getRow(['id' => $data['warehouse_id']]);
 
     if (!$warehouse) {
       setLastError('Warehouse is not found.');
       return false;
     }
 
-    $queueLists = self::getTodayQueueTicketList($data['warehouse']);
+    // Get callable ticket.
+    $ticket = self::select('*')
+      ->where('warehouse_id', $warehouse->id)
+      ->where('status', self::STATUS_WAITING)
+      ->orderBy('date', 'ASC')
+      ->getRow();
 
-    if ($queueLists) {
+
+    if ($ticket) {
       $user = User::getRow(['id' => $data['user_id']]);
 
-      foreach ($queueLists as $list) {
-        $ticket = $list;
-        break;
+      if (!$user) {
+        setLastError('User is not found.');
+        return false;
       }
 
       $call_date   = date('Y-m-d H:i:s');
@@ -185,8 +193,10 @@ class QueueTicket
         User::update((int)$user->id, ['token' => $ticket->token, 'queue_category_id' => $ticket->queue_category_id]);
         return self::getQueueTicketById((int)$ticket->id);
       }
+
       return null;
     }
+
     return null;
   }
 
@@ -206,9 +216,9 @@ class QueueTicket
     return false;
   }
 
-  public static function endQueue($ticket_id, $data = [])
+  public static function endQueue(int $ticketId, array $data)
   {
-    $ticket   = self::getRow(['id' => $ticket_id]);
+    $ticket   = self::getRow(['id' => $ticketId]);
     $category = QueueCategory::getRow(['id' => $ticket->queue_category_id]);
 
     if (!empty($data['serve_time'])) { // 00:05:00
@@ -239,7 +249,7 @@ class QueueTicket
     // Check if minus then overtime.
     $over_time = ($diffOver->format('%r') == '-' ? $overDate->diff($limitDate)->format('%H:%I:%S') : '00:00:00');
 
-    if (self::update((int)$ticket_id, [
+    if (self::update((int)$ticketId, [
       'end_date'    => $end_date,
       'over_time'   => $over_time, // OK
       'serve_time'  => $serve_time, // OK
@@ -252,7 +262,12 @@ class QueueTicket
     return false;
   }
 
-  public static function formatTicket($number)
+  /**
+   * Format ticket.
+   * @param int $number Number of ticket to format.
+   * @param string Return ticket number. Ex. 003, 006, 009, 012, ...
+   */
+  public static function formatTicket(int $number)
   {
     return ($number < 10 ? '00' . $number : ($number < 100 ? '0' . $number : $number));
   }
@@ -261,16 +276,20 @@ class QueueTicket
    * Generate new queue ticket token.
    * @param array $data [ *queue_category_id, *warehouse_id ]
    */
-  public static function generateNewQueueTicketToken($data)
+  public static function generateNewTicketToken(array $data)
   {
     $queueCategory = QueueCategory::getRow(['id' => $data['queue_category_id']]);
-    $lastTicket = self::getTodayLastQueueTicket($data);
+    $lastTicket = self::select('*')
+      ->where('queue_category_id', $data['queue_category_id'])
+      ->where('warehouse_id', $data['warehouse_id'])
+      ->orderBy('date', 'DESC')
+      ->getRow();
 
     if ($lastTicket) {
-      $ticket_number = intval(str_replace($queueCategory->prefix, '', $lastTicket->token));
-      $ticket_number++;
+      $ticketNumber = intval(str_replace($queueCategory->prefix, '', $lastTicket->token));
+      $ticketNumber++;
 
-      return $queueCategory->prefix . self::formatTicket($ticket_number);
+      return $queueCategory->prefix . self::formatTicket($ticketNumber);
     }
 
     // If not ticket present.
@@ -289,8 +308,8 @@ class QueueTicket
   {
     return self::select("queue_tickets.*,
       queue_categories.prefix, queue_categories.attempt,
-      queue_categories.duration, customers.name AS customer_name,
-      customers.phone AS customer_phone")
+      queue_categories.duration,
+      customers.id AS customer_id, customers.name AS customer_name, customers.phone AS customer_phone")
       ->from('queue_tickets')
       ->join('queue_categories', 'queue_categories.id = queue_tickets.queue_category_id', 'left')
       ->join('customers', 'customers.id = queue_tickets.customer_id', 'left')
@@ -309,84 +328,20 @@ class QueueTicket
     return null;
   }
 
-  public static function getTodayCallableQueueTicket(string $warehouseCode)
+  public static function getTodayOnlineCounters(int $warehouseId)
   {
-    $warehouse = Warehouse::getRow(['code' => $warehouseCode]);
-
-    return self::select('*')
-      ->like('date', date('Y-m-d'), 'right')
-      ->where('warehouse_id', $warehouse->id)
-      ->where('status', self::STATUS_CALLING)
-      ->getRow();
-  }
-
-  /**
-   * Get today last queue ticket.
-   * @param array $data [ *queue_category_id, *warehouse_id ]
-   */
-  public static function getTodayLastQueueTicket(array $data)
-  {
-    if (empty($data['queue_category_id'])) {
-      setLastError('No queue category id');
-      return null;
-    }
-
-    if (empty($data['warehouse_id'])) {
-      setLastError('No warehouse id');
-      return null;
-    }
-
-    return self::select('*')
-      ->like('date', date('Y-m-d'), 'right')
-      ->where('warehouse_id', $data['warehouse_id'])
-      ->where('queue_category_id', $data['queue_category_id'])
-      ->where('status', self::STATUS_WAITING)
-      ->orderBy('date', 'desc')
-      ->getRow();
-  }
-
-  public static function getTodayOnlineCounters(string $warehouseCode)
-  {
-    $warehouse = Warehouse::getRow(['code' => $warehouseCode]);
+    $warehouse = Warehouse::getRow(['id' => $warehouseId]);
 
     $user = User::select('*')
       ->where('warehouse_id', $warehouse->id);
 
     if ($warehouse->code == 'LUC') {
-      $user->orWhere('warehouse IS null');
+      $user->orWhere('warehouse_id IS null');
     }
 
     return $user
       ->where('counter > 0')
       ->orderBy('counter', 'ASC')
-      ->get();
-  }
-
-  public static function getTodayQueueTicketList(string $warehouseCode)
-  {
-    $warehouse = Warehouse::getRow(['code' => $warehouseCode]);
-
-    return self::select('*')
-      ->like('date', date('Y-m-d'), 'right')
-      ->where('warehouse_id', $warehouse->id)
-      ->where('status', self::STATUS_WAITING)
-      ->orderBy('date', 'ASC')
-      ->get();
-  }
-
-  public static function getTodaySkippedQueueList(string $warehouseCode)
-  {
-    $warehouse = Warehouse::getRow(['code' => $warehouseCode]);
-
-    $expMinute = 20; // Hardcoded.
-    $date = date('Y-m-d H:i:s', strtotime("-{$expMinute} minute"));
-
-    return self::select('*')
-      ->like('date', date('Y-m-d'), 'right')
-      ->where("est_call_date > '{$date}'")
-      ->where('warehouse_id', $warehouse->id)
-      ->where('status', self::STATUS_SKIPPED)
-      ->orderBy('date', 'ASC')
       ->get();
   }
 
@@ -398,9 +353,9 @@ class QueueTicket
     return DB::table('queue_tickets')->select($columns, $escape);
   }
 
-  public static function serveQueue($ticketId)
+  public static function serveQueue(int $ticketId)
   {
-    if (self::update((int)$ticketId, [
+    if (self::update($ticketId, [
       'serve_date'  => date('Y-m-d H:i:s'),
       'status'      => self::STATUS_SERVING,
       'status2'     => self::toStatus(self::STATUS_SERVING),
@@ -413,7 +368,7 @@ class QueueTicket
 
   public static function skipQueue(int $ticketId)
   {
-    if (self::update((int)$ticketId, [
+    if (self::update($ticketId, [
       'end_date'  => date('Y-m-d H:i:s'),
       'status'    => self::STATUS_SKIPPED,
       'status2'   => self::toStatus(self::STATUS_SKIPPED),

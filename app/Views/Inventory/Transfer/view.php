@@ -120,13 +120,13 @@
   </div>
 </div>
 <div class="modal-footer">
-  <?php if ($transfer->status != 'packing' && hasAccess('ProductMutation.Packing')) : ?>
+  <?php if ($transfer->status != 'packing' && hasAccess('ProductTransfer.Packing')) : ?>
     <button type="button" class="btn bg-gradient-warning commit-status status-packing"><i class="fad fa-fw fa-check"></i> <?= lang('Status.packing') ?></button>
   <?php endif; ?>
-  <?php if ($transfer->status == 'packing' && hasAccess('ProductMutation.Send')) : ?>
+  <?php if ($transfer->status == 'packing' && hasAccess('ProductTransfer.Send')) : ?>
     <button type="button" class="btn bg-gradient-primary commit-status status-sent"><i class="fad fa-fw fa-check"></i> <?= lang('App.send') ?></button>
   <?php endif; ?>
-  <?php if (inStatus($transfer->status, ['sent', 'received_partial']) && hasAccess('ProductMutation.Receive')) : ?>
+  <?php if (inStatus($transfer->status, ['sent', 'received_partial']) && hasAccess('ProductTransfer.Receive')) : ?>
     <button type="button" class="btn bg-gradient-success commit-status status-received"><i class="fad fa-fw fa-box-open-full"></i> <?= lang('App.receive') ?></button>
   <?php endif; ?>
   <button type="button" class="btn bg-gradient-danger" data-dismiss="modal"><i class="fad fa-fw fa-times"></i> <?= lang('App.close') ?></button>

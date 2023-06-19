@@ -47,19 +47,19 @@ class Production extends BaseController
 
     $userJS = getJSON(session('login')?->json);
 
-    if (isset($userJS->billers) && !empty($userJS->billers)) {
-      if ($billers) {
-        $billers = array_merge($billers, $userJS->billers);
+    if (isset($userJS->warehouses) && !empty($userJS->warehouses)) {
+      if ($warehouses) {
+        $warehouses = array_merge($warehouses, $userJS->warehouses);
       } else {
-        $billers = $userJS->billers;
+        $warehouses = $userJS->warehouses;
       }
     }
 
-    if (session('login')->biller_id) {
-      if ($billers) {
-        $billers[] = session('login')->biller_id;
+    if (session('login')->warehouse_id) {
+      if ($warehouses) {
+        $warehouses[] = session('login')->warehouse_id;
       } else {
-        $billers = [session('login')->biller_id];
+        $warehouses = [session('login')->warehouse_id];
       }
     }
 
@@ -88,7 +88,7 @@ class Production extends BaseController
 
   public function getTrackingPODs()
   {
-    checkPermission('Sale.Complete');
+    checkPermission('TrackingPOD.View');
 
     $warehouses = getPost('warehouse');
     $startDate  = (getPost('start_date') ?? date('Y-m-d', strtotime('-1 month')));
@@ -97,36 +97,47 @@ class Production extends BaseController
     $dt = new DataTables('trackingpod');
     $dt
       ->select("trackingpod.id AS id, trackingpod.created_at, products.code AS category,
-        start_click, end_click, usage_click, (mc_reject + op_reject) AS total_reject, erp_click, balance,
-        warehouse.name AS warehouse_name, creator.fullname, attachment")
+        start_click, end_click, usage_click, today_click, (mc_reject + op_reject) AS total_reject,
+        balance, warehouse.name AS warehouse_name, creator.fullname, attachment")
       ->join('products', 'products.id = trackingpod.pod_id', 'left')
       ->join('warehouse', 'warehouse.id = trackingpod.warehouse_id', 'left')
       ->join('users creator', 'creator.id = trackingpod.created_by', 'left')
       ->where("trackingpod.created_at BETWEEN '{$startDate} 00:00:00' AND '{$endDate} 23:59:59'")
       ->editColumn('id', function ($data) {
-        return '
+        $menu = '
           <div class="btn-group btn-action">
             <a class="btn bg-gradient-primary btn-sm dropdown-toggle" href="#" data-toggle="dropdown">
               <i class="fad fa-gear"></i>
             </a>
-            <div class="dropdown-menu">
-              <a class="dropdown-item" href="' . base_url('production/trackingpod/edit/' . $data['id']) . '"
-                data-toggle="modal" data-target="#ModalStatic"
-                data-modal-class="modal-dialog-centered modal-dialog-scrollable">
-                <i class="fad fa-fw fa-edit"></i> ' . lang('App.edit') . '
-              </a>
-              <a class="dropdown-item" href="' . base_url('production/trackingpod/view/' . $data['id']) . '"
-                data-toggle="modal" data-target="#ModalStatic"
-                data-modal-class="modal-dialog-centered modal-dialog-scrollable">
-                <i class="fad fa-fw fa-magnifying-glass"></i> ' . lang('App.view') . '
-              </a>
-              <div class="dropdown-divider"></div>
-              <a class="dropdown-item" href="' . base_url('production/trackingpod/delete/' . $data['id']) . '"
-                data-action="confirm">
-                <i class="fad fa-fw fa-trash"></i> ' . lang('App.delete') . '
-              </a>
+            <div class="dropdown-menu">';
+
+        if (hasAccess('TrackingPOD.Edit')) {
+          $menu .= '<a class="dropdown-item" href="' . base_url('production/trackingpod/edit/' . $data['id']) . '"
+              data-toggle="modal" data-target="#ModalStatic"
+              data-modal-class="modal-dialog-centered modal-dialog-scrollable">
+              <i class="fad fa-fw fa-edit"></i> ' . lang('App.edit') . '
+            </a>';
+        }
+
+        $menu .= '<a class="dropdown-item" href="' . base_url('production/trackingpod/view/' . $data['id']) . '"
+            data-toggle="modal" data-target="#ModalStatic"
+            data-modal-class="modal-dialog-centered modal-dialog-scrollable">
+            <i class="fad fa-fw fa-magnifying-glass"></i> ' . lang('App.view') . '
+          </a>';
+
+        if (hasAccess('TrackingPOD.Delete')) {
+          $menu .= '<div class="dropdown-divider"></div>
+            <a class="dropdown-item" href="' . base_url('production/trackingpod/delete/' . $data['id']) . '"
+              data-action="confirm">
+              <i class="fad fa-fw fa-trash"></i> ' . lang('App.delete') . '
+            </a>';
+        }
+
+        $menu .= '
             </div>
           </div>';
+
+        return $menu;
       })
       ->editColumn('start_click', function ($data) {
         return formatNumber($data['start_click']);
@@ -137,11 +148,11 @@ class Production extends BaseController
       ->editColumn('usage_click', function ($data) {
         return formatNumber($data['usage_click']);
       })
+      ->editColumn('today_click', function ($data) {
+        return formatNumber($data['today_click']);
+      })
       ->editColumn('total_reject', function ($data) {
         return formatNumber($data['total_reject']);
-      })
-      ->editColumn('erp_click', function ($data) {
-        return formatNumber($data['erp_click']);
       })
       ->editColumn('balance', function ($data) {
         return formatNumber($data['balance']);
@@ -307,8 +318,11 @@ class Production extends BaseController
     return $this->buildPage($this->data);
   }
 
+  // Harus dilakukan malam hari.
   protected function trackingpod_add()
   {
+    checkPermission('TrackingPOD.Add');
+
     if (requestMethod() == 'POST' && isAJAX()) {
       $date       = dateTimePHP(getPost('date'));
       $category   = getPost('category');
@@ -316,13 +330,19 @@ class Production extends BaseController
       $note       = stripTags(getPost('note'));
       $endClick = 0;
       $mcReject = 0;
+      $useAttachment = true;
 
       $endClicks = getPost('endclick');
       $mcRejects = getPost('rejectmachine');
 
       for ($a = 0; $a < count($endClicks); $a++) {
-        $endClick += filterDecimal($endClicks[$a]);
-        $mcReject += filterDecimal($mcRejects[$a]);
+        $endClick += filterNumber($endClicks[$a]);
+        $mcReject += filterNumber($mcRejects[$a]);
+      }
+
+      // Bypass attachment for debugging.
+      if (strpos($note, 'noattachment') !== false) {
+        $useAttachment = false;
       }
 
       $data = [
@@ -336,27 +356,29 @@ class Production extends BaseController
 
       DB::transStart();
 
-      $data = $this->useAttachment($data, null, function ($upload) use ($endClick) {
-        if (!$upload->has('attachment')) {
-          $this->response(400, ['message' => 'Attachment berupa foto display mesin POD dibutuhkan.']);
-        }
+      $data = $this->useAttachment($data, null, function ($upload) use ($endClick, $useAttachment) {
+        if ($useAttachment) {
+          if (!$upload->has('attachment')) {
+            $this->response(400, ['message' => 'Attachment berupa foto display mesin POD dibutuhkan.']);
+          }
 
-        $ocr = ocr($upload->getTempName());
-        $fullColor = 0;
+          $ocr = ocr($upload->getTempName());
+          $fullColor = 0;
 
-        if ($ocr) {
-          // Multi Full Color Counter in one image. Must be Vertical Ordered.
-          for ($x = 0; $x < count($ocr); $x++) {
-            if (strcasecmp($ocr[$x], 'Full Color Counter') === 0) {
-              $fullColor += filterDecimal($ocr[$x + 1]);
+          if ($ocr) {
+            // Multi Full Color Counter in one image. Must be Vertical Ordered.
+            for ($x = 0; $x < count($ocr); $x++) {
+              if (strcasecmp($ocr[$x], 'Full Color Counter') === 0) {
+                $fullColor += filterNumber($ocr[$x + 1]);
+              }
             }
           }
-        }
 
-        if ($endClick != $fullColor) {
-          $this->response(400, [
-            'message' => "End Click ($endClick) tidak sesuai attachment Full Color Counter ($fullColor)."
-          ]);
+          if ($endClick != $fullColor) {
+            $this->response(400, [
+              'message' => "End Click ($endClick) tidak sesuai attachment Full Color Counter ($fullColor)."
+            ]);
+          }
         }
       });
 
@@ -382,6 +404,8 @@ class Production extends BaseController
 
   protected function trackingpod_delete($id = null)
   {
+    checkPermission('TrackingPOD.Delete');
+
     $tpod = TrackingPOD::getRow(['id' => $id]);
 
     if (!$tpod) {
@@ -411,15 +435,97 @@ class Production extends BaseController
 
   protected function trackingpod_edit($id = null)
   {
+    checkPermission('TrackingPOD.Edit');
+
+    $pod = TrackingPOD::getRow(['id' => $id]);
+
+    if (!$pod) {
+      $this->response(404, ['message' => 'Tracking POD is not found.']);
+    }
+
+    if (requestMethod() == 'POST' && isAJAX()) {
+      $date       = dateTimePHP(getPost('date'));
+      $category   = getPost('category');
+      $warehouse  = getPost('warehouse');
+      $note       = stripTags(getPost('note'));
+      $endClick = 0;
+      $mcReject = 0;
+
+      $endClicks = getPost('endclick');
+      $mcRejects = getPost('rejectmachine');
+
+      for ($a = 0; $a < count($endClicks); $a++) {
+        $endClick += filterNumber($endClicks[$a]);
+        $mcReject += filterNumber($mcRejects[$a]);
+      }
+
+      $data = [
+        'pod_id'        => $category,
+        'warehouse_id'  => $warehouse,
+        'end_click'     => $endClick,
+        'mc_reject'     => $mcReject,
+        'note'          => $note,
+        'created_at'    => $date,
+      ];
+
+      DB::transStart();
+
+      $data = $this->useAttachment($data, null, function ($upload) use ($endClick) {
+        // if (!$upload->has('attachment')) {
+        //   $this->response(400, ['message' => 'Attachment berupa foto display mesin POD dibutuhkan.']);
+        // }
+
+        // $ocr = ocr($upload->getTempName());
+        // $fullColor = 0;
+
+        // if ($ocr) {
+        //   // Multi Full Color Counter in one image. Must be Vertical Ordered.
+        //   for ($x = 0; $x < count($ocr); $x++) {
+        //     if (strcasecmp($ocr[$x], 'Full Color Counter') === 0) {
+        //       $fullColor += filterNumber($ocr[$x + 1]);
+        //     }
+        //   }
+        // }
+
+        // if ($endClick != $fullColor) {
+        //   $this->response(400, [
+        //     'message' => "End Click ($endClick) tidak sesuai attachment Full Color Counter ($fullColor)."
+        //   ]);
+        // }
+      });
+
+      $insertId = TrackingPOD::add($data);
+
+      if (!$insertId) {
+        $this->response(400, ['message' => getLastError()]);
+      }
+
+      DB::transComplete();
+
+      if (DB::transStatus()) {
+        $this->response(200, ['message' => 'TrackingPOD has been updated.']);
+      }
+
+      $this->response(400, ['message' => 'Failed to update TrackingPOD.']);
+    }
+
+    $this->data['title']  = lang('App.edittrackingpod');
+    $this->data['pod']    = $pod;
+
+    $this->response(200, ['content' => view('Production/TrackingPOD/edit', $this->data)]);
   }
 
   protected function trackingpod_view($id = null)
   {
+    checkPermission('TrackingPOD.View');
+
     $tpod = TrackingPOD::getRow(['id' => $id]);
 
     if (!$tpod) {
       $this->response(404, ['message' => 'TrackingPOD is not found.']);
     }
+
+    TrackingPOD::sync((int)$id);
 
     $whp = WarehouseProduct::getRow(['product_id' => $tpod->pod_id, 'warehouse_id' => $tpod->warehouse_id]);
 

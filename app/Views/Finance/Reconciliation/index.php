@@ -10,7 +10,7 @@
           </div>
         </div>
         <div class="card-body">
-          <table id="Table" class="table table-bordered table-hover" style="width:100%;">
+          <table id="Table" class="table table-head-fixed-main table-hover table-striped" style="width:100%;">
             <thead>
               <tr>
                 <th>MB Bank Name</th>
@@ -62,6 +62,7 @@
       order: [
         [0, 'desc']
       ],
+      pageLength: 50,
       processing: true,
       responsive: true,
       scrollX: false,

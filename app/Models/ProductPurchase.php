@@ -188,6 +188,43 @@ class ProductPurchase
     return null;
   }
 
+  public static function sync($where = [])
+  {
+    $purchases = self::get($where);
+    $hasPayment = false;
+    $synced = 0;
+
+    foreach ($purchases as $purchase) {
+      $paid = 0;
+      $payments = Payment::get(['purchase_id' => $purchase->id]);
+      $status = $purchase->payment_status;
+
+      foreach ($payments as $payment) {
+        if ($payment->status == 'paid') {
+          $paid += $payment->amount;
+        }
+
+        $hasPayment = true;
+      }
+
+      if ($purchase->grand_total == $paid) {
+        $status = 'paid';
+      } else if ($paid > 0 && $purchase->grand_total > $paid) {
+        $status = 'partial';
+      } else if (!$hasPayment) {
+        $status = 'pending';
+      }
+
+      if (!self::update((int)$purchase->id, ['payment_status' => $status])) {
+        return false;
+      }
+
+      $synced++;
+    }
+
+    return $synced;
+  }
+
   /**
    * Select ProductPurchase.
    */

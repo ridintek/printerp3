@@ -11,6 +11,17 @@ class Customer
    */
   public static function add(array $data)
   {
+    if (empty($data['customer_group_id'])) {
+      setLastError('Customer Group ID is not set.');
+      return false;
+    }
+
+    $csGroup = CustomerGroup::getRow(['id' => $data['customer_group_id']]);
+
+    if ($csGroup) {
+      $data['customer_group_name'] = $csGroup->name;
+    }
+
     DB::table('customers')->insert($data);
 
     if (DB::error()['code'] == 0) {
@@ -70,6 +81,8 @@ class Customer
    */
   public static function update(int $id, array $data)
   {
+    $data = nulling($data, ['address', 'city', 'email']);
+
     DB::table('customers')->update($data, ['id' => $id]);
 
     if (DB::error()['code'] == 0) {

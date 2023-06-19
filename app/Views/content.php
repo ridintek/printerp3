@@ -35,8 +35,8 @@
     // ERP namespace.
     window.erp = {
       biller: {
-        code: '<?= session('login')->biller ?>',
-        id: '<?= session('login')->biller_id ?>'
+        code: <?= session('login')->biller ? "'" . session('login')->biller . "'" : 'null' ?>,
+        id: <?= session('login')->biller_id ?? 'null' ?>
       },
       chart: {},
       debug: false,
@@ -60,9 +60,13 @@
         bankfrom: {},
         bankto: {},
         biller: {},
+        creator: {},
+        customer: {},
         machine: {},
         operator: {},
         product: {},
+        supplier: {},
+        techsupport: {},
         user: {},
         warehouse: {}
       },
@@ -73,8 +77,8 @@
         id: <?= session('login')->user_id ?>
       },
       warehouse: {
-        code: '<?= session('login')->warehouse ?>',
-        id: '<?= session('login')->biller_id ?>'
+        code: <?= session('login')->warehouse ? "'" . session('login')->warehouse . "'" : 'null' ?>,
+        id: <?= session('login')->warehouse_id ?? 'null' ?>
       }
     };
   </script>
@@ -474,7 +478,7 @@
               </li>
             <?php endif; ?>
             <!-- Maintenance -->
-            <?php if (hasAccess(['MaintenanceReport.View', 'MaintenanceLog.View', 'MaintenanceSchedule.View'])) : ?>
+            <?php if (hasAccess(['MaintenanceReport.View', 'MaintenanceReview.View', 'MaintenanceSchedule.View'])) : ?>
               <li class="nav-item">
                 <a href="#" class="nav-link" data-slug="maintenance">
                   <i class="nav-icon fad fa-cog" style="color:#ff0040"></i>
@@ -618,25 +622,17 @@
                   <?php endif; ?>
                   <?php if (hasAccess('Report.IncomeStatement')) : ?>
                     <li class="nav-item">
-                      <a href="#" class="nav-link">
-                        <i class="nav-icon fad fa-money-bill-trend-up"></i>
+                      <a href="<?= base_url('report/incomestatement') ?>" class="nav-link" data-action="link" data-slug="incomestatement">
+                        <i class="nav-icon fad fa-money-bill-trend-up" style="color:#4040ff"></i>
                         <p><?= lang('App.incomestatement') ?></p>
                       </a>
                     </li>
                   <?php endif; ?>
                   <?php if (hasAccess('Report.InventoryBalance')) : ?>
                     <li class="nav-item">
-                      <a href="#" class="nav-link">
-                        <i class="nav-icon fad fa-box-dollar"></i>
+                      <a href="<?= base_url('report/inventorybalance') ?>" class="nav-link" data-action="link" data-slug="inventorybalance">
+                        <i class="nav-icon fad fa-box-dollar" style="color:#80ffff"></i>
                         <p><?= lang('App.inventorybalance') ?></p>
-                      </a>
-                    </li>
-                  <?php endif; ?>
-                  <?php if (hasAccess('Report.Maintenance')) : ?>
-                    <li class="nav-item">
-                      <a href="#" class="nav-link">
-                        <i class="nav-icon fad fa-screwdriver-wrench"></i>
-                        <p><?= lang('App.maintenance') ?></p>
                       </a>
                     </li>
                   <?php endif; ?>
@@ -648,10 +644,18 @@
                       </a>
                     </li>
                   <?php endif; ?>
+                  <?php if (hasAccess('Report.PrintERP')) : ?>
+                    <li class="nav-item">
+                      <a href="<?= base_url('report/printerp') ?>" class="nav-link" data-action="link" data-slug="printerp">
+                        <i class="nav-icon fad fa-money-bill-wave" style="color:#4040ff"></i>
+                        <p>PrintERP</p>
+                      </a>
+                    </li>
+                  <?php endif; ?>
                   <?php if (hasAccess('Report.Receivable')) : ?>
                     <li class="nav-item">
-                      <a href="#" class="nav-link">
-                        <i class="nav-icon fad fa-file-invoice-dollar"></i>
+                      <a href="<?= base_url('report/receivable') ?>" class="nav-link" data-action="link" data-slug="receivable">
+                        <i class="nav-icon fad fa-file-invoice-dollar" style="color:#8080ff"></i>
                         <p><?= lang('App.receivable') ?></p>
                       </a>
                     </li>
@@ -907,7 +911,6 @@
   <script src="<?= base_url() ?>/assets/app/js/common.js?v=<?= $resver ?>"></script>
   <script>
     typing('nopgboss', () => {
-
       if (erp.debug) {
         erp.debug = false;
         toastr.info('Debug has been deactivated.');
@@ -916,6 +919,18 @@
         toastr.info('Debug has been activated.');
       }
     })
+  </script>
+  <!-- Google tag (gtag.js) -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-Y8FVKN22WM"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+
+    function gtag() {
+      dataLayer.push(arguments);
+    }
+    gtag('js', new Date());
+
+    gtag('config', 'G-Y8FVKN22WM');
   </script>
 </body>
 

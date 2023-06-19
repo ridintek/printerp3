@@ -27,7 +27,7 @@
                       <button class="btn btn-lg bg-gradient-success" id="btn-serve"><i class="fa fa-play"></i> <span data-field="label">SERVE</span></button>
                       <button class="btn btn-lg bg-gradient-warning" id="btn-rest"><i class="fa fa-mug-hot"></i> <span data-field="label">REST</span></button>
                       <button class="btn btn-lg bg-gradient-default" id="btn-extend"><i class="fa fa-clock"></i> <span data-field="label">EXTEND TIME</span></button>
-                      <button class="btn btn-lg bg-gradient-primary" id="btn-addsale" data-remote="<?= base_url('sale/add') ?>" data-toggle="modal" data-target="#ModalStatic"><i class="fa fa-plus"></i> <span data-field="label">ADD SALE</span></button>
+                      <button class="btn btn-lg bg-gradient-primary" id="btn-addsale" data-remote="<?= base_url('sale/add') ?>" data-toggle="modal" data-target="#ModalStatic" data-modal-class="modal-lg modal-dialog-centered modal-dialog-scrollable"><i class="fa fa-plus"></i> <span data-field="label">ADD SALE</span></button>
                     </div>
                     <div class="col-md-3">
                       <?php $counterOpts = [
@@ -471,9 +471,10 @@
     async function CounterMessage() {
       // If counter online then...
       if (QueueConfig.get('counter_status') && QueueConfig.get('counter_status') != 'offline') {
-        let displayData = await QMS.getDisplayData(window.warehouseCode);
+        let displayData = await QMS.getDisplayData(erp.warehouse.id ?? 'LUC');
+        let queueList = displayData.data.queue_list;
 
-        if (displayData.data.queue_list.data.length) {
+        if (queueList.code == 200) {
           if (QueueConfig.get('counter_status') == 'idle') {
             if (!timerWaitCallTimeout.isRunning() && !timerOverWaitCall.isRunning()) {
               QueueNotify.warning('Ada antrian pelanggan. Silakan untuk segera memanggil. Waktu 1 menit.');
@@ -524,9 +525,6 @@
 
     window.setTimeout(CounterMessage, 5000);
 
-    window._x = '<?= csrf_token() ?>';
-    window._vx = '<?= csrf_hash() ?>';
-    window.warehouseCode = '<?= session('login')->warehouse ?? 'LUC' ?>';
     let Counter = {
       number: 0,
       setNumber: function(number) {
@@ -596,51 +594,37 @@
     btnCall.click(async function() { // CALL
       $(this).prop('disabled', true);
 
-      let res = {};
+      let response = {};
+      let oldResponse = {};
 
       try {
         if (typeof window.recallTicketId !== 'undefined' && window.recallTicketId) {
-          res = await QueueHttp.send('GET', base_url + '/qms/recallQueue/' + window.recallTicketId);
+          response = await QMS.recallQueueTicket(window.recallTicketId);
           delete(window.recallTicketId);
         } else {
-          res = await QueueHttp.send('GET', base_url + '/qms/callQueue/<?= session('login')->warehouse ?? 'LUC' ?>');
+          response = await QMS.callQueueTicket(erp.warehouse.id ?? 'LUC');
         }
       } catch (e) {
         console.warn(e);
       }
 
+      let oldTicket = QueueConfig.getObject('ticket_data');
 
-      let old_ticket = QueueConfig.getObject('ticket_data');
-
-      if (old_ticket) { // END OLD TICKET
+      if (oldTicket) { // END OLD TICKET
         let data = {};
-        data[<?= csrf_token() ?>] = '<?= csrf_hash() ?>';
+
         data['serve_time'] = timerCustServing.getTime();
-        data['ticket'] = old_ticket.id;
+        data['ticket'] = oldTicket.id;
 
         if (Counter.status == 'serve' || Counter.status == 'paused') {
-          QueueHttp.send('POST', base_url + '/qms/endQueue', data).then((r) => {
-            if (!r.error) {
-              console.log('Current ticket has been ended.');
-            } else {
-              console.log(r.msg);
-            }
-          });
+          oldResponse = await QMS.endQueueTicket(data);
         } else if (Counter.status == 'call') {
-          QueueHttp.send('POST', base_url + '/qms/skipQueue', data).then((r) => {
-            if (!r.error) {
-              console.log('Current ticket has been skipped.');
-            } else {
-              console.log(r.msg);
-            }
-          });
+          oldResponse = await QMS.skipQueueTicket(data);
         }
       }
 
-      if (!res.error) {
-        let ticket = res.data;
-
-        //console.log(ticket);
+      if (response.code == 200) {
+        let ticket = response.data;
 
         Counter.setStatus('call');
         initializeControls();
@@ -649,12 +633,17 @@
 
         if (!timerProgress.isRunning()) timerProgress.start();
 
+        console.log(ticket);
+        console.log(response);
+
         if (ticket.prefix == 'D') {
           QueueConfig.set('edit_design', true);
         } else {
           QueueConfig.set('edit_design', false);
         }
 
+        // Auto customer on add sale.
+        btnAddSale[0].dataset.remote = base_url + '/sale/add?customer=' + ticket.customer_id;
         CustTicket.html(ticket.token);
         CustCategory.html(ticket.queue_category_name);
         CustName.html(ticket.customer_name);
@@ -667,6 +656,7 @@
       } else {
         timerProgress.stop();
         timerOverServing.stop();
+        timerCustServing.stop();
         timerCustOverServe.stop();
 
         Counter.setStatus('idle');
@@ -697,12 +687,12 @@
       let ticket = QueueConfig.getObject('ticket_data');
 
       try {
-        let res = await QueueHttp.send('GET', base_url + '/qms/recallQueue/' + ticket.id);
+        let res = await QMS.recallQueueTicket(ticket.id);
       } catch (e) {
         console.log(e);
       }
 
-      if (!res.error) {
+      if (res.code == 200) {
         QueueNotify.success('<strong>Recall success.</strong>');
         timerWaitServeTimeout.reset();
       }
@@ -731,20 +721,20 @@
       $(this).prop('disabled', true);
 
       try {
-        let res = await QueueHttp.send('POST', base_url + '/qms/serveQueue', data);
+        let res = await QMS.serveQueueTicket(ticket.id);
+
+        if (res.code == 200) {
+          timerServing.start();
+          timerCustServing.start();
+          Counter.setStatus('serve');
+          initializeControls();
+          QueueNotify.success('Serving started.');
+        } else {
+          QueueNotify.error(res.msg);
+          $(this).prop('disabled', false);
+        }
       } catch (e) {
         console.warn(e);
-      }
-
-      if (!res.error) {
-        timerServing.start();
-        timerCustServing.start();
-        Counter.setStatus('serve');
-        initializeControls();
-        QueueNotify.success('Serving started.');
-      } else {
-        QueueNotify.error(res.msg);
-        $(this).prop('disabled', false);
       }
 
       timerOverWaitCall.stop();
@@ -761,33 +751,22 @@
       let data = {};
       let old_ticket = QueueConfig.getObject('ticket_data');
 
-      data[<?= csrf_token() ?>] = '<?= csrf_hash() ?>';
+      data.__ = __;
 
       $(this).prop('disabled', true);
 
       if (old_ticket) { // END OLD TICKET
         let data = {};
-        data[<?= csrf_token() ?>] = '<?= csrf_hash() ?>';
+
+        data.__ = __;
         data['serve_time'] = timerCustServing.getTime();
         data['ticket'] = old_ticket.id;
 
         try {
           if (Counter.status == 'serve' || Counter.status == 'paused') {
-            QueueHttp.send('POST', base_url + '/qms/endQueue', data).then((r) => {
-              if (!r.error) {
-                console.log('Current ticket has been ended.');
-              } else {
-                console.log(r.msg);
-              }
-            });
+            let response = await QMS.endQueueTicket(data);
           } else if (Counter.status == 'call') {
-            QueueHttp.send('POST', base_url + '/qms/skipQueue', data).then((r) => {
-              if (!r.error) {
-                console.log('Current ticket has been skipped.');
-              } else {
-                console.log(r.msg);
-              }
-            });
+            let response = await QMS.skipQueueTicket(data);
           }
         } catch (e) {
           console.warn(e);
@@ -828,30 +807,22 @@
       }, 10 * 1000); // Time out for 10 seconds.
     });
 
-    cbCounter.change(function() { // Counter number change.
-      let data = {};
-      data.counter = this.value;
-      data[<?= csrf_token() ?>] = '<?= csrf_hash() ?>';
+    cbCounter.change(async function() { // Counter number change.
+      let response = await QMS.setCounter(this.value);
 
-      QueueHttp.send('POST', base_url + '/qms/setCounter', data).then((res) => {
-        if (!res.error) {
-          Counter.setNumber(this.value);
-          if (!QueueConfig.get('counter_status') || QueueConfig.get('counter_status') == 'offline') {
-            Counter.setStatus(this.value > 0 ? 'idle' : 'offline');
-          } else {
-            Counter.setStatus(QueueConfig.get('counter_status'));
-          }
+      if (response.code == 200) {
+        Counter.setNumber(this.value);
 
-          initializeControls();
+        if (!QueueConfig.get('counter_status') || QueueConfig.get('counter_status') == 'offline') {
+          Counter.setStatus(this.value > 0 ? 'idle' : 'offline');
         } else {
-          QueueNotify.error('Failed to change counter number.');
+          Counter.setStatus(QueueConfig.get('counter_status'));
         }
-      }).catch((res) => {
-        QueueNotify.error('Failed to change counter number. Please check your network status!');
-        console.groupCollapsed('cbCounter.onChange', 'color: yellow');
-        console.warn(res);
-        console.groupEnd();
-      });
+
+        initializeControls();
+      } else {
+        QueueNotify.error('Failed to change counter number.<br>Please check your internet connection.');
+      }
     });
 
     $('#holdMe').click(function() {

@@ -7,7 +7,7 @@
 <div class="modal-body">
   <form id="form">
     <?= csrf_field() ?>
-    <table class="table table-hover table-sm table-striped">
+    <table class="table table-hover table-striped">
       <tbody>
         <tr>
           <td><?= lang('App.id') ?></td>

@@ -6,13 +6,24 @@ use App\Models\{
   Activity,
   Auth,
   Biller,
+  ComboItem,
   Customer,
   CustomerGroup,
   DB,
+  Expense,
+  ExpenseCategory,
+  Income,
+  IncomeCategory,
+  InternalUse,
   Payment,
   PaymentValidation,
+  Product,
+  ProductPurchase,
+  ProductTransfer,
   Sale,
   SaleItem,
+  Stock,
+  StockOpname,
   User,
   Voucher,
   Warehouse,
@@ -55,6 +66,44 @@ function addActivity(string $data, array $json = [])
   }
 
   return Activity::add($data);
+}
+
+/**
+ * Convert Biller ID to Warehouse ID. See warehouseToBiller.
+ * @param int|array $billerId Biller ID. It can be biller id or array of biller id.
+ * @return int|array|null Return Warehouse ID. Return null if error.
+ */
+function billerToWarehouse($billerId)
+{
+  if (gettype($billerId) == 'array') {
+    $data = [];
+
+    foreach ($billerId as $biller_id) {
+      $biller = Biller::getRow(['id' => $biller_id]);
+
+      if ($biller) {
+        $warehouse = Warehouse::getRow(['code' => $biller->code]);
+
+        if ($warehouse) {
+          $data[] = $warehouse->id;
+        }
+      }
+    }
+
+    return $data;
+  } else {
+    $biller = Biller::getRow(['id' => $billerId]);
+
+    if ($biller) {
+      $warehouse = Warehouse::getRow(['code' => $biller->code]);
+
+      if ($warehouse) {
+        return $warehouse->id;
+      }
+    }
+  }
+
+  return null;
 }
 
 /**
@@ -314,6 +363,19 @@ function filterNumber($num)
 }
 
 /**
+ * Filter number as quantity with (max. 6 fp) or without floating point.
+ * @param mixed $num Number to filter.
+ * @example 1 filterQuantity('35,836.924'); // Return "35836.924000"
+ * @example 1 filterQuantity('1.5'); // Return "1.500000"
+ * @return string
+ */
+function formatQuantity($num)
+{
+  $decimals = (isNumberFloated($num) ? 6 : 0);
+  return number_format(filterNumber($num), $decimals, '.', '');
+}
+
+/**
  * Convert number into formatted currency.
  */
 function formatCurrency($num)
@@ -330,7 +392,11 @@ function formatNumber($num)
   $dec = 0;
 
   if (strpos(strval(floatval($num)), '.') !== false) {
-    $dec = strlen(explode('.', strval($num))[1]);
+    $dec = strlen(explode('.', strval(floatval($num)))[1]);
+
+    if ($dec > 6) {
+      $dec = 6;
+    }
   }
 
   return number_format(filterNumber($num), $dec);
@@ -669,6 +735,308 @@ function getGetPost($name)
 }
 
 /**
+ * Get income statement report.
+ * @param array $opt [ biller_id[], start_date, end_date ]
+ * @return array|null Return income statement data.
+ */
+function getIncomeStatementReport($opt)
+{
+  // Lucretia gunakan harga average cost.
+  // Outlet gunakan harga mark-on.
+
+  $lucretaiMode = false;
+
+  if (!isset($opt['biller_id']) || empty($opt['biller_id'])) {
+    setLastError('Biller is not set.');
+    return null;
+  }
+
+  if (!is_array($opt['biller_id'])) {
+    setLastError('Biller id is not an array.');
+    return null;
+  }
+
+  $startDate  = ($opt['start_date'] ?? date('Y-m-') . '01');
+  $endDate    = ($opt['end_date'] ?? date('Y-m-d'));
+  $billerIds  = $opt['biller_id']; // Must be array.
+
+  // BEGIN COLLECT DATA.
+  $expenses     = Expense::select('*')
+    ->whereIn('biller_id', $billerIds)
+    ->where("date BETWEEN '{$startDate} 00:00:00' AND '{$endDate} 23:59:59'")
+    ->get();
+  $expenseGroup = ExpenseCategory::select('*')->orderBy('name', 'ASC')->get();
+  $incomes      = Income::select('*')
+    ->whereIn('biller_id', $billerIds)
+    ->where("date BETWEEN '{$startDate} 00:00:00' AND '{$endDate} 23:59:59'")
+    ->get();
+  $incomeGroup  = IncomeCategory::get();
+  $internalUses = InternalUse::select('*')
+    ->whereIn('biller_id', $billerIds)
+    ->where("date BETWEEN '{$startDate} 00:00:00' AND '{$endDate} 23:59:59'")
+    ->get();
+  $sales        = Sale::select('*')
+    ->whereIn('biller_id', $billerIds)
+    ->where("date BETWEEN '{$startDate} 00:00:00' AND '{$endDate} 23:59:59'")
+    ->get();
+
+  $warehouseIds = billerToWarehouse($billerIds); // Convert biller to warehouse.
+
+  $billerLucretai = Biller::getRow(['code' => 'LUC']);
+
+  if (count($billerIds) == 1 && $billerIds[0] == $billerLucretai->id) {
+    $lucretaiMode = true;
+  } else {
+    foreach ($billerIds as $biller_id) {
+      if ($biller_id == $billerLucretai->id) $lucretaiMode = true;
+    }
+  }
+
+  if ($warehouseIds) {
+    $purchases    = ProductPurchase::select('*')
+      ->whereIn('warehouse_id', $warehouseIds)
+      ->where("date BETWEEN '{$startDate} 00:00:00' AND '{$endDate} 23:59:59'")
+      ->get();
+    $stockOpnames = StockOpname::select('*')
+      ->whereIn('warehouse_id', $warehouseIds)
+      ->where("date BETWEEN '{$startDate} 00:00:00' AND '{$endDate} 23:59:59'")
+      ->get();
+    $transfers = ProductTransfer::select('*')
+      ->whereIn('warehouse_id_from', $warehouseIds)
+      ->where("date BETWEEN '{$startDate} 00:00:00' AND '{$endDate} 23:59:59'")
+      ->get();
+  } else {
+    $purchases = [];
+    $stockOpnames = [];
+    $transfers = [];
+  }
+
+  $capInvAmount = 0;
+  $invCost = [
+    '32. Purchase of Vehicle', '33. Purchase of Land and Building', '34. Purchase of Production Machine',
+    '35. Purchase of Finishing Machine', '36. Purchase of Computers and Supporting Equipment',
+    '37. Purchase of Building Construction', '38. Purchase of Another Investation Cost',
+  ];
+  $invCostData = [];
+  $invCostAmount = 0;
+  $expenseAmount = 0;
+  $expenseData   = [];
+  $incomeAmount  = 0;
+  $incomeData    = [];
+  $internalUseAmount = 0;
+  $internalUseData = [];
+  $priveAmount = 0;
+  $purchaseAmount = 0;
+  $revenue       = 0;
+  $soldItemCost  = 0;
+  $soAmount = 0;
+  $transferAmount = 0;
+  $transferItemCost = 0;
+
+  // EXPENSES
+  foreach ($expenseGroup as $exgroup) {
+    $amount = 0;
+
+    if (strcasecmp($exgroup->name, 'Capital Investment (Not used)') === 0) continue; // Ignored.
+    if (strcasecmp($exgroup->name, 'Sales TB') === 0) continue; // Ignore Sales TB.
+
+    foreach ($expenses as $expense) {
+      if ($expense->category_id == $exgroup->id) {
+        $amount += $expense->amount;
+      }
+    }
+
+    if (strcasecmp($exgroup->name, 'Prive') === 0) {
+      $priveAmount += $amount;
+
+      continue;
+    }
+
+    if (array_search($exgroup->name, $invCost) !== false) { // Biaya Investasi.
+      $invCostAmount += $amount;
+
+      $invCostData[] = [
+        'name' => $exgroup->name,
+        'amount' => $amount
+      ];
+
+      continue;
+    }
+
+    $expenseAmount += $amount;
+
+    $expenseData[] = [
+      'name'   => $exgroup->name,
+      'amount' => $amount
+    ];
+  }
+
+  // INCOMES
+  foreach ($incomeGroup as $ingroup) {
+    $amount = 0;
+
+    if (strcasecmp($ingroup->name, 'Sales TB') === 0) continue; // Ignore Sales TB.
+    if (strcasecmp($ingroup->name, 'Penanaman Modal') === 0) continue; // Ignored.
+    // if (strcasecmp($ingroup->name, 'Pendapatan Baltis Inn') === 0) continue; // Ignored.
+    if (strcasecmp($ingroup->name, 'Setoran Kewajiban IDS') === 0) continue; // Ignored.
+
+    foreach ($incomes as $income) {
+      if ($income->category_id == $ingroup->id) {
+        $amount += $income->amount;
+      }
+    }
+
+    if (strcasecmp($ingroup->name, 'Capital Investment') === 0) {
+      $capInvAmount += $amount;
+
+      continue;
+    }
+
+    if (strcasecmp($ingroup->name, 'Pendapatan Baltis Inn') === 0) {
+      $revenue += $amount;
+
+      continue;
+    }
+
+    $incomeAmount += $amount;
+
+    $incomeData[] = [
+      'name'   => $ingroup->name,
+      'amount' => $amount
+    ];
+  }
+
+  // INTERNAL USES.
+  $iuCategories = ['consumable', 'sparepart'];
+
+  foreach ($iuCategories as $iuCategory) {
+    // if ($iuCategory == 'sparepart' && !$lucretaiMode) continue; // Ignore sparepart if not lucretai.
+
+    $amount = 0;
+
+    foreach ($internalUses as $internalUse) {
+      if ($internalUse->category == $iuCategory) {
+        $amount += $internalUse->grand_total;
+      }
+    }
+
+    $internalUseAmount += $amount;
+
+    $internalUseData[] = [
+      'name'   => ucfirst($iuCategory),
+      'amount' => $amount
+    ];
+  }
+
+  if ($purchases) {
+    foreach ($purchases as $purchase) {
+      $purchaseAmount += $purchase->grand_total;
+    }
+  }
+
+  $saleCount = 0;
+
+  // SALES
+  foreach ($sales as $sale) {
+    // I/O MANIP: Tanggal lebih dari 2023-01-01 00:00:00, maka jangan include sale.status = need_payment.
+    if (strtotime($startDate) >= strtotime('2023-01-01 00:00:00') || strtotime($endDate) >= strtotime('2023-01-01 00:00:00')) {
+      if (strcasecmp($sale->status, 'need_payment') === 0) continue;
+    }
+
+    // #1 Revenue.
+    $revenue += $sale->grand_total;
+    $saleCount++;
+
+    $saleItems = SaleItem::get(['sale_id' => $sale->id]);
+
+    if ($saleItems) {
+      foreach ($saleItems as $saleItem) {
+        if ($saleItem->product_type == 'combo') {
+          // Selling item to raw materials;
+          $comboItems = ComboItem::get(['product_id' => $saleItem->product_id]);
+
+          foreach ($comboItems as $comboItem) {
+            // Raw material.
+            $item = Product::getRow(['code' => $comboItem->item_code]);
+
+            // #2 Cost of Goods > Sold Items Cost.
+            $soldItemCost += round($item->markon_price * $comboItem->quantity * $saleItem->finished_qty);
+          }
+        }
+      }
+    }
+  }
+
+  // STOCK OPNAMES
+  foreach ($stockOpnames as $stockOpname) {
+    $soAmount += ($stockOpname->total_lost + $stockOpname->total_plus);
+  }
+
+  // If SO Amount plus then make minus, if minus make plus.
+  $soAmount = ($soAmount * -1);
+
+  // TRANSFERS
+  foreach ($transfers as $transfer) {
+    $transferItems = Stock::get(['transfer_id' => $transfer->id, 'status' => 'sent']);
+
+    if ($transferItems) {
+      foreach ($transferItems as $transferItem) {
+        $product = Product::getRow(['id' => $transferItem->product_id]);
+        // $transferItemCost += ($transferItem->price * $transferItem->quantity);
+        // $transferItemCost += ($product->avg_cost * $transferItem->quantity);
+        $transferItemCost += ($product->cost * $transferItem->quantity);
+      }
+    }
+
+    $transferAmount += $transfer->grand_total;
+  }
+
+  if ($lucretaiMode) { // Change revenue if lucretai mode enabled.
+    $revenue = $transferAmount;
+    $soldItemCost = $transferItemCost;
+  }
+
+  $costOfGoodsData   = [['name' => 'RAW Materials', 'amount' => $soldItemCost]];
+  $costOfGoodsData   = array_merge($costOfGoodsData, $internalUseData);
+  $costOfGoodsData   = array_merge($costOfGoodsData, [['name' => 'Lost of Goods', 'amount' => $soAmount]]);
+  $costOfGoodsAmount = getTotalAmount($costOfGoodsData); // Sold Item Cost, Internal Use.
+
+  $grossProfit = ($revenue - $costOfGoodsAmount);
+  $netProfit   = ($grossProfit + $incomeAmount - $expenseAmount);
+  $balanceSheetAmount = ($netProfit - $invCostAmount + $capInvAmount - $priveAmount);
+
+  $incomeStatementData = [
+    ['name' => 'Revenue', 'amount' => $revenue],
+    ['name' => 'Cost of Goods', 'amount' => $costOfGoodsAmount, 'data' => $costOfGoodsData],
+    ['name' => 'Gross Profit', 'amount' => $grossProfit],
+    ['name' => 'Other Income', 'amount' => $incomeAmount, 'data' => $incomeData],
+    ['name' => 'Operational Cost', 'amount' => $expenseAmount, 'data' => $expenseData],
+    ['name' => 'Net Profit', 'amount' => $netProfit],
+    ['name' => 'Investation Cost', 'amount' => $invCostAmount, 'data' => $invCostData],
+    ['name' => 'Capital Investment', 'amount' => $capInvAmount],
+    ['name' => 'Prive', 'amount' => $priveAmount],
+    ['name' => 'Balance Sheet', 'amount' => $balanceSheetAmount]
+  ];
+
+  return $incomeStatementData;
+}
+
+/**
+ * Get month name by index.
+ * @param int $index Month index.
+ * @example 1 getMonthName(8); // Return 'agustus'.
+ */
+function getMonthName($index)
+{
+  $months = [
+    null, 'januari', 'februari', 'maret', 'april', 'mei', 'juni',
+    'juli', 'agustus', 'september', 'oktober', 'november', 'desember'
+  ];
+  $x = filterNumber($index);
+  return $months[$x % 13];
+}
+
+/**
  * Get order stock quantity by current stock, min order and safety stock.
  * @param float $currentStock Current stock of item.
  * @param float $minOrderQty Min. order of item.
@@ -807,9 +1175,38 @@ function getLastError(string $defaultMsg = null)
  * @param float $cost Item cost.
  * @param float $markon Mark-on percent.
  */
-function getMarkonPrice($cost, $markon)
+function getMarkonPrice(float $cost, float $markon)
 {
   return round(filterNumber($cost) / (1 - (filterNumber($markon) / 100)));
+}
+
+/**
+ * Get new user Stock Opname Cycle.
+ * @param int $userId User ID.
+ * @param int $warehouseId Warehouse ID.
+ * @return int Return SO Cycle. Return 0 if no item to be check.
+ */
+function getNewSOCycle(int $userId, int $warehouseId)
+{
+  $so = StockOpname::select('*')->where('created_by', $userId)->orderBy('id', 'DESC')->getRow();
+
+  if ($so) {
+    $soCycle = intval($so->cycle) + 1;
+
+    $whp = WarehouseProduct::getRow(['warehouse_id' => $warehouseId, 'user_id' => $userId, 'so_cycle' => $soCycle]);
+
+    if ($whp) {
+      return $soCycle;
+    }
+  }
+
+  $whp = WarehouseProduct::getRow(['warehouse_id' => $warehouseId, 'user_id' => $userId, 'so_cycle' => 1]);
+
+  if ($whp) {
+    return 1;
+  }
+
+  return 0;
 }
 
 /**
@@ -841,6 +1238,22 @@ function getStockOpnameSuggestion(int $userId, int $warehouseId, int $cycle)
 function getStockQuantity(int $productId, int $warehouseId, array $opt = [])
 {
   return Stock::totalQuantity($productId, $warehouseId, $opt);
+}
+
+/**
+ * Get total amount of array data.
+ * @param array $data [ *amount ]
+ * @return float Total of accumulated amount.
+ */
+function getTotalAmount(array $data)
+{
+  $amount = 0.0;
+
+  foreach ($data as $d) {
+    $amount += floatval($d['amount']);
+  }
+
+  return $amount;
 }
 
 /**
@@ -1120,6 +1533,15 @@ function isLoggedIn()
 }
 
 /**
+ * Check if number has floated point.
+ * @param string $num Number to check.
+ */
+function isNumberFloated($num)
+{
+  return (strpos(strval(floatval($num)), '.') !== false ? true : false);
+}
+
+/**
  * Check assigned product warehouse by warehouse name.
  * @param string $product_warehouse Assigned product warehouse name.
  * Ex. "Durian, Tembalang" or "-Tlogosari, -Ungaran".
@@ -1354,7 +1776,7 @@ function renderAttachment(string $attachment = null)
   return $res;
 }
 
-function renderStatus(string $status)
+function renderStatus($status)
 {
   if (empty($status)) return '';
 
@@ -1363,16 +1785,16 @@ function renderStatus(string $status)
 
   $danger = [
     'bad', 'decrease', 'due', 'due_partial', 'expired', 'need_approval', 'need_payment', 'off',
-    'over_due', 'over_received', 'overwrite', 'returned', 'skipped'
+    'over_due', 'over_received', 'overwrite', 'returned', 'sent', 'skipped'
   ];
   $info = [
     'calling', 'completed_partial', 'confirmed', 'delivered', 'excellent', 'finished',
-    'installed_partial', 'ordered', 'partial', 'percent', 'preparing', 'received',
+    'installed_partial', 'ordered', 'partial', 'percent', 'preparing',
     'received_partial', 'serving'
   ];
   $success = [
     'active', 'approved', 'completed', 'consumable', 'currency', 'increase', 'formula',
-    'good', 'installed', 'paid', 'sent', 'served', 'solved', 'verified'
+    'good', 'installed', 'paid', 'received', 'served', 'solved', 'verified'
   ];
   $warning = [
     'called', 'cancelled', 'checked', 'draft', 'inactive', 'packing', 'pending', 'slow', 'sparepart',

@@ -188,6 +188,8 @@ class User
       }
 
       $data['biller'] = $biller->code;
+    } else {
+      $data['biller'] = null;
     }
 
     if (!empty($data['warehouse_id'])) {
@@ -199,6 +201,8 @@ class User
       }
 
       $data['warehouse'] = $warehouse->code;
+    } else {
+      $data['warehouse'] = null;
     }
 
     $data = nulling($data, ['biller_id', 'warehouse_id']);

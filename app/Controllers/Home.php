@@ -506,8 +506,8 @@ class Home extends BaseController
       case 'supplier':
         $results = $this->select2_supplier();
         break;
-      case 'teamsupport':
-        $results = $this->select2_teamsupport();
+      case 'techsupport':
+        $results = $this->select2_techsupport();
         break;
       case 'user':
         $results = $this->select2_user();
@@ -528,6 +528,7 @@ class Home extends BaseController
 
   protected function select2_bank($mode = null)
   {
+    $id     = getGet('id');
     $biller = getGet('biller');
     $limit  = getGet('limit');
     $term   = getGet('term');
@@ -536,7 +537,7 @@ class Home extends BaseController
     if ($mode == 'type') {
       $q = Bank::select('type id, type text')->distinct();
 
-      return $q->get();
+      return $q->orderBy('type', 'ASC')->get();
     }
 
     $q = Bank::select("id, (CASE WHEN number IS NOT NULL THEN CONCAT(name, ' (', number, ')') ELSE name END) text")
@@ -564,6 +565,10 @@ class Home extends BaseController
         ->groupEnd();
     }
 
+    if ($id) {
+      $q->whereIn('id', $id);
+    }
+
     if ($biller) {
       $q->whereIn('biller_id', $biller);
     }
@@ -572,14 +577,14 @@ class Home extends BaseController
       $q->whereIn('type', $type);
     }
 
-    return $q->get();
+    return $q->orderBy('name', 'ASC')->get();
   }
 
   protected function select2_biller()
   {
+    $id     = getGet('id');
     $limit  = getGet('limit');
     $term   = getGet('term');
-    $id     = getGet('id');
 
     $q = Biller::select("id, name text")
       ->where('active', 1);
@@ -608,7 +613,7 @@ class Home extends BaseController
       $q->whereIn('id', $id);
     }
 
-    return $q->get();
+    return $q->orderBy('name', 'ASC')->get();
   }
 
   protected function select2_customer()
@@ -645,11 +650,12 @@ class Home extends BaseController
       $q->whereIn('id', $id);
     }
 
-    return $q->get();
+    return $q->orderBy('name', 'ASC')->get();
   }
 
   protected function select2_expense($submode = null)
   {
+    $id     = getGet('id');
     $limit  = getGet('limit');
     $term   = getGet('term');
 
@@ -674,6 +680,10 @@ class Home extends BaseController
           ->groupEnd();
       }
 
+      if ($id) {
+        $q->whereIn('id', $id);
+      }
+
       return $q->get();
     }
 
@@ -682,6 +692,7 @@ class Home extends BaseController
 
   protected function select2_income($submode = null)
   {
+    $id     = getGet('id');
     $limit  = getGet('limit');
     $term   = getGet('term');
 
@@ -706,6 +717,10 @@ class Home extends BaseController
           ->groupEnd();
       }
 
+      if ($id) {
+        $q->whereIn('id', $id);
+      }
+
       return $q->get();
     }
 
@@ -719,6 +734,7 @@ class Home extends BaseController
     $term       = getGet('term');
     $types      = getGet('type');
     $iuseTypes  = getGet('iuse_type');
+    $isW2P      = getGet('w2p');
 
     if ($submode == 'category') {
       $q = ProductCategory::select("id, CONCAT('(', code, ') ', name) text");
@@ -781,6 +797,10 @@ class Home extends BaseController
       $q->whereIn('type', $types);
     }
 
+    if ($isW2P == false) {
+      $q->notLike('code', 'W2P', 'after');
+    }
+
     return $q->get();
   }
 
@@ -819,15 +839,16 @@ class Home extends BaseController
     return $q->get();
   }
 
-  protected function select2_teamsupport()
+  protected function select2_techsupport()
   {
+    $id         = getGet('id');
     $billers    = getGet('biller');
     $limit      = getGet('limit');
     $term       = getGet('term');
     $warehouses = getGet('warehouse');
 
     $q = User::select("id, fullname text")
-      ->like('groups', 'TEAMSUPPORT', 'none')
+      ->like('groups', 'TECHSUPPORT', 'none')
       ->where('active', 1);
 
     if ($limit) {
@@ -850,6 +871,10 @@ class Home extends BaseController
         ->orWhereIn('fullname', $term)
         ->orWhereIn('username', $term)
         ->groupEnd();
+    }
+
+    if ($id) {
+      $q->whereIn('id', $id);
     }
 
     if ($billers) {
@@ -905,7 +930,7 @@ class Home extends BaseController
     }
 
     if ($billers) {
-      if (in_array(null, $billers)) {
+      if (!in_array(null, $billers)) {
         $q->whereIn('biller_id', $billers);
       }
     }
@@ -919,6 +944,7 @@ class Home extends BaseController
 
   protected function select2_usergroup()
   {
+    $id     = getGet('id');
     $limit  = getGet('limit');
     $term   = getGet('term');
 
@@ -942,11 +968,16 @@ class Home extends BaseController
         ->groupEnd();
     }
 
+    if ($id) {
+      $q->whereIn('id', $id);
+    }
+
     return $q->get();
   }
 
   protected function select2_voucher()
   {
+    $id     = getGet('id');
     $limit  = getGet('limit');
     $term   = getGet('term');
 
@@ -977,14 +1008,18 @@ class Home extends BaseController
         ->groupEnd();
     }
 
+    if ($id) {
+      $q->whereIn('id', $id);
+    }
+
     return $q->get();
   }
 
   protected function select2_warehouse()
   {
+    $id     = getGet('id');
     $limit  = getGet('limit');
     $term   = getGet('term');
-    $id     = getGet('id');
 
     $q = Warehouse::select("id, name text ")
       ->where('active', 1);
@@ -1013,6 +1048,6 @@ class Home extends BaseController
       $q->whereIn('id', $id);
     }
 
-    return $q->get();
+    return $q->orderBy('name', 'ASC')->get();
   }
 }

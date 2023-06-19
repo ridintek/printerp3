@@ -35,8 +35,8 @@
               </div>
               <div class="col-md-6">
                 <div class="form-group">
-                  <label for="description"><?= lang('App.description') ?></label>
-                  <input id="description" name="description" class="form-control form-control-border form-control-sm" placeholder="<?= lang('App.description') ?>">
+                  <label for="desc"><?= lang('App.description') ?></label>
+                  <input id="desc" name="desc" class="form-control form-control-border form-control-sm" placeholder="<?= lang('App.description') ?>">
                 </div>
               </div>
             </div>

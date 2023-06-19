@@ -5,9 +5,9 @@
         <div class="card-header bg-gradient-dark">
           <div class="card-tools">
             <?php if (hasAccess('Sale.Add')) : ?>
-            <a class="btn btn-tool bg-gradient-success use-tooltip" href="<?= base_url('sale/add') ?>" title="<?= lang('App.add') ?>" data-toggle="modal" data-target="#ModalStatic" data-modal-class="modal-lg modal-dialog-centered modal-dialog-scrollable">
-              <i class="fad fa-plus-circle"></i>
-            </a>
+              <a class="btn btn-tool bg-gradient-success use-tooltip" href="<?= base_url('sale/add') ?>" title="<?= lang('App.add') ?>" data-toggle="modal" data-target="#ModalStatic" data-modal-class="modal-lg modal-dialog-centered modal-dialog-scrollable">
+                <i class="fad fa-plus-circle"></i>
+              </a>
             <?php endif; ?>
             <a class="btn btn-tool bg-gradient-warning use-tooltip" href="#" data-widget="control-sidebar" title="<?= lang('App.filter') ?>" data-slide="true">
               <i class="fad fa-filter"></i>
@@ -15,7 +15,7 @@
           </div>
         </div>
         <div class="card-body">
-          <table id="Table" class="table table-bordered table-hover" style="width:100%;">
+          <table id="Table" class="table table-head-fixed-main table-hover table-striped" style="width:100%;">
             <thead>
               <tr>
                 <th></th>
@@ -75,11 +75,7 @@
             <div class="col-md-12">
               <div class="form-group">
                 <label for="filter-biller"><?= lang('App.biller') ?></label>
-                <select id="filter-biller" class="select-allow-clear" data-placeholder="<?= lang('App.biller') ?>" style="width:100%" multiple>
-                  <option value=""></option>
-                  <?php foreach (\App\Models\Biller::get(['active' => 1]) as $bl) : ?>
-                    <option value="<?= $bl->code ?>"><?= $bl->name ?></option>
-                  <?php endforeach; ?>
+                <select id="filter-biller" class="select-biller" data-placeholder="<?= lang('App.biller') ?>" style="width:100%" multiple>
                 </select>
               </div>
             </div>
@@ -88,11 +84,7 @@
             <div class="col-md-12">
               <div class="form-group">
                 <label for="filter-warehouse"><?= lang('App.warehouse') ?></label>
-                <select id="filter-warehouse" class="select-allow-clear" data-placeholder="<?= lang('App.warehouse') ?>" style="width:100%" multiple>
-                  <option value=""></option>
-                  <?php foreach (\App\Models\Warehouse::get(['active' => 1]) as $wh) : ?>
-                    <option value="<?= $wh->code ?>"><?= $wh->name ?></option>
-                  <?php endforeach; ?>
+                <select id="filter-warehouse" class="select-warehouse" data-placeholder="<?= lang('App.warehouse') ?>" style="width:100%" multiple>
                 </select>
               </div>
             </div>
@@ -106,6 +98,7 @@
                   <option value="completed"><?= lang('Status.completed') ?></option>
                   <option value="completed_partial"><?= lang('Status.completed_partial') ?></option>
                   <option value="delivered"><?= lang('Status.delivered') ?></option>
+                  <option value="draft"><?= lang('Status.draft') ?></option>
                   <option value="finished"><?= lang('Status.finished') ?></option>
                   <option value="inactive"><?= lang('Status.inactive') ?></option>
                   <option value="need_payment"><?= lang('Status.need_payment') ?></option>
@@ -290,6 +283,7 @@
       order: [
         [1, 'desc']
       ],
+      pageLength: 50,
       processing: true,
       responsive: true,
       scrollX: false,

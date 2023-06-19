@@ -11,14 +11,16 @@
       <div class="col-md-12">
         <div class="card">
           <div class="card-body">
-            <div class="row">
-              <div class="col-md-6">
-                <div class="form-group">
-                  <label for="date"><?= lang('App.date') ?></label>
-                  <input id="date" name="date" type="datetime-local" class="form-control form-control-border form-control-sm">
+            <?php if (hasAccess('BankMutation.Edit')) : ?>
+              <div class="row">
+                <div class="col-md-6">
+                  <div class="form-group">
+                    <label for="date"><?= lang('App.date') ?></label>
+                    <input id="date" name="date" type="datetime-local" class="form-control form-control-border form-control-sm">
+                  </div>
                 </div>
               </div>
-            </div>
+            <?php endif; ?>
             <div class="row">
               <div class="col-md-12">
                 <div class="card">

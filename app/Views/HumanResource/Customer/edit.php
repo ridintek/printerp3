@@ -15,7 +15,7 @@
               <div class="col-md-6">
                 <div class="form-group">
                   <label for="group"><?= lang('App.group') ?> *</label>
-                  <select class="select" name="group" style="width:100%">
+                  <select class="select" name="group" data-placeholder="<?= lang('App.group') ?>" style="width:100%">
                     <?php foreach (\App\Models\CustomerGroup::get() as $group) : ?>
                       <option value="<?= $group->id ?>"><?= $group->name ?></option>
                     <?php endforeach; ?>
@@ -25,7 +25,8 @@
               <div class="col-md-6">
                 <div class="form-group">
                   <label for="pricegroup"><?= lang('App.pricegroup') ?> *</label>
-                  <select class="select" name="pricegroup" style="width:100%">
+                  <select class="select-allow-clear" name="pricegroup" data-placeholder="<?= lang('App.pricegroup') ?>" style="width:100%">
+                    <option value=""></option>
                     <?php foreach (\App\Models\PriceGroup::get() as $group) : ?>
                       <option value="<?= $group->id ?>"><?= $group->name ?></option>
                     <?php endforeach; ?>

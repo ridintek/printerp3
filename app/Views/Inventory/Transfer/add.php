@@ -12,12 +12,14 @@
         <div class="card">
           <div class="card-body">
             <div class="row">
-              <div class="col-md-6">
-                <div class="form-group">
-                  <label for="date"><?= lang('App.date') ?></label>
-                  <input id="date" name="date" type="datetime-local" class="form-control form-control-border form-control-sm">
+              <?php if (hasAccess('ProductTransfer.Edit')) : ?>
+                <div class="col-md-6">
+                  <div class="form-group">
+                    <label for="date"><?= lang('App.date') ?></label>
+                    <input id="date" name="date" type="datetime-local" class="form-control form-control-border form-control-sm">
+                  </div>
                 </div>
-              </div>
+              <?php endif; ?>
               <div class="col-md-6">
                 <div class="form-group">
                   <label for="created_by"><?= lang('App.createdby') ?></label>
@@ -139,6 +141,7 @@
   $(document).ready(function() {
     erp.select2.product = {};
     erp.select2.product.type = ['standard'];
+    erp.select2.user = {};
 
     let editor = new Quill('#editor', {
       theme: 'snow'
@@ -196,7 +199,9 @@
                 quantity: 0,
                 spec: '',
                 current_qty: item.quantity,
-                destination_qty: itemQtyTo
+                destination_qty: itemQtyTo,
+                received_qty: 0,
+                rest_qty: 0
               });
 
               initControls();
@@ -228,8 +233,12 @@
       });
     });
 
-    preSelect2('warehouse', '#warehousefrom', erp.warehouse.id).catch(err => console.warn(err));
-    preSelect2('warehouse', '#warehouseto', erp.warehouse.id).catch(err => console.warn(err));
+    preSelect2('user', '#created_by', erp.user.id).catch(err => console.warn(err));
+
+    if (erp.warehouse.id) {
+      preSelect2('warehouse', '#warehousefrom', erp.warehouse.id).catch(err => console.warn(err));
+      preSelect2('warehouse', '#warehouseto', erp.warehouse.id).catch(err => console.warn(err));
+    }
 
     initModalForm({
       form: '#form',

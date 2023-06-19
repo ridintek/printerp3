@@ -5,10 +5,12 @@ declare(strict_types=1);
 namespace App\Controllers;
 
 use App\Libraries\DataTables;
+use App\Libraries\Spreadsheet;
 use App\Models\{
   Attachment,
   DB,
   InternalUse,
+  Payment,
   Product,
   ProductCategory,
   ProductMutation,
@@ -86,6 +88,12 @@ class Inventory extends BaseController
   {
     checkPermission('InternalUse.View');
 
+    $warehouses     = getPost('warehouse');
+    $status         = getPost('status');
+    $createdBy      = getPost('created_by');
+    $startDate      = (getPost('start_date') ?? date('Y-m-d', strtotime('-1 month')));
+    $endDate        = (getPost('end_date') ?? date('Y-m-d'));
+
     $dt = new DataTables('internal_uses');
     $dt
       ->select("internal_uses.id AS id, internal_uses.date, internal_uses.reference,
@@ -145,12 +153,36 @@ class Inventory extends BaseController
         return renderAttachment($data['attachment']);
       });
 
-    if (session('login')->warehouse_id) {
-      $dt->where('whfrom.id', session('login')->warehouse_id);
+    $userJS = getJSON(session('login')?->json);
+
+    if (isset($userJS->warehouses) && !empty($userJS->warehouses)) {
+      if ($warehouses) {
+        $warehouses = array_merge($warehouses, $userJS->warehouses);
+      } else {
+        $warehouses = $userJS->warehouses;
+      }
     }
+
+    if (session('login')->warehouse_id) {
+      if ($warehouses) {
+        $warehouses[] = session('login')->warehouse_id;
+      } else {
+        $warehouses = [session('login')->warehouse_id];
+      }
+    }
+
+    if ($warehouses) {
+      $dt->groupStart()
+        ->whereIn('internal_uses.from_warehouse_id', $warehouses)
+        ->orWhereIn('internal_uses.to_warehouse_id', $warehouses)
+        ->groupEnd();
+    }
+
 
     $dt->generate();
   }
+
+
 
   public function getProductMutations()
   {
@@ -294,14 +326,40 @@ class Inventory extends BaseController
             <div class="dropdown-menu">
               <a class="dropdown-item" href="' . base_url('inventory/purchase/edit/' . $data['id']) . '"
                 data-toggle="modal" data-target="#ModalStatic"
-                data-modal-class="modal-xl modal-dialog-centered modal-dialog-scrollable">
+                data-modal-class="modal-lg modal-dialog-centered modal-dialog-scrollable">
                 <i class="fad fa-fw fa-edit"></i> ' . lang('App.edit') . '
+              </a>
+              <a class="dropdown-item" href="' . base_url('inventory/purchase/print/' . $data['id']) . '"
+                target="_blank">
+                <i class="fad fa-fw fa-print"></i> ' . lang('App.print') . '
+              </a>
+              <a class="dropdown-item" href="' . base_url('inventory/purchase/print/' . $data['id']) . '?preview=1"
+                data-toggle="modal" data-target="#ModalDefault"
+                data-modal-class="modal-xl modal-dialog-centered">
+                <i class="fad fa-fw fa-print"></i> ' . lang('App.preview') . '
               </a>
               <a class="dropdown-item" href="' . base_url('inventory/purchase/view/' . $data['id']) . '"
                 data-toggle="modal" data-target="#ModalStatic"
-                data-modal-class="modal-xl modal-dialog-centered modal-dialog-scrollable">
+                data-modal-class="modal-lg modal-dialog-centered modal-dialog-scrollable">
                 <i class="fad fa-fw fa-magnifying-glass"></i> ' . lang('App.view') . '
               </a>
+              <div class="dropdown-divider"></div>
+              <div class="dropdown-submenu dropdown-hover">
+                <a href="#" class="dropdown-item dropdown-toggle" data-toggle="dropdown">
+                  <i class="fad fa-fw fa-money-bill"></i> ' . lang('App.payment') . '</a>
+                <div class="dropdown-menu">
+                  <a class="dropdown-item" href="' . base_url('payment/add/purchase/' . $data['id']) . '"
+                    data-toggle="modal" data-target="#ModalStatic"
+                    data-modal-class="modal-dialog-centered modal-dialog-scrollable">
+                    <i class="fad fa-fw fa-money-bill"></i> ' . lang('App.addpayment') . '
+                  </a>
+                  <a class="dropdown-item" href="' . base_url('payment/view/purchase/' . $data['id']) . '"
+                      data-toggle="modal" data-target="#ModalStatic"
+                      data-modal-class="modal-lg modal-dialog-centered modal-dialog-scrollable">
+                      <i class="fad fa-fw fa-money-bill"></i> ' . lang('App.viewpayment') . '
+                  </a>
+                </div>
+              </div>
               <div class="dropdown-divider"></div>
               <a class="dropdown-item" href="' . base_url('inventory/purchase/delete/' . $data['id']) . '"
                 data-action="confirm">
@@ -317,13 +375,13 @@ class Inventory extends BaseController
         return renderStatus($data['payment_status']);
       })
       ->editColumn('grand_total', function ($data) {
-        return formatNumber($data['grand_total']);
+        return '<div class="float-right">' . formatNumber($data['grand_total']) . '</div>';
       })
       ->editColumn('paid', function ($data) {
-        return formatNumber($data['paid']);
+        return '<div class="float-right">' . formatNumber($data['paid']) . '</div>';
       })
       ->editColumn('balance', function ($data) {
-        return formatNumber($data['balance']);
+        return '<div class="float-right">' . formatNumber($data['balance']) . '</div>';
       })
       ->editColumn('attachment', function ($data) {
         return renderAttachment($data['attachment']);
@@ -359,13 +417,21 @@ class Inventory extends BaseController
   {
     checkPermission('ProductTransfer.View');
 
+    $suppliers      = getPost('supplier');
+    $warehouses     = getPost('warehouse');
+    $status         = getPost('status');
+    $paymentStatus  = getPost('payment_status');
+    $createdBy      = getPost('created_by');
+    $startDate      = (getPost('start_date') ?? date('Y-m-d', strtotime('-1 month')));
+    $endDate        = (getPost('end_date') ?? date('Y-m-d'));
+
     $dt = new DataTables('product_transfer');
 
     $dt
       ->select("product_transfer.id AS id, product_transfer.date,
       product_transfer.reference,
       warehousefrom.name AS warehouse_from_name, warehouseto.name AS warehouse_to_name,
-      product_transfer.items, product_transfer.note,
+      product_transfer.items, product_transfer.grand_total, product_transfer.paid,
       product_transfer.status, product_transfer.payment_status,
       product_transfer.attachment, product_transfer.created_at, creator.fullname")
       ->join('warehouse warehousefrom', 'warehousefrom.id = product_transfer.warehouse_id_from', 'left')
@@ -396,6 +462,12 @@ class Inventory extends BaseController
             </div>
           </div>';
       })
+      ->editColumn('grand_total', function ($data) {
+        return '<div class="float-right">' . formatNumber($data['grand_total']) . '</div>';
+      })
+      ->editColumn('paid', function ($data) {
+        return '<div class="float-right">' . formatNumber($data['paid']) . '</div>';
+      })
       ->editColumn('status', function ($data) {
         return renderStatus($data['status']);
       })
@@ -404,8 +476,59 @@ class Inventory extends BaseController
       })
       ->editColumn('attachment', function ($data) {
         return renderAttachment($data['attachment']);
-      })
-      ->generate();
+      });
+
+
+    $userJS = getJSON(session('login')?->json);
+
+    if (isset($userJS->warehouses) && !empty($userJS->warehouses)) {
+      if ($warehouses) {
+        $warehouses = array_merge($warehouses, $userJS->warehouses);
+      } else {
+        $warehouses = $userJS->warehouses;
+      }
+    }
+
+    if (session('login')->warehouse_id) {
+      if ($warehouses) {
+        $warehouses[] = session('login')->warehouse_id;
+      } else {
+        $warehouses = [session('login')->warehouse_id];
+      }
+    }
+
+    if ($status) {
+      $dt->whereIn('product_transfer.status', $status);
+    }
+
+    if ($paymentStatus) {
+      $dt->whereIn('product_transfer.payment_status', $paymentStatus);
+    }
+
+    if ($suppliers) {
+      $dt->whereIn('product_transfer.supplier_id', $suppliers);
+    }
+
+    if ($warehouses) {
+      $dt->groupStart()
+        ->whereIn('product_transfer.warehouse_id_from', $warehouses)
+        ->orWhereIn('product_transfer.warehouse_id_to', $warehouses)
+        ->groupEnd();
+    }
+
+    if ($createdBy) {
+      $dt->whereIn('product_transfer.created_by', $createdBy);
+    }
+
+    if ($startDate) {
+      $dt->where("date >= '{$startDate} 00:00:00'");
+    }
+
+    if ($endDate) {
+      $dt->where("date <= '{$endDate} 23:59:59'");
+    }
+
+    $dt->generate();
   }
 
   public function getProductTransferPlans()
@@ -496,11 +619,18 @@ class Inventory extends BaseController
   {
     checkPermission('StockOpname.View');
 
+    $warehouses     = getPost('warehouse');
+    $status         = getPost('status');
+    $createdBy      = getPost('created_by');
+    $startDate      = (getPost('start_date') ?? date('Y-m-d', strtotime('-1 month')));
+    $endDate        = (getPost('end_date') ?? date('Y-m-d'));
+    $xls            = getGet('xls');
+
     $dt = new DataTables('stock_opnames');
     $dt
       ->select("stock_opnames.id AS id, stock_opnames.date, stock_opnames.reference,
         adjustment_plus.reference AS plus_ref, adjustment_min.reference AS min_ref,
-        creator.fullname, warehouse.name AS warehouse_name,
+        creator.fullname AS pic_name, warehouse.name AS warehouse_name,
         stock_opnames.total_lost, stock_opnames.total_plus, stock_opnames.total_edited,
         stock_opnames.status, stock_opnames.note,
         stock_opnames.created_at, stock_opnames.attachment")
@@ -547,21 +677,104 @@ class Inventory extends BaseController
 
         return $menu;
       })
-      ->editColumn('total_lost', function ($data) {
-        return formatNumber($data['total_lost']);
+      ->editColumn('total_lost', function ($data) use ($xls) {
+        return ($xls ? $data['total_lost'] : formatNumber($data['total_lost']));
       })
-      ->editColumn('total_plus', function ($data) {
-        return formatNumber($data['total_plus']);
+      ->editColumn('total_plus', function ($data) use ($xls) {
+        return ($xls ? $data['total_plus'] : formatNumber($data['total_plus']));
       })
-      ->editColumn('status', function ($data) {
-        return renderStatus($data['status']);
+      ->editColumn('status', function ($data) use ($xls) {
+        return ($xls ? $data['status'] : renderStatus($data['status']));
       })
-      ->editColumn('attachment', function ($data) {
-        return renderAttachment($data['attachment']);
+      ->editColumn('attachment', function ($data) use ($xls) {
+        return ($xls ? $data['attachment'] : renderAttachment($data['attachment']));
       });
 
+    $userJS = getJSON(session('login')?->json);
+
+    if (isset($userJS->warehouses) && !empty($userJS->warehouses)) {
+      if ($warehouses) {
+        $warehouses = array_merge($warehouses, $userJS->warehouses);
+      } else {
+        $warehouses = $userJS->warehouses;
+      }
+    }
+
     if (session('login')->warehouse_id) {
-      $dt->where('warehouse.id', session('login')->warehouse_id);
+      if ($warehouses) {
+        $warehouses[] = session('login')->warehouse_id;
+      } else {
+        $warehouses = [session('login')->warehouse_id];
+      }
+    }
+
+    if ($warehouses) {
+      $dt->orWhereIn('stock_opnames.warehouse_id', $warehouses);
+    }
+
+    if ($status) {
+      $dt->whereIn('stock_opnames.status', $status);
+    }
+
+    if ($createdBy) {
+      $dt->whereIn('stock_opnames.created_by', $createdBy);
+    }
+
+    if ($startDate) {
+      $dt->where("stock_opnames.date >= '{$startDate} 00:00:00'");
+    }
+
+    if ($endDate) {
+      $dt->where("stock_opnames.date <= '{$endDate} 23:59:59'");
+    }
+
+    if ($xls == 1) {
+      $rows = $dt->asObject()->generate(true);
+
+      $sheet = new Spreadsheet();
+      $sheet->setTitle('Stock Opnames');
+
+      $sheet->setCellValue('A1', 'No');
+      $sheet->setCellValue('B1', 'Date');
+      $sheet->setCellValue('C1', 'Reference');
+      $sheet->setCellValue('D1', 'Adjustment Plus Ref');
+      $sheet->setCellValue('E1', 'Adjustment Minus Ref');
+      $sheet->setCellValue('F1', 'PIC');
+      $sheet->setCellValue('G1', 'Warehouse');
+      $sheet->setCellValue('H1', 'Total Lost');
+      $sheet->setCellValue('I1', 'Total Plus');
+      $sheet->setCellValue('J1', 'Total Edited');
+      $sheet->setCellValue('K1', 'Status');
+      $sheet->setCellValue('L1', 'Note');
+      $sheet->setCellValue('M1', 'Created At');
+      $sheet->setCellValue('N1', 'Attachment');
+
+      $r = 2;
+
+      foreach ($rows as $row) {
+        $sheet->setCellValue('A' . $r, $r);
+        $sheet->setCellValue('B' . $r, $row['date']);
+        $sheet->setCellValue('C' . $r, $row['reference']);
+        $sheet->setCellValue('D' . $r, $row['plus_ref']);
+        $sheet->setCellValue('E' . $r, $row['min_ref']);
+        $sheet->setCellValue('F' . $r, $row['pic_name']);
+        $sheet->setCellValue('G' . $r, $row['warehouse_name']);
+        $sheet->setCellValue('H' . $r, $row['total_lost']);
+        $sheet->setCellValue('I' . $r, $row['total_plus']);
+        $sheet->setCellValue('J' . $r, $row['total_edited']);
+        $sheet->setCellValue('K' . $r, $row['status']);
+        $sheet->setCellValue('L' . $r, htmlRemove($row['note']));
+        $sheet->setCellValue('M' . $r, $row['created_at']);
+
+        if ($row['attachment']) {
+          $sheet->setCellValue('N' . $r, lang('App.view'));
+          $sheet->setUrl('N' . $r, 'https://erp.indoprinting.co.id/attachment/' . $row['attachment']);
+        }
+
+        $r++;
+      }
+
+      $sheet->export('PrintERP-StockOpname-' . date('Ymd_His'));
     }
 
     $dt->generate();
@@ -572,7 +785,7 @@ class Inventory extends BaseController
     checkPermission('Product.History');
 
     $status     = getPost('status');
-    $warehouse  = getPost('warehouse');
+    $warehouses = getPost('warehouse');
     $startDate  = (getPost('start_date') ?? date('Y-m-d', strtotime('-7 day')));
     $endDate    = (getPost('end_date') ?? date('Y-m-d'));
 
@@ -603,12 +816,31 @@ class Inventory extends BaseController
         return renderStatus($data['status']);
       });
 
-    if ($status) {
-      $dt->whereIn('stocks.status', $status);
+
+    $userJS = getJSON(session('login')?->json);
+
+    if (isset($userJS->warehouses) && !empty($userJS->warehouses)) {
+      if ($warehouses) {
+        $warehouses = array_merge($warehouses, $userJS->warehouses);
+      } else {
+        $warehouses = $userJS->warehouses;
+      }
     }
 
-    if ($warehouse) {
-      $dt->whereIn('stocks.warehouse_id', $warehouse);
+    if (session('login')->warehouse_id) {
+      if ($warehouses) {
+        $warehouses[] = session('login')->warehouse_id;
+      } else {
+        $warehouses = [session('login')->warehouse_id];
+      }
+    }
+
+    if ($warehouses) {
+      $dt->whereIn('stocks.warehouse_id', $warehouses);
+    }
+
+    if ($status) {
+      $dt->whereIn('stocks.status', $status);
     }
 
     $dt->where("stocks.date BETWEEN '{$startDate} 00:00:00' AND '{$endDate} 23:59:59'");
@@ -880,7 +1112,7 @@ class Inventory extends BaseController
         'category'          => $category,
         'note'              => stripTags(getPost('note')),
         'supplier_id'       => getPost('supplier'),
-        'ts_id'             => getPost('teamsupport'),
+        'ts_id'             => getPost('techsupport'),
       ];
 
       $itemId       = getPost('item[id]');
@@ -1008,7 +1240,7 @@ class Inventory extends BaseController
         'note'              => stripTags(getPost('note')),
         'status'            => getPost('status'), // Status is changeable from edit.
         'supplier_id'       => getPost('supplier'),
-        'ts_id'             => getPost('teamsupport'),
+        'ts_id'             => getPost('techsupport'),
       ];
 
       $itemId       = getPost('item[id]');
@@ -1108,7 +1340,7 @@ class Inventory extends BaseController
     foreach ($iuseItems as $iuseItem) {
       $counter = $iuseItem->spec;
 
-      if ($status == 'completed') {
+      if ($status == 'installed') {
         for ($a = 0; $a < count($itemId); $a++) {
           if (empty($itemCounter[$a])) {
             $this->response(400, ['message' => "Counter {$itemCode[$a]} harus diisi."]);
@@ -1133,7 +1365,7 @@ class Inventory extends BaseController
 
     DB::transStart();
 
-    $res = InternalUse::update((int)$id, ['status' => $status], $items);
+    $res = InternalUse::update((int)$id, ['category' => $internalUse->category, 'status' => $status], $items);
 
     if (!$res) {
       $this->response(400, ['message' => getLastError()]);
@@ -1399,6 +1631,220 @@ class Inventory extends BaseController
     }
 
     $this->response(400, ['message' => 'Bad request.']);
+  }
+
+  protected function product_history($id = null)
+  {
+    $startDate    = getGet('start_date');
+    $endDate      = getGet('end_date');
+    $warehouseId  = getGet('warehouse');
+    $export_xls   = (getGet('xls') == 1 ? TRUE : FALSE);
+
+    $this->data['product_id']   = $id;
+    $this->data['product']      = Product::getRow(['id' => $id]);
+    $this->data['start_date']   = $startDate;
+    $this->data['end_date']     = $endDate;
+    $this->data['warehouse_id'] = $warehouseId;
+    $this->data['warehouse']    = Warehouse::getRow(['id' => $warehouseId]);
+
+    $clause = [];
+
+    if ($id)          $clause['product_id']   = $id;
+    if ($warehouseId) $clause['warehouse_id'] = $warehouseId;
+
+    $stock = Stock::select('*')->where('product_id', $id);
+
+    if ($warehouseId) {
+      $stock->where('warehouse_id', $warehouseId);
+    }
+
+    if ($startDate) {
+      $stock->where("date >= '{$startDate} 00:00:00'");
+    }
+
+    if ($endDate) {
+      $stock->where("date <= '{$endDate} 23:59:59'");
+    }
+
+    $rows = $stock->orderBy('date', 'ASC')->get();
+
+    $beginningQty  = ($startDate ? Stock::beginningQty($clause, $startDate) : 0);
+
+    $this->data['beginningQty'] = $beginningQty;
+    $this->data['rows']         = $rows;
+
+    if ($export_xls) {
+      // $total_balance = filterQuantity($beginningQty);
+      // $total_decrease = 0;
+      // $total_increase = 0;
+      // $old_balance = 0;
+      // $old_decrease = 0;
+      // $old_increase = 0;
+      // $old_date = '';
+      // $iold_date = 0;
+      // $x = 2;
+
+      // $excel = $this->ridintek->spreadsheet();
+      // $excel->setTitle('Product History');
+      // $excel->setBold('A1:I1');
+      // $excel->setHorizontalAlign('A1:I1', 'center');
+      // $excel->setFillColor('A1:I1', 'FFFF00');
+      // $excel->setCellValue('A1', 'Stock ID');
+      // $excel->setCellValue('B1', 'Date');
+      // $excel->setCellValue('C1', 'Reference');
+      // $excel->setCellValue('D1', 'Warehouse');
+      // $excel->setCellValue('E1', 'Category');
+      // $excel->setCellValue('F1', 'Created By');
+      // $excel->setCellValue('G1', 'Increase');
+      // $excel->setCellValue('H1', 'Decrease');
+      // $excel->setCellValue('I1', 'Balance');
+
+      // if (!empty($rows)) {
+      //   if ($beginning_qty > 0 || $beginning_qty < 0) {
+      //     $excel->setBold("A2:I2");
+      //     $excel->setCellValue('A2', '-');
+      //     $excel->setCellValue('B2', $start_date . ' 00:00:00');
+      //     $excel->mergeCells('C2:H2');
+      //     $excel->setHorizontalAlign('C2', 'center');
+      //     $excel->setCellValue('C2', 'BEGINNING');
+      //     $excel->setCellValue('I2', filterQuantity($beginning_qty));
+
+      //     $x++;
+      //   }
+
+      //   foreach ($rows as $row) {
+      //     if ($row->status != 'received' && $row->status != 'sent') continue;
+
+      //     $idate = strtotime($row->date);
+
+      //     if ($iold_date && (date('m', $idate) != date('m', $iold_date))) { // Monthly Summary
+      //       $excel->setBold("A{$x}:I{$x}");
+      //       $excel->setCellValue("A{$x}", '-');
+      //       $excel->setCellValue("B{$x}", $old_date . ' 23:59:59');
+      //       $excel->mergeCells("C{$x}:F{$x}");
+      //       $excel->setHorizontalAlign("C{$x}", 'center');
+      //       $excel->setCellValue("C{$x}", 'SUMMARY ' . strtoupper(getMonthName(date('n', $iold_date)))); // Ex. SUMMARY JANUARY
+      //       $excel->setCellValue("G{$x}", $old_increase);
+      //       $excel->setCellValue("H{$x}", $old_decrease);
+      //       $excel->setCellValue("I{$x}", $old_balance);
+      //       $old_balance = 0;
+      //       $old_decrease = 0;
+      //       $old_increase = 0;
+      //       $x++;
+      //     }
+
+      //     // BEGIN DATA
+      //     $excel->setCellValue("A{$x}", $row->id);
+      //     $excel->setCellValue("B{$x}", $row->date);
+
+      //     $reference = '';
+      //     if ($row->adjustment_id != NULL) {
+      //       $reference = $this->site->getStockAdjustmentByID($row->adjustment_id)->reference;
+      //     } else if ($row->internal_use_id != NULL) {
+      //       $reference = $this->site->getStockInternalUseByID($row->internal_use_id)->reference;
+      //     } else if ($row->purchase_id != NULL) {
+      //       $reference = $this->site->getStockPurchaseByID($row->purchase_id)->reference;
+      //     } else if ($row->sale_id != NULL) {
+      //       $reference = $this->site->getSaleByID($row->sale_id)->reference;
+      //     } else if ($row->transfer_id != NULL) {
+      //       $transfer2 = ProductTransfer::getRow(['id' => $row->transfer_id]);
+
+      //       if ($transfer2) {
+      //         $reference = str_replace('TRF', 'TRF2', $transfer2->reference);
+      //       } else {
+      //         $reference = $this->site->getStockTransferByID($row->transfer_id)->reference;
+      //       }
+      //     }
+
+      //     $excel->setCellValue("C{$x}", $reference);
+      //     $excel->setCellValue("D{$x}", $row->warehouse_name);
+      //     $excel->setCellValue("E{$x}", $row->category_code);
+
+      //     $created_by = '';
+      //     if ($row->created_by != NULL) {
+      //       $user = $this->site->getUserByID($row->created_by);
+      //       $created_by = ($user ? $user->fullname : '');
+      //     }
+
+      //     $excel->setCellValue("F{$x}", $created_by);
+
+      //     $dec = 0;
+      //     $inc = 0;
+
+      //     if ($row->status == 'received') {
+      //       $inc = $row->quantity;
+      //       $total_increase = filterQuantity($total_increase + $inc);
+      //     } else if ($row->status == 'sent') {
+      //       $dec = $row->quantity;
+      //       $total_decrease = filterQuantity($total_decrease + $dec);
+      //     }
+
+      //     $excel->setCellValue("G{$x}", ($inc ? $inc : ''));
+      //     $excel->setCellValue("H{$x}", ($dec ? $dec : ''));
+
+      //     if ($row->status == 'received') {
+      //       $total_balance = filterQuantity($total_balance + $row->quantity);
+      //     } else if ($row->status == 'sent') {
+      //       $total_balance = filterQuantity($total_balance - $row->quantity);
+      //     }
+
+      //     $iold_date = $idate;
+      //     $old_date = date('Y-m-d', $iold_date);
+      //     $old_balance = $total_balance;
+      //     $old_decrease += $dec;
+      //     $old_increase += $inc;
+
+      //     $excel->setCellValue("I{$x}", $total_balance);
+      //     // END DATA
+
+      //     $x++;
+      //   }
+
+      //   // LAST MONTHLY SUMMARY
+      //   $excel->setBold("A{$x}:I{$x}");
+      //   $excel->setCellValue("A{$x}", '-');
+      //   $excel->setCellValue("B{$x}", ($end_date ? $end_date . date(' H:i:s') : ''));
+      //   $excel->mergeCells("C{$x}:F{$x}");
+      //   $excel->setHorizontalAlign("C{$x}", 'center');
+      //   $excel->setCellValue("C{$x}", 'SUMMARY ' . strtoupper(getMonthName(date('m', $iold_date)))); // Ex. SUMMARY JANUARY
+      //   $excel->setCellValue("G{$x}", $old_increase);
+      //   $excel->setCellValue("H{$x}", $old_decrease);
+      //   $excel->setCellValue("I{$x}", $old_balance);
+
+      //   $x++;
+      // } else { // If no data available.
+      //   $excel->mergeCells('A2:I2');
+      //   $excel->setCellValue('A2', lang('no_data_available'));
+      //   $excel->setHorizontalAlign('A2', 'center');
+      // }
+
+      // $excel->setBold("A{$x}:I{$x}");
+      // $excel->setCellValue("A{$x}", '-');
+      // $excel->setCellValue("B{$x}", ($end_date ? $end_date . date(' H:i:s') : ''));
+      // $excel->mergeCells("C{$x}:F{$x}");
+      // $excel->setHorizontalAlign("C{$x}", 'center');
+      // $excel->setCellValue("C{$x}", 'SUMMARY TOTAL');
+      // $excel->setCellValue("G{$x}", $total_increase);
+      // $excel->setCellValue("H{$x}", $total_decrease);
+      // $excel->setCellValue("I{$x}", $total_balance);
+
+      // // Set Auto Width
+      // $excel->setColumnAutoWidth('A');
+      // $excel->setColumnAutoWidth('B');
+      // $excel->setColumnAutoWidth('C');
+      // $excel->setColumnAutoWidth('D');
+      // $excel->setColumnAutoWidth('E');
+      // $excel->setColumnAutoWidth('F');
+      // $excel->setColumnAutoWidth('G');
+      // $excel->setColumnAutoWidth('H');
+      // $excel->setColumnAutoWidth('I');
+
+      // $excel->export('PrintERP - Product_History-' . date('Ymd_His'));
+    }
+
+    $this->data['title']  = lang('App.usagehistory');
+
+    $this->response(200, ['content' => view('Inventory/Product/history', $this->data)]);
   }
 
   protected function product_sync()
@@ -1694,6 +2140,31 @@ class Inventory extends BaseController
     $this->response(200, ['content' => view('Inventory/Purchase/plan', $this->data)]);
   }
 
+  protected function purchase_print($id = null)
+  {
+    checkPermission('Sale.View');
+
+    $preview = getGet('preview');
+
+    $purchase = ProductPurchase::getRow(['id' => $id]);
+
+    if (!$purchase) {
+      $this->response(404, ['message' => 'Purchase is not found.']);
+    }
+
+    $items = Stock::get(['purchase_id' => $purchase->id]);
+
+    $this->data['purchase'] = $purchase;
+    $this->data['items']    = $items;
+    $this->data['title']    = "Invoice {$purchase->reference}";
+
+    if ($preview) {
+      $this->response(200, ['content' => view('Inventory/Purchase/preview', $this->data)]);
+    }
+
+    return view('Inventory/Purchase/print', $this->data);
+  }
+
   protected function purchase_status($id = null)
   {
     $purchase = ProductPurchase::getRow(['id' => $id]);
@@ -1708,7 +2179,7 @@ class Inventory extends BaseController
       $this->response(404, ['message' => 'Product Purchase items are not found.']);
     }
 
-    $date           = date('Y-m-d H:i:s');
+    $date           = date('Y-m-d H:i:s'); // Tgl. sekarang.
     $status         = getPost('status');
     $itemId         = getPost('item[id]');
     $itemRest       = getPost('item[rest]');
@@ -1721,13 +2192,61 @@ class Inventory extends BaseController
 
     DB::transStart();
 
+    if ($status == 'approve_payment') {
+      $payments = Payment::get(['purchase_id' => $id]);
+
+      foreach ($payments as $payment) {
+        if ($payment->status == 'need_approval') {
+          if (!Payment::update((int)$payment->id, ['status' => 'approved', 'type' => 'approved'])) {
+            $this->response(400, ['message' => getLastError()]);
+          }
+        }
+      }
+
+      if (!ProductPurchase::update((int)$id, ['payment_status' => 'approved'])) {
+        $this->response(400, ['message' => getLastError()]);
+      }
+
+      DB::transComplete();
+
+      if (DB::transStatus()) {
+        $this->response(200, ['message' => 'Purchase payment has been approved.']);
+      }
+
+      $this->response(400, ['message' => 'Failed to approve payment.']);
+    }
+
+    if ($status == 'commit_payment') {
+      $payments = Payment::get(['purchase_id' => $id]);
+
+      foreach ($payments as $payment) {
+        if ($payment->status == 'approved') {
+          if (!Payment::update((int)$payment->id, ['status' => 'paid', 'type' => 'sent'])) {
+            $this->response(400, ['message' => getLastError()]);
+          }
+        }
+      }
+
+      if (!ProductPurchase::sync(['id' => $id])) {
+        $this->response(400, ['message' => getLastError()]);
+      }
+
+      DB::transComplete();
+
+      if (DB::transStatus()) {
+        $this->response(200, ['message' => 'Purchase payment has been approved.']);
+      }
+
+      $this->response(400, ['message' => 'Failed to approve payment.']);
+    }
+
     foreach ($purchaseItems as $purchaseItem) {
       for ($a = 0; $a < count($itemId); $a++) {
         if ($purchaseItem->product_id == $itemId[$a]) {
           if ($status == 'received') {
             $receivedQty = floatval($purchaseItem->quantity + $itemRest[$a]);
 
-            if (!Stock::update((int)$purchaseItem->id, ['quantity' => $receivedQty, 'status' => 'received'])) {
+            if (!Stock::update((int)$purchaseItem->id, ['date' => $date, 'quantity' => $receivedQty, 'status' => 'received', 'created_by' => $purchase->created_by])) {
               $this->response(400, ['message' => getLastError()]);
             }
 
@@ -1781,6 +2300,8 @@ class Inventory extends BaseController
   protected function purchase_view($id = null)
   {
     checkPermission('ProductPurchase.View');
+
+    ProductPurchase::sync(['id' => $id]);
 
     $purchase = ProductPurchase::getRow(['id' => $id]);
 
@@ -2269,36 +2790,16 @@ class Inventory extends BaseController
       $this->response(404, ['message' => 'User is not found.']);
     }
 
-    $userJS = getJSON($user->json);
-    $soCycle = intval($userJS->so_cycle ?? 1);
-
     $warehouse = Warehouse::getRow(['id' => $warehouseId]);
 
     if (!$warehouse) {
       $this->response(404, ['message' => 'Warehouse is not found.']);
     }
 
-    if (empty($userJS->so_cycle)) {
-      $userJS->so_cycle = $soCycle;
-
-      $data = [
-        'json'      => json_encode($userJS),
-        'json_data' => json_encode($userJS),
-      ];
-
-      if (!User::update((int)$user->id, $data)) {
-        $this->response(400, ['message' => 'Failed to update user data.']);
-      }
-    }
+    // Get new SO Cycle.
+    $soCycle = getNewSOCycle((int)$userId, (int)$warehouseId);
 
     $items = getStockOpnameSuggestion((int)$user->id, (int)$warehouse->id, $soCycle);
-
-    if (!$items) {
-      $soCycle = 1;
-      $userJS->so_cycle = $soCycle;
-
-      $items = getStockOpnameSuggestion((int)$user->id, (int)$warehouse->id, $soCycle);
-    }
 
     if (!$items) {
       $this->response(400, ['message' => 'No items to be check.']);
@@ -2592,11 +3093,11 @@ class Inventory extends BaseController
     $receivedQty  = 0;
     $status       = getPost('status');
 
-    if ($status == 'received') {
-      $receivedQty = $transfer->quantity;
-    }
-
     foreach ($transferItems as $transferItem) {
+      if ($status == 'received') {
+        $receivedQty = $transferItem->quantity;
+      }
+
       $items[] = [
         'id'            => $transferItem->product_id,
         'quantity'      => $transferItem->quantity,

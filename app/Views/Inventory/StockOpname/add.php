@@ -12,12 +12,14 @@
         <div class="card">
           <div class="card-body">
             <div class="row">
-              <div class="col-md-3">
-                <div class="form-group">
-                  <label for="date"><?= lang('App.date') ?></label>
-                  <input type="datetime-local" id="date" name="date" class="form-control form-control-border form-control-sm">
+              <?php if (hasAccess('StockOpname.Edit')) : ?>
+                <div class="col-md-3">
+                  <div class="form-group">
+                    <label for="date"><?= lang('App.date') ?></label>
+                    <input type="datetime-local" id="date" name="date" class="form-control form-control-border form-control-sm">
+                  </div>
                 </div>
-              </div>
+              <?php endif; ?>
               <div class="col-md-3">
                 <div class="form-group">
                   <label for="pic"><?= lang('App.pic') ?> *</label>

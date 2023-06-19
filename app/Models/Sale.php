@@ -48,12 +48,16 @@ class Sale
     $date       = ($data['date'] ?? date('Y-m-d H:i:s'));
     $reference  = OrderRef::getReference('sale');
 
+    if (empty($data['due_date'])) { // Calculate due date. Default 7 days later.
+      $data['due_date'] = date('Y-m-d H:i:s', strtotime('+7 day'));
+    }
+
     // Calculate totalQty, totalPrice and totalItems.
     foreach ($items as $item) {
-      $price    = filterDecimal($item['price']);
-      $quantity = filterDecimal($item['quantity']);
-      $width    = filterDecimal($item['width'] ?? 1);
-      $length   = filterDecimal($item['length'] ?? 1);
+      $price    = filterNumber($item['price']);
+      $quantity = filterNumber($item['quantity']);
+      $width    = filterNumber($item['width'] ?? 1);
+      $length   = filterNumber($item['length'] ?? 1);
       $area     = ($width * $length);
 
       $totalQty   = ($area * $quantity);
@@ -84,7 +88,7 @@ class Sale
     $useTB = isTBSale($biller->code, $warehouse->code);
 
     // Get payment term.
-    $payment_term = filterDecimal($data['payment_term'] ?? 1);
+    $payment_term = filterNumber($data['payment_term'] ?? 1);
     $payment_term = ($payment_term > 0 ? $payment_term : 1);
 
     $saleJS = json_encode([
@@ -111,7 +115,7 @@ class Sale
       'discount'        => $discount,
       'tax'             => $tax,
       'total'           => roundDecimal($totalPrice),
-      'shipping'        => filterDecimal($data['shipping'] ?? 0),
+      'shipping'        => filterNumber($data['shipping'] ?? 0),
       'grand_total'     => roundDecimal($grandTotal), // IMPORTANT roundDecimal !!
       'balance'         => $balance,
       'status'          => $data['status'],
@@ -119,7 +123,7 @@ class Sale
       'payment_term'    => $payment_term,
       'due_date'        => ($data['due_date'] ?? null),
       'total_items'     => $totalItems,
-      'paid'            => filterDecimal($data['paid'] ?? 0),
+      'paid'            => filterNumber($data['paid'] ?? 0),
       'attachment'      => ($data['attachment'] ?? null),
       'payment_method'  => ($data['payment_method'] ?? null),
       'use_tb'          => $useTB,

@@ -204,7 +204,7 @@
                 unit: item.unit,
                 markon_price: item.markon_price,
                 quantity: 0,
-                spec: item.spec,
+                spec: '',
                 current_qty: item.quantity,
                 destination_qty: itemQtyTo,
                 received_qty: 0,

@@ -11,7 +11,7 @@
         <div class="card-body">
           <form id="form">
             <?= csrf_field() ?>
-            <table class="table table-hover table-sm table-striped">
+            <table class="table table-head-fixed table-hover table-striped">
               <tbody>
                 <tr>
                   <td><?= lang('App.pic') ?></td>
@@ -42,6 +42,10 @@
                   <td><?= formatNumber($tpod->usage_click) ?></td>
                 </tr>
                 <tr>
+                  <td><?= lang('App.todayclick') ?></td>
+                  <td><?= formatNumber($tpod->today_click) ?></td>
+                </tr>
+                <tr>
                   <td><?= lang('App.rejectmachine') ?></td>
                   <td><?= formatNumber($tpod->mc_reject) ?></td>
                 </tr>
@@ -52,10 +56,6 @@
                 <tr>
                   <td><?= lang('App.totalreject') ?></td>
                   <td><?= formatNumber($tpod->mc_reject + $tpod->op_reject) ?></td>
-                </tr>
-                <tr>
-                  <td><?= lang('App.erpclick') ?></td>
-                  <td><?= formatNumber($tpod->erp_click) ?></td>
                 </tr>
                 <tr>
                   <td><?= lang('App.tolerance') ?> (%)</td>

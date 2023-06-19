@@ -25,6 +25,14 @@ table.dataTable tbody tr {
   z-index: 1;
 }
 
+.card .overlay, .info-box .overlay, .overlay-wrapper .overlay, .small-box .overlay {
+  z-index: 1;
+}
+
+.dark-mode {
+  background-color: #343a40!important;
+}
+
 .dark-mode .page-loader-wrapper {
   background-color: #343a40;
 }
@@ -69,6 +77,10 @@ table.dataTable tbody tr {
   stroke: #fff;
 }
 
+.dark-mode .table.table-head-fixed-main thead tr:nth-child(1) th {
+  background-color: #3f474e;
+}
+
 .dataTables_wrapper .dataTables_length,
 .dataTables_wrapper .dataTables_filter,
 .dataTables_wrapper .dataTables_info,
@@ -87,7 +99,7 @@ table.dataTable tbody tr {
 }
 
 .layout-navbar-fixed .wrapper .main-header {
-  z-index: 1;
+  z-index: 2;
 }
 
 .main-sidebar {
@@ -109,6 +121,21 @@ table.dataTable tbody tr {
 
 .os-padding {
   z-index: inherit;
+}
+
+.table.table-head-fixed-main thead tr:nth-child(1) th {
+  background-color: #fff;
+  border-bottom: 0;
+  box-shadow: none;
+  position: sticky;
+  top: 3rem;
+  z-index: 1;
+}
+
+.table.table-head-fixed thead tr:nth-child(1) th {
+  border-bottom: 0;
+  box-shadow: none;
+  z-index: 1;
 }
 
 .text-decoration-underline {

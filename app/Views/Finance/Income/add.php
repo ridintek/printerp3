@@ -12,12 +12,14 @@
         <div class="card">
           <div class="card-body">
             <div class="row">
-              <div class="col-md-6">
-                <div class="form-group">
-                  <label for="date"><?= lang('App.date') ?> *</label>
-                  <input type="datetime-local" id="date" name="date" class="form-control form-control-border form-control-sm">
+              <?php if (hasAccess('Income.Edit')) : ?>
+                <div class="col-md-6">
+                  <div class="form-group">
+                    <label for="date"><?= lang('App.date') ?> *</label>
+                    <input type="datetime-local" id="date" name="date" class="form-control form-control-border form-control-sm">
+                  </div>
                 </div>
-              </div>
+              <?php endif; ?>
               <div class="col-md-6">
                 <div class="form-group">
                   <label for="biller"><?= lang('App.biller') ?> *</label>
@@ -92,6 +94,8 @@
   })();
 
   $(document).ready(function() {
+    erp.select2.bank.biller = [0];
+
     let editor = new Quill('#editor', {
       theme: 'snow'
     });
@@ -108,6 +112,11 @@
         url: base_url + '/finance/bank/balance/' + this.value
       })
     });
+
+    $('#biller').change(function() {
+      $('#bank').val(null).trigger('change');
+      erp.select2.bank.biller = [this.value];
+    })
 
     initModalForm({
       form: '#form',

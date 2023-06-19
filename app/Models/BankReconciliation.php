@@ -70,7 +70,7 @@ class BankReconciliation
    */
   public static function sync()
   {
-    $curl = curl_init(base_url('api/v1/mutasibank/accounts'));
+    $curl = curl_init(base_url('api/v2/mutasibank/accounts'));
 
     curl_setopt_array($curl, [
       CURLOPT_HEADER => FALSE,

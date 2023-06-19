@@ -14,7 +14,8 @@ class ProductReport
     DB::table('product_report')->insert($data);
 
     if (DB::error()['code'] == 0) {
-      return DB::insertID();
+      $insertId = DB::insertID();
+      return $insertId;
     }
 
     setLastError(DB::error()['message']);
@@ -55,6 +56,16 @@ class ProductReport
       return $rows[0];
     }
     return null;
+  }
+
+  public static function sync($where = [])
+  {
+    $reports = self::select('*')->get($where);
+
+    foreach ($reports as $report) {
+      $product = Product::getRow(['id' => $report->product_id]);
+    }
+
   }
 
   /**

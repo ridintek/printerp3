@@ -94,50 +94,108 @@ class Sale extends BaseController
           </a>';
         }
 
-        $menu .= '<a class="dropdown-item" href="' . base_url('sale/print/' . $data['id']) . '"
-              target="_blank">
-              <i class="fad fa-fw fa-print"></i> ' . lang('App.print') . '
-            </a>
-            <a class="dropdown-item" href="' . base_url('sale/print/' . $data['id']) . '?deliverynote=1"
-              target="_blank">
-              <i class="fad fa-fw fa-print"></i> ' . lang('App.deliverynote') . '
-            </a>
-            <a class="dropdown-item" href="' . base_url('sale/view/' . $data['id']) . '"
+        $menu .= '<div class="dropdown-submenu dropdown-hover">
+            <a href="#" class="dropdown-item dropdown-toggle" data-toggle="dropdown">
+              <i class="fad fa-fw fa-print"></i> ' . lang('App.print') . '</a>
+            <div class="dropdown-menu">
+              <a class="dropdown-item" href="' . base_url('sale/print/' . $data['id']) . '"
+                target="_blank">
+                <i class="fad fa-fw fa-print"></i> ' . lang('App.invoice') . '
+              </a>
+              <a class="dropdown-item" href="' . base_url('sale/print/' . $data['id']) . '?deliverynote=1"
+                target="_blank">
+                <i class="fad fa-fw fa-print"></i> ' . lang('App.deliverynote') . '
+              </a>
+            </div>
+          </div>';
+
+        $menu .= '<a class="dropdown-item" href="' . base_url('sale/view/' . $data['id']) . '"
               data-toggle="modal" data-target="#ModalStatic"
               data-modal-class="modal-lg modal-dialog-centered modal-dialog-scrollable">
               <i class="fad fa-fw fa-edit"></i> ' . lang('App.view') . '
             </a>';
 
+        if (hasAccess('Sale.Edit')) {
+          $menu .= '<div class="dropdown-divider"></div>
+            <div class="dropdown-submenu dropdown-hover">
+              <a href="#" class="dropdown-item dropdown-toggle" data-toggle="dropdown">
+                <i class="fad fa-fw fa-check"></i> ' . lang('App.activation') . '</a>
+              <div class="dropdown-menu">
+                <a class="dropdown-item" href="' . base_url('sale/activate/' . $data['id']) . '"
+                  data-action="confirm">
+                  <i class="fad fa-fw fa-check"></i> ' . lang('App.activate') . '
+                </a>
+                <a class="dropdown-item" href="' . base_url('sale/deactivate/' . $data['id']) . '"
+                  data-action="confirm">
+                  <i class="fad fa-fw fa-times-circle"></i> ' . lang('App.deactivate') . '
+                </a>
+              </div>
+            </div>';
+        }
+
         if (hasAccess('Sale.Payment')) {
           $menu .= '<div class="dropdown-divider"></div>
-          <a class="dropdown-item" href="' . base_url('payment/add/sale/' . $data['id']) . '"
-            data-toggle="modal" data-target="#ModalStatic"
-            data-modal-class="modal-dialog-centered modal-dialog-scrollable">
-            <i class="fad fa-fw fa-money-bill"></i> ' . lang('App.addpayment') . '
-          </a>
-          <a class="dropdown-item" href="' . base_url('payment/view/sale/' . $data['id']) . '"
-              data-toggle="modal" data-target="#ModalStatic"
-              data-modal-class="modal-lg modal-dialog-centered modal-dialog-scrollable">
-              <i class="fad fa-fw fa-money-bill"></i> ' . lang('App.viewpayment') . '
-          </a>';
+          <div class="dropdown-submenu dropdown-hover">
+            <a href="#" class="dropdown-item dropdown-toggle" data-toggle="dropdown">
+              <i class="fad fa-fw fa-money-bill"></i> ' . lang('App.payment') . '</a>
+            <div class="dropdown-menu">
+              <a class="dropdown-item" href="' . base_url('payment/add/sale/' . $data['id']) . '"
+                data-toggle="modal" data-target="#ModalStatic"
+                data-modal-class="modal-dialog-centered modal-dialog-scrollable">
+                <i class="fad fa-fw fa-money-bill"></i> ' . lang('App.addpayment') . '
+              </a>
+              <a class="dropdown-item" href="' . base_url('payment/view/sale/' . $data['id']) . '"
+                  data-toggle="modal" data-target="#ModalStatic"
+                  data-modal-class="modal-lg modal-dialog-centered modal-dialog-scrollable">
+                  <i class="fad fa-fw fa-money-bill"></i> ' . lang('App.viewpayment') . '
+              </a>
+            </div>
+          </div>';
         }
 
-        if (hasAccess('PaymentValidation.Manual')) {
+        if (hasAccess(['Sale.Approve', 'Sale.ResetComplete'])) {
           $menu .= '<div class="dropdown-divider"></div>
-            <a class="dropdown-item" href="' . base_url('finance/validation/manual/sale/' . $data['id']) . '"
-              data-toggle="modal" data-target="#ModalStatic"
-              data-modal-class="modal-dialog-centered modal-dialog-scrollable">
-              <i class="fad fa-fw fa-money-bill"></i> ' . lang('App.manualvalidation') . '
-            </a>';
+            <div class="dropdown-submenu dropdown-hover">
+              <a href="#" class="dropdown-item dropdown-toggle" data-toggle="dropdown">
+                <i class="fad fa-fw fa-check-circle"></i> ' . lang('App.production') . '</a>
+              <div class="dropdown-menu">';
+
+          if (hasAccess('Sale.Approve')) {
+            $menu .= '<a class="dropdown-item" href="' . base_url('sale/approve/' . $data['id']) . '"
+                data-action="confirm">
+                <i class="fad fa-fw fa-check"></i> ' . lang('App.approve') . '
+              </a>';
+          }
+
+          if (hasAccess('Sale.ResetComplete')) {
+            $menu .= '<a class="dropdown-item" href="' . base_url('sale/reset/' . $data['id']) . '"
+                data-action="confirm">
+                <i class="fad fa-fw fa-undo"></i> ' . lang('App.resetcomplete') . '
+              </a>';
+          }
+
+          $menu .= '
+              </div>
+            </div>';
         }
 
-        if (hasAccess('Sale.ResetComplete')) {
-          $menu .= '
-            <div class="dropdown-divider"></div>
-            <a class="dropdown-item" href="' . base_url('sale/reset/' . $data['id']) . '"
-              data-action="confirm">
-              <i class="fad fa-fw fa-undo"></i> ' . lang('App.resetcomplete') . '
-            </a>';
+        if (hasAccess(['PaymentValidation.Delete', 'PaymentValidation.Manual'])) {
+          $menu .= '<div class="dropdown-divider"></div>
+            <div class="dropdown-submenu dropdown-hover">
+              <a href="#" class="dropdown-item dropdown-toggle" data-toggle="dropdown">
+                <i class="fad fa-fw fa-check-circle"></i> ' . lang('App.validation') . '</a>
+              <div class="dropdown-menu">
+                <a class="dropdown-item" href="' . base_url('finance/validation/cancel/sale/' . $data['id']) . '"
+                  data-action="confirm">
+                  <i class="fad fa-fw fa-undo"></i> ' . lang('App.cancelvalidation') . '
+                </a>
+                <a class="dropdown-item" href="' . base_url('finance/validation/manual/sale/' . $data['id']) . '"
+                  data-toggle="modal" data-target="#ModalStatic"
+                  data-modal-class="modal-dialog-centered modal-dialog-scrollable">
+                  <i class="fad fa-fw fa-money-bill"></i> ' . lang('App.manualvalidation') . '
+                </a>
+              </div>
+            </div>';
         }
 
         if (hasAccess('Sale.Delete')) {
@@ -184,24 +242,46 @@ class Sale extends BaseController
       }
     }
 
-    if (session('login')->biller) {
-      if ($billers) {
-        $billers[] = session('login')->biller;
+    if (isset($userJS->warehouses) && !empty($userJS->warehouses)) {
+      if ($warehouses) {
+        $warehouses = array_merge($warehouses, $userJS->warehouses);
       } else {
-        $billers = [session('login')->biller];
+        $warehouses = $userJS->warehouses;
       }
     }
 
-    if ($billers) {
-      $dt->whereIn('sales.biller', $billers);
+    if (session('login')->biller_id) {
+      if ($billers) {
+        $billers[] = session('login')->biller_id;
+      } else {
+        $billers = [session('login')->biller_id];
+      }
+    }
+
+    if (session('login')->warehouse_id) {
+      if ($warehouses) {
+        $warehouses[] = session('login')->warehouse_id;
+      } else {
+        $warehouses = [session('login')->warehouse_id];
+      }
+    }
+
+    if ($billers || $warehouses) {
+      $dt->groupStart();
+
+      if ($billers) {
+        $dt->whereIn('sales.biller_id', $billers);
+      }
+
+      if ($warehouses) {
+        $dt->orWhereIn('sales.warehouse_id', $warehouses);
+      }
+
+      $dt->groupEnd();
     }
 
     if ($customers) {
       $dt->whereIn('sales.customer_id', $customers);
-    }
-
-    if ($warehouses) {
-      $dt->whereIn('sales.warehouse', $warehouses);
     }
 
     if ($status) {
@@ -213,7 +293,7 @@ class Sale extends BaseController
     }
 
     if ($createdBy) {
-      $dt->whereIn('pic.phone', $createdBy);
+      $dt->whereIn('pic.id', $createdBy);
     }
 
     if ($receivable) {
@@ -287,6 +367,27 @@ class Sale extends BaseController
     $dt->generate();
   }
 
+  public function activate($id = null)
+  {
+    if (requestMethod() == 'POST' && isAJAX()) {
+      DB::transStart();
+
+      if (!Invoice::update((int)$id, ['status' => 'need_payment'])) {
+        $this->response(400, ['message' => getLastError()]);
+      }
+
+      Invoice::sync(['id' => $id]);
+
+      DB::transComplete();
+
+      if (DB::transStatus()) {
+        $this->response(200, ['message' => 'Invoice has been activated.']);
+      }
+
+      $this->response(400, ['message' => getLastError()]);
+    }
+  }
+
   public function add()
   {
     checkPermission('Sale.Add');
@@ -297,7 +398,7 @@ class Sale extends BaseController
       $warehouse  = getPost('warehouse');
       $cashier    = getPost('cashier');
       $customer   = getPost('customer');
-      $discount   = filterDecimal(getPost('discount') ?? 0);
+      $discount   = filterNumber(getPost('discount') ?? 0);
       $dueDate    = dateTimePHP(getPost('duedate'), false);
       $note       = getPost('note');
       $approved   = (getPost('approved') == 1 ? 1 : 0);
@@ -336,7 +437,7 @@ class Sale extends BaseController
           'spec'        => $rawItems['spec'][$a],
           'width'       => $rawItems['width'][$a],
           'length'      => $rawItems['length'][$a],
-          'price'       => filterDecimal($rawItems['price'][$a]),
+          'price'       => filterNumber($rawItems['price'][$a]),
           'quantity'    => $rawItems['quantity'][$a],
           'operator_id' => $rawItems['operator'][$a],
         ];
@@ -412,6 +513,73 @@ class Sale extends BaseController
     $this->response(200, ['content' => view('Sale/add', $this->data)]);
   }
 
+  public function approve($id = null)
+  {
+    $sale = Invoice::getRow(['id' => $id]);
+
+    if (!$sale) {
+      $this->response(404, ['message' => 'Sale is not found.']);
+    }
+
+    if (requestMethod() == 'POST' && isAJAX()) {
+      DB::transStart();
+
+      if (!Invoice::update((int)$id, ['approved' => 1])) {
+        $this->response(400, ['message' => getLastError()]);
+      }
+
+      DB::transComplete();
+
+      if (DB::transStatus()) {
+        $this->response(200, ['message' => 'Invoice has been approved.']);
+      }
+
+      $this->response(200, ['message' => 'Failed to approve invoice.']);
+    }
+  }
+
+  public function deactivate($id = null)
+  {
+    if (requestMethod() == 'POST' && isAJAX()) {
+      DB::transStart();
+
+      if (!Invoice::update((int)$id, ['status' => 'inactive'])) {
+        $this->response(400, ['message' => getLastError()]);
+      }
+
+      Payment::delete(['sale_id' => $id]);
+      Stock::delete(['sale_id' => $id]);
+
+      foreach (SaleItem::get(['sale_id' => $id]) as $saleItem) {
+        $saleItemJS = getJSON($saleItem->json);
+
+        $saleItemJS->complete = [];
+        // Deprecated: 2 lines below.
+        // $saleItemJS->completed_at = '';
+        // $saleItemJS->operator_id = 0;
+
+        $json = json_encode($saleItemJS);
+
+        SaleItem::update((int)$saleItem->id, [
+          'finished_qty'  => 0,
+          'status'        => 'inactive',
+          'json'          => $json,
+          'json_data'     => $json
+        ]);
+      }
+
+      Invoice::sync(['id' => $id]);
+
+      DB::transComplete();
+
+      if (DB::transStatus()) {
+        $this->response(200, ['message' => 'Invoice has been deactivated.']);
+      }
+
+      $this->response(400, ['message' => getLastError()]);
+    }
+  }
+
   public function delete($id = null)
   {
     checkPermission('Sale.Delete');
@@ -424,6 +592,11 @@ class Sale extends BaseController
 
     if (requestMethod() == 'POST' && isAJAX()) {
       DB::transStart();
+
+      // Only the OWNER group is authorized to perform DELETE operations.
+      if (!in_array('OWNER', session('login')->groups)) {
+        $this->deactivate($id);
+      }
 
       $res = Invoice::delete(['id' => $id]);
 
@@ -481,7 +654,7 @@ class Sale extends BaseController
       $warehouse  = getPost('warehouse');
       $cashier    = getPost('cashier');
       $customer   = getPost('customer');
-      $discount   = filterDecimal(getPost('discount') ?? 0);
+      $discount   = filterNumber(getPost('discount') ?? 0);
       $dueDate    = dateTimePHP(getPost('duedate'));
       $note       = getPost('note');
       $approved   = (getPost('approved') == 1 ? 1 : 0);
@@ -520,7 +693,7 @@ class Sale extends BaseController
           'width'         => $rawItems['width'][$a],
           'length'        => $rawItems['length'][$a],
           'spec'          => $rawItems['spec'][$a],
-          'price'         => filterDecimal($rawItems['price'][$a]),
+          'price'         => filterNumber($rawItems['price'][$a]),
           'quantity'      => $rawItems['quantity'][$a],
           'operator_id'   => $rawItems['operator'][$a],
           'status'        => $rawItems['status'][$a],
@@ -687,8 +860,8 @@ class Sale extends BaseController
 
       $saleItemJS->complete = [];
       // Deprecated: 2 lines below.
-      $saleItemJS->completed_at = '';
-      $saleItemJS->operator_id = 0;
+      // $saleItemJS->completed_at = '';
+      // $saleItemJS->operator_id = 0;
 
       $json = json_encode($saleItemJS);
 
@@ -767,7 +940,7 @@ class Sale extends BaseController
     if (requestMethod() == 'POST' && isAJAX()) {
       $code       = getPost('code');
       $name       = getPost('name');
-      $amount     = filterDecimal(getPost('amount'));
+      $amount     = filterNumber(getPost('amount'));
       $method     = getPost('method');
       $percent    = getPost('percent');
       $quota      = getPost('quota');
@@ -882,7 +1055,7 @@ class Sale extends BaseController
     if (requestMethod() == 'POST' && isAJAX()) {
       $code       = getPost('code');
       $name       = getPost('name');
-      $amount     = filterDecimal(getPost('amount'));
+      $amount     = filterNumber(getPost('amount'));
       $method     = getPost('method');
       $percent    = getPost('percent');
       $quota      = getPost('quota');

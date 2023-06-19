@@ -107,7 +107,7 @@ class Stock
     if (!isset($data['cost']))  $data['cost']   = $product->cost;
     if (!isset($data['price'])) $data['price']  = $product->price;
 
-    $data['subtotal'] = filterDecimal($data['price']) * filterDecimal($data['quantity']);
+    $data['subtotal'] = filterNumber($data['price']) * filterNumber($data['quantity']);
 
     $data = setCreatedBy($data);
 
@@ -128,6 +128,42 @@ class Stock
     setLastError(DB::error()['message']);
 
     return false;
+  }
+
+  /**
+   * Get beginning quantity.
+   * @param array $where [ product_id, warehouse_id ]
+   * @param string $date Date beginning quantity (Y-m-d).
+   * @return float Return beginning quantity.
+   */
+  public static function beginningQty(array $where, string $date)
+  {
+    // Back to 1 day ago.
+    $endDate = date('Y-m-d', strtotime('-1 day', strtotime($date ?? date('Y-m-d'))));
+
+    $q = self::select('quantity, status')->where($where)->where("date <= '{$endDate} 23:59:59'");
+
+    if (!empty($where['product_id'])) {
+      $q->where('product_id', $where['product_id']);
+    }
+
+    if (!empty($where['warehouse_id'])) {
+      $q->where('warehouse_id', $where['warehouse_id']);
+    }
+
+    $stocks = $q->get();
+
+    $beginningQty = 0.0;
+
+    foreach ($stocks as $stock) {
+      if ($stock->status == 'received') {
+        $beginningQty += floatval($stock->quantity);
+      } else if ($stock->status == 'sent') {
+        $beginningQty -= floatval($stock->quantity);
+      }
+    }
+
+    return $beginningQty;
   }
 
   /**
@@ -305,7 +341,7 @@ class Stock
 
       $data['cost']     = $product->cost;
       $data['price']    = $product->price;
-      $data['subtotal'] = filterDecimal($data['price']) * filterDecimal($data['quantity']);
+      $data['subtotal'] = filterNumber($data['price']) * filterNumber($data['quantity']);
     }
 
     if (isset($data['warehouse_id'])) {
