@@ -2726,7 +2726,7 @@ class Inventory extends BaseController
             if (StockOpnameItem::isLost((int)$soItem->id)) {
               $itemLost[] = [
                 'id'        => $soItem->product_id,
-                'quantity'  => $soItem->first_qty
+                'quantity'  => ($soItem->last_qty ?? $soItem->first_qty)
               ];
 
               $data['total_lost'] += floatval($soItem->subtotal);
