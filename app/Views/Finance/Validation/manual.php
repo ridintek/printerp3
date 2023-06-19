@@ -83,7 +83,8 @@
   })();
 
   $(document).ready(function() {
-    erp.select2.bank.biller = ['<?= $pv->biller_id ?>'];
+    erp.select2.bank = {};
+    erp.select2.bank.biller = [<?= $pv->biller_id ?>];
 
     let editor = new Quill('#editor', {
       theme: 'snow'
