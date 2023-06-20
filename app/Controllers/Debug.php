@@ -8,16 +8,30 @@ use App\Libraries\FileUpload;
 use App\Models\{
   DB, Expense,
   PaymentValidation, QueueTicket,
-  Sale, SaleItem, Stock, Test1, Test2, TrackingPOD
+  Sale, SaleItem, Stock, StockAdjustment, Test1, Test2, TrackingPOD
 };
 
 class Debug extends BaseController
 {
-  public function qms()
+  public function adjustment()
   {
-    $r = QueueTicket::getTodayLastTicket(['queue_category_id' => 1, 'warehouse_id' => 5]);
+    $date = '2023-06-16 08:05:00';
 
-    dbgprint($r);
+    $items[] = [
+      'id' => 381, // POSTMN
+      'quantity' => 200
+    ];
+
+    $insertId = StockAdjustment::add([
+      'date'          => $date,
+      'warehouse_id'  => 5,
+      'mode'          => 'overwrite',
+      'note'          => 'TEST'
+    ], $items, [
+      'end_date' => $date
+    ]);
+
+    dbgprint($insertId);
   }
 
   public function trackingpod()
