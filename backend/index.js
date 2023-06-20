@@ -13,9 +13,9 @@ let option = {
 
 var dbConnection = mysql.createConnection({
   host: 'localhost',
-  user: 'idp_erp',
-  password: 'Dur14n100$',
-  database: 'idp_erp'
+  user: '-',
+  password: '-',
+  database: '-'
 });
 
 let app = express();
