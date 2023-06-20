@@ -113,6 +113,15 @@
                 <?php endforeach; ?>
               </tbody>
             </table>
+            <div class="row">
+              <div class="col-md-12">
+                <div class="form-group">
+                  <label for="editor"><?= lang('App.note') ?></label>
+                  <div id="editor"></div>
+                  <input type="hidden" name="note">
+                </div>
+              </div>
+            </div>
           </form>
         </div>
       </div>
@@ -137,6 +146,16 @@
   })();
 
   $(document).ready(function() {
+    let editor = new Quill('#editor', {
+      theme: 'snow'
+    });
+
+    editor.on('text-change', (delta, oldDelta, source) => {
+      $('[name="note"]').val(editor.root.innerHTML);
+    });
+
+    editor.root.innerHTML = `<?= $transfer->note ?>`;
+
     $('.commit-status').click(function() {
       let status = '';
 

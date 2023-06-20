@@ -23,12 +23,7 @@
               <div class="col-md-6">
                 <div class="form-group">
                   <label for="method"><?= lang('App.method') ?> *</label>
-                  <select id="method" name="method" class="select" data-placeholder="<?= lang('App.method') ?>" style=" width:100%">
-                    <option value=""></option>
-                    <?php $bankTypes = \App\Models\Bank::select('type')->distinct()->get(['active' => 1]); ?>
-                    <?php foreach ($bankTypes as $bankType) : ?>
-                      <option value="<?= $bankType->type ?>"><?= lang('App.' . strtolower($bankType->type)) ?></option>
-                    <?php endforeach; ?>
+                  <select id="method" name="method" class="select-bank-type" data-placeholder="<?= lang('App.method') ?>" style=" width:100%">
                   </select>
                 </div>
               </div>

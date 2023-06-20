@@ -272,7 +272,7 @@ class InternalUse
             return false;
           }
 
-          Product::sync((int)$product->id);
+          Product::sync(['id' => $product->id]);
         }
       }
 

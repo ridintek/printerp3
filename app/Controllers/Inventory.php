@@ -619,12 +619,12 @@ class Inventory extends BaseController
   {
     checkPermission('StockOpname.View');
 
-    $warehouses     = getPost('warehouse');
-    $status         = getPost('status');
-    $createdBy      = getPost('created_by');
-    $startDate      = (getPost('start_date') ?? date('Y-m-d', strtotime('-1 month')));
-    $endDate        = (getPost('end_date') ?? date('Y-m-d'));
-    $xls            = getGet('xls');
+    $warehouses     = getPostGet('warehouse');
+    $status         = getPostGet('status');
+    $createdBy      = getPostGet('created_by');
+    $startDate      = (getPostGet('start_date') ?? date('Y-m-d', strtotime('-1 month')));
+    $endDate        = (getPostGet('end_date') ?? date('Y-m-d'));
+    $xls            = getPostGet('xls');
 
     $dt = new DataTables('stock_opnames');
     $dt
@@ -784,8 +784,10 @@ class Inventory extends BaseController
   {
     checkPermission('Product.History');
 
+    $product    = getPost('product');
     $status     = getPost('status');
     $warehouses = getPost('warehouse');
+    $createdBy  = getPost('created_by');
     $startDate  = (getPost('start_date') ?? date('Y-m-d', strtotime('-7 day')));
     $endDate    = (getPost('end_date') ?? date('Y-m-d'));
 
@@ -835,12 +837,20 @@ class Inventory extends BaseController
       }
     }
 
+    if ($product) {
+      $dt->whereIn('stocks.product_id', $product);
+    }
+
     if ($warehouses) {
       $dt->whereIn('stocks.warehouse_id', $warehouses);
     }
 
     if ($status) {
       $dt->whereIn('stocks.status', $status);
+    }
+
+    if ($createdBy) {
+      $dt->whereIn('stocks.created_by', $createdBy);
     }
 
     $dt->where("stocks.date BETWEEN '{$startDate} 00:00:00' AND '{$endDate} 23:59:59'");
@@ -1196,7 +1206,7 @@ class Inventory extends BaseController
       Stock::delete(['internal_use_id' => $id]);
 
       foreach ($iUseItems as $iUseItem) {
-        Product::sync((int)$iUseItem->product_id);
+        Product::sync(['id' => $iUseItem->product_id]);
       }
 
       $res = InternalUse::delete(['id' => $id]);
@@ -1500,7 +1510,7 @@ class Inventory extends BaseController
       Stock::delete(['pm_id' => $id]);
 
       foreach ($mutationItems as $mutationItem) {
-        Product::sync((int)$mutationItem->product_id);
+        Product::sync(['id' => $mutationItem->product_id]);
       }
 
       $res = ProductMutation::delete(['id' => $id]);
@@ -1615,11 +1625,11 @@ class Inventory extends BaseController
 
       DB::transStart();
 
-      $res = Product::delete(['id' => $id]);
-
-      if (!$res) {
+      if (!Product::delete(['id' => $id])) {
         $this->response(400, ['message' => getLastError()]);
       }
+
+      WarehouseProduct::delete(['product_id' => $id]);
 
       DB::transComplete();
 
@@ -1863,8 +1873,10 @@ class Inventory extends BaseController
       $synced = 0;
 
       foreach ($ids as $productId) {
-        if (Product::sync((int)$productId)) {
+        if (Product::sync(['id' => $productId])) {
           $synced++;
+        } else {
+          $this->response(400, ['message' => getLastError()]);
         }
       }
 
@@ -1917,6 +1929,14 @@ class Inventory extends BaseController
       $categoryId   = getPost('category');
       $supplierId   = getPost('supplier');
       $warehouseId  = getPost('warehouse');
+
+      if (empty($billerId)) {
+        $this->response(400, ['message' => 'Biller is not set.']);
+      }
+
+      if (empty($warehouseId)) {
+        $this->response(400, ['message' => 'Warehouse is not set.']);
+      }
 
       $data = [
         'date'          => dateTimePHP(getPost('date')),
@@ -2020,6 +2040,14 @@ class Inventory extends BaseController
       $categoryId   = getPost('category');
       $supplierId   = getPost('supplier');
       $warehouseId  = getPost('warehouse');
+
+      if (empty($billerId)) {
+        $this->response(400, ['message' => 'Biller is not set.']);
+      }
+
+      if (empty($warehouseId)) {
+        $this->response(400, ['message' => 'Warehouse is not set.']);
+      }
 
       $data = [
         'date'            => dateTimePHP(getPost('date')),
@@ -2256,13 +2284,13 @@ class Inventory extends BaseController
 
             $receivedValue += floatval($receivedQty * $purchaseItem->cost);
 
-            Product::sync((int)$purchaseItem->product_id);
+            Product::sync(['id' => $purchaseItem->product_id]);
           } else {
             if (!Stock::update((int)$purchaseItem->id, ['quantity' => 0, 'status' => $status])) {
               $this->response(400, ['message' => getLastError()]);
             }
 
-            Product::sync((int)$purchaseItem->product_id);
+            Product::sync(['id' => $purchaseItem->product_id]);
           }
 
           break;
@@ -2420,7 +2448,7 @@ class Inventory extends BaseController
       Attachment::delete(['hashname' => $adjustment->attachment]);
 
       foreach ($stocks as $stock) {
-        Product::sync((int)$stock->product_id);
+        Product::sync(['id' => $stock->product_id]);
       }
 
       DB::transComplete();
@@ -2649,7 +2677,7 @@ class Inventory extends BaseController
       }
 
       foreach ($soItems as $soItem) {
-        Product::sync((int)$soItem->product_id);
+        Product::sync(['id' => $soItem->product_id]);
       }
 
       $res = StockOpname::delete(['id' => $id]);
@@ -2748,9 +2776,7 @@ class Inventory extends BaseController
         'warehouse_id'  => $opname->warehouse_id,
         'mode'          => 'overwrite',
         'note'          => $opname->reference
-      ], $itemLost, [
-        'end_date' => (new \DateTime($opname->date))->format('Y-m-d')
-      ]);
+      ], $itemLost);
 
       if (!$lostId) {
         return false;
@@ -2806,7 +2832,7 @@ class Inventory extends BaseController
     }
 
     foreach ($items as $item) {
-      Product::sync((int)$item->id);
+      Product::sync(['id' => $item->id]);
     }
 
     // Updated items quantity.
@@ -3027,7 +3053,7 @@ class Inventory extends BaseController
         'destination_qty' => $whProductTo->quantity,
         'received_qty'    => $ptitem->received_qty,
         'unit'            => $unit->code,
-        'spec'            => $ptitem->spec,
+        'spec'            => ($ptitem->spec ?? ''), // Fix spec null/undefined on JS.
       ];
     }
 
@@ -3092,6 +3118,7 @@ class Inventory extends BaseController
     $items        = [];
     $receivedQty  = 0;
     $status       = getPost('status');
+    $note         = stripTags(getPost('note'));
 
     foreach ($transferItems as $transferItem) {
       if ($status == 'received') {
@@ -3109,7 +3136,7 @@ class Inventory extends BaseController
 
     DB::transStart();
 
-    $res = ProductTransfer::update((int)$id, ['status' => $status], $items);
+    $res = ProductTransfer::update((int)$id, ['status' => $status, 'note' => $note], $items);
 
     if (!$res) {
       $this->response(400, ['message' => getLastError()]);

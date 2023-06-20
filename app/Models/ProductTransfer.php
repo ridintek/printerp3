@@ -196,7 +196,7 @@ class ProductTransfer
         Stock::delete(['transfer_id' => $pt->id]);
 
         foreach ($ptitems as $ptitem) {
-          Product::sync((int)$ptitem->product_id);
+          Product::sync(['id' => $ptitem->product_id]);
         }
 
         Attachment::delete(['hashname' => $pt->attachment]);
@@ -376,7 +376,7 @@ class ProductTransfer
               }
             }
 
-            Product::sync((int)$product->id);
+            Product::sync(['id' => $product->id]);
           }
         }
 

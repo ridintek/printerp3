@@ -101,6 +101,15 @@ class Maintenance extends BaseController
             </a>';
         }
 
+        if (hasAccess('MaintenanceReport.Assign')) {
+          $menu .= '
+            <a class="dropdown-item" href="' . base_url('maintenance/report/assign/' . $data['id']) . '"
+              data-toggle="modal" data-target="#ModalStatic"
+              data-modal-class="modal-dialog-centered modal-dialog-scrollable">
+              <i class="fad fa-fw fa-plus-square"></i> ' . lang('App.assign') . '
+            </a>';
+        }
+
         $menu .= '
           <a class="dropdown-item" href="' . base_url('maintenance/report/view/' . $data['id']) . $param . '"
             data-toggle="modal" data-target="#ModalStatic"
@@ -124,7 +133,7 @@ class Maintenance extends BaseController
         $lastCheck  = (!empty($data['last_check']) ? strtotime($data['last_check']) : null);
         $todayCheck = ($lastCheck ? date('Y-m-d', $lastCheck) : null);
         $todayDate  = date('Y-m-d');
-        $hasUpdated = ($todayCheck == $todayDate ? true : false);
+        $hasUpdated = ($todayCheck == $todayDate);
 
         return ($hasUpdated ? '<div class="text-center"><i class="fad fa-2x fa-check"></i></div>' : '');
       });
@@ -621,7 +630,39 @@ class Maintenance extends BaseController
     $this->response(200, ['content' => view('Maintenance/Report/add', $this->data)]);
   }
 
-  public function report_delete($id = null)
+  protected function report_assign($id = null)
+  {
+    $product = Product::getRow(['id' => $id]);
+
+    if (!$product) {
+      $this->response(404, ['message' => 'Item is not found.']);
+    }
+
+    if (requestMethod() == 'POST' && isAJAX()) {
+      $techsupport = getPost('techsupport');
+
+      $productJS = getJSON($product->json);
+
+      $productJS->pic_id = intval($techsupport);
+      $productJS->assigned_by = intval(session('login')->user_id);
+      $productJS->assigned_at = date('Y-m-d H:i:s');
+
+      $json = json_encode($productJS);
+
+      if (!Product::update((int)$id, ['json' => $json, 'json_data' => $json])) {
+        $this->response(400, ['message' => getLastError()]);
+      }
+
+      $this->response(200, ['message' => "Item {$product->code} has been assigned."]);
+    }
+
+    $this->data['title']    = lang('App.assign');
+    $this->data['product']  = $product;
+
+    $this->response(200, ['content' => view('Maintenance/Report/assign', $this->data)]);
+  }
+
+  protected function report_delete($id = null)
   {
     checkPermission('MaintenanceReport.Delete');
 
@@ -672,7 +713,7 @@ class Maintenance extends BaseController
     }
   }
 
-  public function report_edit($id = null)
+  protected function report_edit($id = null)
   {
     checkPermission('MaintenanceReport.Edit');
 
@@ -765,7 +806,7 @@ class Maintenance extends BaseController
     $this->response(200, ['content' => view('Maintenance/Report/edit', $this->data)]);
   }
 
-  public function report_view($productId = null)
+  protected function report_view($productId = null)
   {
     $product = Product::getRow(['id' => $productId]);
 

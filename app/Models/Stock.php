@@ -254,7 +254,23 @@ class Stock
   {
     $whp = WarehouseProduct::getRow(['product_id' => $productId, 'warehouse_id' => $warehouseId]);
 
-    if (!$whp) return false;
+    if (!$whp) {
+      $product = Product::getRow(['id' => $productId]);
+      $warehouse = Warehouse::getRow(['id' => $warehouseId]);
+
+      $whpData = [
+        'product_id' => $product->id,
+        'product_code' => $product->code,
+        'warehouse_id' => $warehouse->id,
+        'warehouse_code' => $warehouse->code
+      ];
+
+      if (!WarehouseProduct::add($whpData)) {
+        return false;
+      }
+
+      $whp = WarehouseProduct::getRow(['product_id' => $productId, 'warehouse_id' => $warehouseId]);
+    }
 
     return WarehouseProduct::update(
       (int)$whp->id,
@@ -266,19 +282,19 @@ class Stock
    * Get total quantity based by product and warehouse.
    * @param int $productId Product ID.
    * @param int $warehouseId Warehouse ID.
-   * @param array $opt [ start_date, end_date ]
+   * @param array $opt [ start_date (Y-m-d H:i:s), end_date (Y-m-d H:i:s) ]
    * @return float Return total quantity.
    */
   public static function totalQuantity(int $productId, int $warehouseId, array $opt = [])
   {
     $period = '';
 
-    if (isset($opt['start_date']) && isset($opt['end_date'])) {
-      $period = "AND date BETWEEN '{$opt['start_date']} 00:00:00' AND '{$opt['end_date']} 23:59:59'";
-    } else if (isset($opt['start_date'])) {
-      $period = "AND date >= '{$opt['start_date']} 00:00:00}'";
-    } else if (isset($opt['end_date'])) {
-      $period = "AND date <= '{$opt['end_date']} 23:59:50'";
+    if (isset($opt['start_date'])) {
+      $period .= "AND date >= '{$opt['start_date']}'";
+    }
+
+    if (isset($opt['end_date'])) {
+      $period .= " AND date <= '{$opt['end_date']}'";
     }
 
     $result = DB::table('stocks')

@@ -157,7 +157,7 @@ class ProductPurchase
         Stock::delete(['purchase_id' => $purchase->id]);
 
         foreach ($items as $item) {
-          Product::sync((int)$item->product_id);
+          Product::sync(['id' => $item->product_id]);
         }
 
         Attachment::delete(['hashname' => $purchase->attachment]);

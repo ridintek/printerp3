@@ -68,8 +68,9 @@ class Product
   /**
    * Sync product quantity.
    */
-  public static function sync(int $productId)
+  public static function sync($where = [])
   {
+    $synced = 0;
     $whIds = [];
 
     foreach (Warehouse::get(['active' => 1]) as $warehouse) {
@@ -78,19 +79,39 @@ class Product
 
     $totalQty = 0;
 
-    foreach ($whIds as $whId) {
-      if (Stock::sync((int)$productId, (int)$whId)) {
-        $totalQty += Stock::totalQuantity((int)$productId, (int)$whId);
-      } else {
-        setLastError("Failed sync Product: {$productId}, Warehouse: {$whId}");
+    foreach (self::get($where) as $product) {
+      $productJS = getJSON($product->json);
+
+      foreach ($whIds as $whId) {
+        if (Stock::sync((int)$product->id, (int)$whId)) {
+          $totalQty += Stock::totalQuantity((int)$product->id, (int)$whId);
+        } else {
+          setLastError("Failed sync Product: {$product->id}, Warehouse: {$whId}");
+          return false;
+        }
+      }
+
+      $lastReport = ProductReport::select('*')
+        ->orderBy('created_at', 'DESC')
+        ->getRow(['product_id' => $product->id]);
+
+      if ($lastReport && $lastReport->condition == 'good') {
+        $productJS->condition = $lastReport->condition;
+        $productJS->assigned_at = '';
+        $productJS->assigned_by = 0;
+        $productJS->note = '';
+        $productJS->pic_id = 0;
+        $productJS->pic_note = '';
+      }
+
+      $json = json_encode($productJS);
+
+      if (Product::update((int)$product->id, ['quantity' => $totalQty, 'json' => $json, 'json_data' => $json])) {
+        $synced++;
       }
     }
 
-    if (Product::update((int)$productId, ['quantity' => $totalQty])) {
-      return true;
-    }
-
-    return false;
+    return $synced;
   }
 
   /**

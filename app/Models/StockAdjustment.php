@@ -10,9 +10,8 @@ class StockAdjustment
    * Add new StockAdjustment.
    * @param array $data [ date, *warehouse_id, *mode ]
    * @param array $items [ *id, *quantity ]
-   * @param array $opt Options [ start_date, end_date ]
    */
-  public static function add(array $data, array $items, array $opt = [])
+  public static function add(array $data, array $items)
   {
     if (empty($data['warehouse_id'])) {
       setLastError('Warehouse ID is not set.');
@@ -33,6 +32,7 @@ class StockAdjustment
 
     if (DB::error()['code'] == 0) {
       $insertId = DB::insertID();
+      $date = ($data['date'] ?? $data['created_at']);
 
       if (!OrderRef::updateReference('adjustment')) {
         return false;
@@ -40,28 +40,14 @@ class StockAdjustment
 
       foreach ($items as $item) {
         $product = Product::getRow(['id' => $item['id']]);
-        $currentQty = 0.0;
 
         if (!$product) {
           setLastError("Product {$item['id']} is not found.");
           return false;
         }
 
-        if (isset($opt['start_date']) || isset($opt['end_date'])) {
-          $currentQty = Stock::totalQuantity((int)$product->id, (int)$warehouse->id, $opt);
-        } else {
-          $whProduct = WarehouseProduct::getRow(['product_id' => $product->id, 'warehouse_id' => $warehouse->id]);
-
-          if (!$whProduct) {
-            setLastError("WarehouseProduct {$product->code}, {$warehouse->code} is not found.");
-            return false;
-          }
-
-          $currentQty = floatval($whProduct->quantity);
-        }
-
-
         if ($data['mode'] == 'overwrite') {
+          $currentQty = Stock::totalQuantity((int)$product->id, (int)$warehouse->id, ['end_date' => $date]);
           $adjusted = getAdjustedQty($currentQty, (float)$item['quantity']);
         } else if ($data['mode'] == 'formula') {
           $adjusted = [
@@ -74,7 +60,7 @@ class StockAdjustment
         }
 
         $res = Stock::add([
-          'date'            => ($data['date'] ?? date('Y-m-d H:i:s')),
+          'date'            => $date,
           'adjustment_id'   => $insertId,
           'product_id'      => $product->id,
           'warehouse_id'    => $warehouse->id,
@@ -87,7 +73,7 @@ class StockAdjustment
           return false;
         }
 
-        Product::sync((int)$product->id);
+        Product::sync(['id' => $product->id]);
       }
 
       return $insertId;
@@ -171,6 +157,7 @@ class StockAdjustment
     if (DB::error()['code'] == 0) {
       if ($items) {
         $adjustment = self::getRow(['id' => $id]);
+        $date = $adjustment->date;
 
         Stock::delete(['adjustment_id' => $id]);
 
@@ -184,22 +171,16 @@ class StockAdjustment
         foreach ($items as $item) {
           $product = Product::getRow(['id' => $item['id']]);
 
-          Product::sync((int)$product->id);
+          Product::sync(['id' => $product->id]);
 
           if (!$product) {
             setLastError("Product {$item['id']} is not found.");
             return false;
           }
 
-          $whProduct = WarehouseProduct::getRow(['product_id' => $product->id, 'warehouse_id' => $warehouse->id]);
-
-          if (!$whProduct) {
-            setLastError("WarehouseProduct {$product->code}, {$warehouse->code} is not found.");
-            return false;
-          }
-
           if ($data['mode'] == 'overwrite') {
-            $adjusted = getAdjustedQty((float)$whProduct->quantity, (float)$item['quantity']);
+            $currentQty = Stock::totalQuantity((int)$product->id, (int)$warehouse->id, ['end_date' => $date]);
+            $adjusted = getAdjustedQty($currentQty, (float)$item['quantity']);
           } else if ($data['mode'] == 'formula') {
             $adjusted = [
               'quantity'  => $item['quantity'],
@@ -211,7 +192,7 @@ class StockAdjustment
           }
 
           $res = Stock::add([
-            'date'            => $data['date'],
+            'date'            => $date,
             'adjustment_id'   => $id,
             'product_id'      => $product->id,
             'warehouse_id'    => $warehouse->id,
@@ -224,7 +205,7 @@ class StockAdjustment
             return false;
           }
 
-          Product::sync((int)$product->id);
+          Product::sync(['id' => $product->id]);
         }
       }
 

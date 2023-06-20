@@ -36,12 +36,7 @@
               <div class="col-md-6">
                 <div class="form-group">
                   <label for="method"><?= lang('App.method') ?> *</label>
-                  <select id="method" name="method" class="select" data-placeholder="<?= lang('App.method') ?>" style=" width:100%">
-                    <option value=""></option>
-                    <?php $bankTypes = \App\Models\Bank::select('type')->distinct()->get(['active' => 1]); ?>
-                    <?php foreach ($bankTypes as $bankType) : ?>
-                      <option value="<?= $bankType->type ?>"><?= lang('App.' . strtolower($bankType->type)) ?></option>
-                    <?php endforeach; ?>
+                  <select id="method" name="method" class="select-bank-type" data-placeholder="<?= lang('App.method') ?>" style=" width:100%">
                   </select>
                 </div>
               </div>
@@ -84,6 +79,13 @@
               </div>
             </div>
             <div class="row">
+              <div class="col-md-12 text-center">
+                <div class="form-group">
+                  <img class="attachment-preview" src="<?= $payment->attachment ? base_url('attachment/' . $payment->attachment) : base_url('assets/app/images/picture.png') ?>" style="max-width:300px">
+                </div>
+              </div>
+            </div>
+            <div class="row">
               <div class="col-md-12">
                 <div class="form-group">
                   <label for="editor"><?= lang('App.note') ?></label>
@@ -108,7 +110,10 @@
   })();
 
   $(document).ready(function() {
-    erp.select2.bank.biller = [$('#biller').val()];
+    erp.select2.bank = {};
+    erp.select2.biller = {};
+
+    erp.select2.bank.biller = [<?= $payment->biller_id ?>];
 
     let hasSkipValidation = <?= hasAccess('PaymentValidation.Skip') ? 'true' : 'false' ?>;
 
@@ -121,6 +126,18 @@
     });
 
     editor.root.innerHTML = `<?= $payment->note ?>`;
+
+    $('#attachment').change(function() {
+      let src = '';
+
+      if (this.files.length) {
+        src = URL.createObjectURL(this.files[0]);
+      } else {
+        src = base_url + '/assets/app/images/picture.png';
+      }
+
+      $('.attachment-preview').prop('src', src);
+    });
 
     $('#biller').change(function() {
       erp.select2.bank.biller = [this.value];
@@ -140,7 +157,7 @@
     });
 
     $('#method').change(function() {
-      erp.bank.type = this.value;
+      erp.select2.bank.type = [this.value];
 
       $('#bank').val('').trigger('change');
 
@@ -155,11 +172,13 @@
       $('#skip_validation').iCheck('disable');
     }
 
-    preSelect2('bank', '#bank', '<?= $payment->bank_id ?>');
-    preSelect2('biller', '#biller', '<?= $payment->biller_id ?>');
-
     $('#date').val('<?= dateTimeJS($payment->date) ?>');
-    $('#method').val('<?= $payment->method ?>').trigger('change');
+
+    preSelect2('biller', '#biller', '<?= $payment->biller_id ?>').then(() => {
+      preSelect2('bank/type', '#method', '<?= $payment->method ?>').then(() => {
+        preSelect2('bank', '#bank', '<?= $payment->bank_id ?>').catch(err => console.warn(err));
+      }).catch(err => console.warn(err));
+    }).catch(err => console.warn(err));
 
     initModalForm({
       form: '#form',

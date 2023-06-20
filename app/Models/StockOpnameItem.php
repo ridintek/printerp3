@@ -152,7 +152,7 @@ class StockOpnameItem
     }
 
     foreach ($items as $item) {
-      Product::sync((int)$item['id']);
+      Product::sync(['id' => $item['id']]);
     }
 
     return $insertIds;

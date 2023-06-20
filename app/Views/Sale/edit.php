@@ -170,7 +170,7 @@
             <div class="row">
               <div class="col-md-12 text-center">
                 <div class="form-group">
-                  <img class="attachment-preview" src="<?= $sale->attachment ? base_url('attachment/' . $sale->attachment) : '' ?>" style="max-width:300px">
+                  <img class="attachment-preview" src="<?= $sale->attachment ? base_url('attachment/' . $sale->attachment) : base_url('assets/app/images/picture.png') ?>" style="max-width:300px">
                 </div>
               </div>
             </div>

@@ -110,8 +110,8 @@
   })();
 
   $(document).ready(function() {
-    erp.select2.bank.biller = [0];
-    erp.select2.bank.type = [];
+    erp.select2.bank = {};
+    erp.select2.biller = {};
 
     let editor = new Quill('#editor', {
       theme: 'snow'
@@ -149,6 +149,7 @@
     });
 
     if (erp.biller.id) {
+      erp.select2.biller.id = [erp.biller.id];
       preSelect2('biller', '#biller', erp.biller.id);
     }
 

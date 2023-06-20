@@ -419,6 +419,8 @@ export class ProductTransfer {
     item.hash = randomString();
     item.rest = (item.quantity - item.received_qty);
 
+    console.log(item);
+
     this._tbody.prepend(`
       <tr>
         <input type="hidden" name="item[id][]" class="item-id" value="${item.id}">

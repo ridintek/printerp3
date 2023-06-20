@@ -233,8 +233,10 @@ class Report extends BaseController
 
     $categoryId  = getPostGet('category');
     $itemName    = getPostGet('item_name');
-    $startDate   = getPostGet('start_date') ?? date('Y-m-') . '01';
-    $endDate     = getPostGet('end_date') ?? date('Y-m-d');
+    $startDate   = getPostGet('start_date');
+    $endDate     = getPostGet('end_date');
+    // $startDate   = getPostGet('start_date') ?? date('Y-m-') . '01';
+    // $endDate     = getPostGet('end_date') ?? date('Y-m-d');
     $warehouseId = getPostGet('warehouse');
 
     $lucretaiMode = false;
@@ -1251,7 +1253,9 @@ class Report extends BaseController
       ->groupStart()
       ->like('categories.code', 'AST', 'none')
       ->orLike('categories.code', 'EQUIP', 'none')
-      ->groupEnd();
+      ->groupEnd()
+      ->orderBy('products.id', 'ASC');
+      
 
     if ($whNames) {
       $q->whereIn('products.warehouses', $whNames);

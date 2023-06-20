@@ -18,24 +18,7 @@
                   <input type="datetime-local" id="date" name="date" class="form-control form-control-border form-control-sm">
                 </div>
               </div>
-            </div>
-            <div class="row bank-account" style="display: none">
               <div class="col-md-6">
-                <div class="form-group">
-                  <label for="bank"><?= lang('App.bankaccount') ?> *</label>
-                  <select id="bank" name="bank" class="select-bank" data-placeholder="<?= lang('App.bankaccount') ?>" style="width:100%">
-                  </select>
-                </div>
-              </div>
-              <div class="col-md-6">
-                <div class="form-group">
-                  <label for="bankbalance"><?= lang('App.currentbalance') ?></label>
-                  <input id="bankbalance" class="form-control form-control-border form-control-sm float-right" readonly>
-                </div>
-              </div>
-            </div>
-            <div class="row">
-              <div class="col-md-12">
                 <div class="form-group">
                   <label for="amount"><?= lang('App.amount') ?> *</label>
                   <input id="amount" name="amount" class="form-control form-control-border form-control-sm currency" value="<?= $amount ?>">
@@ -56,7 +39,7 @@
             <div class="row">
               <div class="col-md-12 text-center">
                 <div class="form-group">
-                  <img class="attachment-preview" src="" style="max-width:400px">
+                  <img class="attachment-preview" src="<?= base_url('assets/app/images/picture.png') ?>" style="max-width:300px">
                 </div>
               </div>
             </div>
@@ -141,18 +124,6 @@
         }
       }
     });
-
-    $('#skip_validation').change(function() {
-      if (this.checked) {
-        $('.bank-account').slideDown();
-      } else {
-        $('.bank-account').slideUp();
-      }
-    });
-
-    if (!hasSkipValidation) {
-      $('#skip_validation').iCheck('disable');
-    }
 
     initModalForm({
       form: '#form',

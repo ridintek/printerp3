@@ -99,8 +99,10 @@
   })();
 
   $(document).ready(function() {
+    erp.select2.bank = {};
+    erp.select2.biller = {};
+
     erp.select2.bank.biller = [<?= $inv->biller_id ?>];
-    erp.select2.bank.type = [0];
     erp.select2.biller.id = [<?= $inv->biller_id ?>];
 
     let editor = new Quill('#editor', {
@@ -143,31 +145,9 @@
     });
 
     $('#method').change(function() {
-      erp.select2.bank.type = [this.value];
-
       $('#bank').val('').trigger('change');
 
-      if (this.value == 'Transfer') {
-        $('.payment-validation').slideDown();
-      } else {
-        $('.payment-validation').slideUp();
-      }
-
-      if (this.value != 'Transfer') {
-        $('.bank-account').slideDown();
-      } else {
-        if (!$('#skip_validation').is(':checked')) {
-          $('.bank-account').slideUp();
-        }
-      }
-    });
-
-    $('#skip_validation').change(function() {
-      if (this.checked) {
-        $('.bank-account').slideDown();
-      } else {
-        $('.bank-account').slideUp();
-      }
+      erp.select2.bank.type = [this.value];
     });
 
     preSelect2('biller', '#biller', '<?= $inv->biller_id ?>').catch(err => console.warn(err));

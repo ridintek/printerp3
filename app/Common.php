@@ -1232,7 +1232,7 @@ function getStockOpnameSuggestion(int $userId, int $warehouseId, int $cycle)
  * Get real stock quantity.
  * @param int $productId Product ID.
  * @param int $warehouseId Warehouse ID.
- * @param array $opt Options. [ start_date, end_date ]
+ * @param array $opt Options. [ start_date (Y-m-d H:i:s), end_date (Y-m-d H:i:s) ]
  * @return float Total stock quantity.
  */
 function getStockQuantity(int $productId, int $warehouseId, array $opt = [])

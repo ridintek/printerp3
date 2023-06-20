@@ -537,6 +537,10 @@ class Home extends BaseController
     if ($mode == 'type') {
       $q = Bank::select('type id, type text')->distinct();
 
+      if ($id) {
+        $q->whereIn('type', $id);
+      }
+
       return $q->orderBy('type', 'ASC')->get();
     }
 

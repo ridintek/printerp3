@@ -78,8 +78,7 @@
             <div class="col-md-12">
               <div class="form-group">
                 <label for="filter-status"><?= lang('App.status') ?></label>
-                <select id="filter-status" class="select-allow-clear" data-placeholder="<?= lang('App.status') ?>" style="width:100%">
-                  <option value=""></option>
+                <select id="filter-status" class="select-allow-clear" data-placeholder="<?= lang('App.status') ?>" style="width:100%" multiple>
                   <option value="received"><?= lang('Status.received') ?></option>
                   <option value="sent"><?= lang('Status.sent') ?></option>
                 </select>
@@ -131,6 +130,7 @@
   TableFilter.bind('clear', '.filter-clear');
 
   TableFilter.on('clear', () => {
+    $('#filter-product').val([]).trigger('change');
     $('#filter-warehouse').val([]).trigger('change');
     $('#filter-status').val([]).trigger('change');
     $('#filter-createdby').val([]).trigger('change');
@@ -147,14 +147,19 @@
         data: (data) => {
           data.__ = __;
 
-          let warehouses = $('#filter-warehouse').val();
+          let product = $('#filter-product').val();
+          let warehouse = $('#filter-warehouse').val();
           let createdBy = $('#filter-createdby').val();
           let status = $('#filter-status').val();
           let startDate = $('#filter-startdate').val();
           let endDate = $('#filter-enddate').val();
 
-          if (warehouses) {
-            data.warehouse = warehouses;
+          if (product) {
+            data.product = product;
+          }
+
+          if (warehouse) {
+            data.warehouse = warehouse;
           }
 
           if (createdBy) {
