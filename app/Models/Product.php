@@ -91,6 +91,7 @@ class Product
         }
       }
 
+      // Sync Last Report.
       $lastReport = ProductReport::select('*')
         ->orderBy('created_at', 'DESC')
         ->getRow(['product_id' => $product->id]);
@@ -102,6 +103,10 @@ class Product
         $productJS->note = '';
         $productJS->pic_id = 0;
         $productJS->pic_note = '';
+        $productJS->updated_at = $lastReport->created_at;
+      } else {
+        $productJS->condition = $lastReport->condition;
+        $productJS->updated_at = $lastReport->created_at;
       }
 
       $json = json_encode($productJS);

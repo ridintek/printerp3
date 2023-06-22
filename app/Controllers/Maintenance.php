@@ -388,11 +388,29 @@ class Maintenance extends BaseController
       $noteTS       = getPost('note_ts');
 
       if (empty($condition)) {
-        $this->response(400, ['message' => 'Condition harus di isi.']);
+        $this->response(400, ['message' => lang('App.condition') . ' harus di isi.']);
       }
 
+      $condLang = lang('App.' . $condition);
+
       if (($condition == 'off' || $condition == 'trouble') && empty($note)) {
-        $this->response(400, ['message' => 'Note tidak boleh kosong.']);
+        $this->response(400, ['message' => "Note tidak boleh kosong saat kondisi {$condLang}."]);
+      }
+
+      if ($condition == 'good' && !hasAccess('MaintenanceReport.Good')) {
+        $this->response(403, ['message' => "Anda tidak punya akses untuk mengubah ke {$condLang}."]);
+      }
+
+      if ($condition == 'solved' && !hasAccess('MaintenanceReport.Solved')) {
+        $this->response(403, ['message' => "Anda tidak punya akses untuk mengubah ke {$condLang}."]);
+      }
+
+      if ($condition == 'off' && !hasAccess('MaintenanceReport.Off')) {
+        $this->response(403, ['message' => "Anda tidak punya akses untuk mengubah ke {$condLang}."]);
+      }
+
+      if ($condition == 'trouble' && !hasAccess('MaintenanceReport.Trouble')) {
+        $this->response(403, ['message' => "Anda tidak punya akses untuk mengubah ke {$condLang}."]);
       }
 
       $lastReport = ProductReport::select('*')->where('product_id', $productId)->orderBy('id', 'DESC')->getRow();
@@ -402,7 +420,7 @@ class Maintenance extends BaseController
       // Validation.
       if ($condition == 'good') {
         if ($lastReport->condition != 'good' && $lastReport->condition != 'solved') {
-          $this->response(400, ['message' => 'Status harus di Solved dahulu sebelum di Good.']);
+          $this->response(400, ['message' => 'Status harus ' . lang('App.solved') . ' dahulu.']);
         }
       }
 
@@ -440,6 +458,7 @@ class Maintenance extends BaseController
       $itemJS->condition  = $condition;
       $itemJS->note       = $note;
       $itemJS->pic_note   = $noteTS;
+      $itemJS->updated_at = date('Y-m-d H:i:s');
       $json = json_encode($itemJS);
 
       if (!Product::update((int)$productId, [
@@ -452,33 +471,6 @@ class Maintenance extends BaseController
       $assigner = (!empty($itemJS->assigned_by) ? User::getRow(['id' => $itemJS->assigned_by]) : null);
       $pic      = User::getRow(['id' => $itemJS->pic_id]);
       $user     = User::getRow(['id' => $createdBy]);
-
-      if ($condition == 'solved') {
-        if (!empty($lastReport) && $lastReport->condition != 'good') {
-          // Send report to CS/TL if status has been solved.
-          if ($user->phone && $assigner) {
-            $message = "Hi {$user->fullname},\n\n" .
-              "Item berikut telah dilakukan perbaikan:\n\n" .
-              "*Outlet*: {$warehouse->name}\n" .
-              "*Assigned At*: " . ($itemJS->assigned_at) . "\n" .
-              "*Assigned By*: {$assigner->fullname}\n" .
-              "*Item Code*: {$product->code}\n" .
-              "*Item Name*: {$product->name}\n" .
-              "*Fixed At*: " . formatDateTime($date) . "\n" .
-              "*Fixed By*: {$pic->fullname}\n" .
-              "*User Note*: " . htmlRemove($note) . "\n" .
-              "*TS Note*: " . htmlRemove($noteTS) . "\n\n" .
-              "Silakan ubah status ke *Good* jika sudah benar.\n\n" .
-              "Terima kasih.";
-
-            if ($createdBy == 1) {
-              WAJob::add(['phone' => '082311662064', 'message' => $message]);
-            } else {
-              WAJob::add(['phone' => $user->phone, 'message' => $message]);
-            }
-          }
-        }
-      }
 
       if ($condition == 'good') { // Reset if machine is good.
         // If last status is solved.
@@ -547,9 +539,9 @@ class Maintenance extends BaseController
           $this->response(400, ['message' => 'Status harus <b>Solved</b> dahulu sebelum di <b>Good</b>.']);
         }
 
-        $itemJS->pic_id       = '';
         $itemJS->assigned_at  = '';
         $itemJS->assigned_by  = '';
+        $itemJS->pic_id       = '';
         $itemJS->pic_note     = '';
         $json = json_encode($itemJS);
 
@@ -559,6 +551,34 @@ class Maintenance extends BaseController
           'json_data' => $json
         ])) {
           $this->response(400, ['message' => getLastError()]);
+        }
+      }
+
+      // Solved by TechSupport.
+      if ($condition == 'solved') {
+        if (!empty($lastReport) && $lastReport->condition != 'good') {
+          // Send report to CS/TL if status has been solved.
+          if ($user->phone && $assigner) {
+            $message = "Hi {$user->fullname},\n\n" .
+              "Item berikut telah dilakukan perbaikan:\n\n" .
+              "*Outlet*: {$warehouse->name}\n" .
+              "*Assigned At*: " . ($itemJS->assigned_at) . "\n" .
+              "*Assigned By*: {$assigner->fullname}\n" .
+              "*Item Code*: {$product->code}\n" .
+              "*Item Name*: {$product->name}\n" .
+              "*Fixed At*: " . formatDateTime($date) . "\n" .
+              "*Fixed By*: {$pic->fullname}\n" .
+              "*User Note*: " . htmlRemove($note) . "\n" .
+              "*TS Note*: " . htmlRemove($noteTS) . "\n\n" .
+              "Silakan ubah status ke *Good* jika sudah benar.\n\n" .
+              "Terima kasih.";
+
+            if ($createdBy == 1) {
+              WAJob::add(['phone' => '082311662064', 'message' => $message]);
+            } else {
+              WAJob::add(['phone' => $user->phone, 'message' => $message]);
+            }
+          }
         }
       }
 
@@ -574,7 +594,7 @@ class Maintenance extends BaseController
               if (empty($schedule->pic)) continue;
 
               if ($schedule->category == $subcat->code) {
-                $picId = ($picId ?? $schedule->pic);
+                $picId = $schedule->pic;
 
                 // Send report to PIC/TS about problem.
                 if ($user = User::getRow(['id' => $picId])) {
@@ -595,6 +615,7 @@ class Maintenance extends BaseController
                   }
                 }
 
+                // Auto-Assign TechSupport.
                 if (isset($schedule->auto_assign) && $schedule->auto_assign == 1) {
                   $itemJS->pic_id       = $picId;
                   $itemJS->assigned_at  = $date;
@@ -632,6 +653,8 @@ class Maintenance extends BaseController
 
   protected function report_assign($id = null)
   {
+    checkPermission('MaintenanceReport.Assign');
+
     $product = Product::getRow(['id' => $id]);
 
     if (!$product) {
@@ -693,6 +716,7 @@ class Maintenance extends BaseController
         $itemJS->condition  = $lastReport->condition;
         $itemJS->note       = $lastReport->note;
         $itemJS->pic_note   = $lastReport->pic_note;
+        $itemJS->updated_at = $lastReport->created_at;
         $json = json_encode($itemJS);
 
         if (!Product::update((int)$product->id, [
@@ -776,6 +800,7 @@ class Maintenance extends BaseController
         $itemJS->condition  = $condition;
         $itemJS->note       = $note;
         $itemJS->pic_note   = $noteTS;
+        $itemJS->updated_at = $date;
         $json = json_encode($itemJS);
 
         if (!Product::update((int)$product->id, [
@@ -808,6 +833,10 @@ class Maintenance extends BaseController
 
   protected function report_view($productId = null)
   {
+    checkPermission('MaintenanceReport.View');
+
+    Product::sync(['id' => $productId]);
+
     $product = Product::getRow(['id' => $productId]);
 
     if (!$product) {

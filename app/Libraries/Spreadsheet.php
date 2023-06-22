@@ -52,12 +52,12 @@ class Spreadsheet
     // header('Content-Disposition: attachment; filename="' . $filename . '"');
     // header('Content-Length: ' . filesize($exportPath . $filename));
     // Just redirect it. If headers above are used. Error 520 on cloudflare.
-    if (!is_cli()) {
+    if (!is_cli() && requestMethod() == 'GET') {
       header('Location: ' . base_url('files/exports/' . $filename));
       exit();
     }
 
-    return 'https://erp.indoprinting.co.id/files/exports/' . $filename . "\r\n";
+    return 'https://erp.indoprinting.co.id/files/exports/' . $filename;
   }
 
   /**

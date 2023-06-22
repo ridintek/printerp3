@@ -8,17 +8,21 @@ use App\Libraries\{DataTables, Spreadsheet};
 use App\Models\{
   Biller,
   DB,
+  Expense,
   Jobs,
   MaintenanceLog,
   Notification,
+  Payment,
   Product,
   ProductReport,
   Stock,
+  Supplier,
   User,
   UserGroup,
   WAJob,
   Warehouse
 };
+use PhpOffice\PhpSpreadsheet\Cell\DataType;
 
 class Report extends BaseController
 {
@@ -654,6 +658,23 @@ class Report extends BaseController
       $this->response(400, ['message' => 'Param is required.']);
     }
 
+    $paramJS = getJSON($param);
+
+    // Old Method to download excel report.
+    if (isset($paramJS->nojob) && $paramJS->nojob == 1) {
+      if (is_callable([$this, 'job_' . $name])) {
+        $excel = $this->{'job_' . $name}($param);
+
+        if ($excel) {
+          $this->response(201, ['message' => 'Report has been created.', 'data' => $excel]);
+        }
+
+        $this->response(400, ['message' => getLastError()]);
+      }
+
+      $this->response(400, ['message' => "Report job_{$name} is not callable."]);
+    }
+
     $data = [
       'class'     => '\App\Controllers\Report::job_' . $name,
       'callback'  => '\App\Controllers\Report::callback',
@@ -716,12 +737,8 @@ class Report extends BaseController
   }
 
   // Called by service.
-  public static function job_dailyPerformance(string $response = null)
+  public static function job_dailyperformance(string $response = null)
   {
-    if (!isCLI()) {
-      self::response(400, ['message' => 'Bad request']);
-    }
-
     $param = getJSON($response);
 
     $opt = [
@@ -782,10 +799,6 @@ class Report extends BaseController
   // Called by service.
   public static function job_debt(string $response = null)
   {
-    if (!isCLI()) {
-      self::response(400, ['message' => 'Bad request']);
-    }
-
     $param = getJSON($response);
 
     $q = DB::table('purchases')
@@ -855,13 +868,148 @@ class Report extends BaseController
     return $sheet->export('PrintERP-DebtReport-' . date('Ymd_His'));
   }
 
+  public static function job_expense(string $response = null)
+  {
+    $param = getJSON($response);
+
+    if (isset($param->bni_format) && $param->bni_format == true) {
+      if (empty($param->id) || !is_array($param->id)) {
+        setLastError('Param ID is empty.');
+        return false;
+      }
+
+      $antarBank = [];
+      $antarRek = [];
+      $rowAB = 1;
+      $rowAR = 1;
+
+      foreach ($param->id as $expenseId) {
+        $expense  = Expense::getRow(['id' => $expenseId]);
+        $supplier = Supplier::getRow(['id' => $expense->supplier_id]);
+
+        if (!$supplier) {
+          setLastError("Supplier id {$expense->supplier_id} is not found.");
+          return false;
+        }
+
+        $supplierJS = getJSON($supplier->json);
+
+        if (!$supplierJS) {
+          setLastError("Supplier json data {$supplier->name} is not valid.");
+          return false;
+        }
+
+        if (stripos($supplierJS->acc_name, 'BNI') !== FALSE) { // InHouse
+          $antarRek[] = [
+            'rek_penerima'  => $supplierJS->acc_no,
+            'nama_penerima' => $supplierJS->acc_holder,
+            'nominal'       => filterNumber($expense->amount),
+            'keterangan'    => htmlRemove($expense->note)
+          ];
+
+          $rowAR++;
+        } else {
+          $antarBank[] = [
+            'rek_penerima'  => $supplierJS->acc_no,
+            'nama_penerima' => $supplierJS->acc_holder,
+            'nominal'       => filterNumber($expense->amount),
+            'pesan'         => htmlRemove($expense->note),
+            'pesan2'        => '',
+            'bic'           => $supplierJS->acc_bic,
+            'bank_penerima' => $supplierJS->acc_name
+          ];
+
+          $rowAB++;
+        }
+      }
+
+      $sheet = new Spreadsheet();
+      $sheet->setTitle('Expense Kliring');
+      $sheet->createSheet();
+      $sheet->setTitle('Expense InHouse');
+
+      if ($antarBank) { // ANTAR BANK (BCA, MANDIRI, BRI) (KLIRING)
+        $sheet->getSheet(0);
+        $sheet->SetCellValue('A1', 'Rek. Tujuan');
+        $sheet->SetCellValue('B1', 'Nama Penerima');
+        $sheet->SetCellValue('C1', 'Amount');
+        $sheet->SetCellValue('D1', 'Remark');
+        $sheet->SetCellValue('E1', 'Remark2');
+        $sheet->SetCellValue('F1', 'Remark3');
+        $sheet->SetCellValue('G1', 'Clearing Code');
+        $sheet->SetCellValue('H1', 'Bank Tujuan');
+        $sheet->SetCellValue('I1', 'Email');
+        $sheet->SetCellValue('J1', 'Reff Num');
+
+        $row = 2;
+        foreach ($antarBank as $data) {
+          $sheet->SetCellValue('A' . $row, $data['rek_penerima'], DataType::TYPE_STRING);
+          $sheet->SetCellValue('B' . $row, $data['nama_penerima']);
+          $sheet->SetCellValue('C' . $row, $data['nominal']);
+          $sheet->SetCellValue('D' . $row, getExcerpt($data['pesan'], 33));
+          $sheet->SetCellValue('E' . $row, '');
+          $sheet->SetCellValue('F' . $row, '');
+          $sheet->SetCellValue('G' . $row, $data['bic'], DataType::TYPE_STRING);
+          $sheet->SetCellValue('H' . $row, $data['bank_penerima']);
+          $sheet->SetCellValue('I' . $row, '');
+          $sheet->SetCellValue('J' . $row, '');
+
+          $row++;
+        }
+
+        $sheet->setColumnAutoWidth('A');
+        $sheet->setColumnAutoWidth('B');
+        $sheet->setColumnAutoWidth('C');
+        $sheet->setColumnAutoWidth('D');
+        $sheet->setColumnAutoWidth('E');
+        $sheet->setColumnAutoWidth('F');
+        $sheet->setColumnAutoWidth('G');
+        $sheet->setColumnAutoWidth('H');
+        $sheet->setColumnAutoWidth('I');
+        $sheet->setColumnAutoWidth('J');
+      }
+
+      if ($antarRek) { // ANTAR BNI / REKENING (INHOUSE)
+        $sheet->getSheet(1);
+        $sheet->SetCellValue('A1', 'Rek. Tujuan');
+        $sheet->SetCellValue('B1', 'Nama Penerima');
+        $sheet->SetCellValue('C1', 'Amount');
+        $sheet->SetCellValue('D1', 'Remark1');
+        $sheet->SetCellValue('E1', 'Remark2');
+        $sheet->SetCellValue('F1', 'Email');
+        $sheet->SetCellValue('G1', 'Reff Num');
+
+        $row = 2;
+        foreach ($antarRek as $data) {
+          $sheet->SetCellValue('A' . $row, $data['rek_penerima'], DataType::TYPE_STRING);
+          $sheet->SetCellValue('B' . $row, $data['nama_penerima']);
+          $sheet->SetCellValue('C' . $row, $data['nominal']);
+          $sheet->SetCellValue('D' . $row, getExcerpt($data['keterangan'], 33));
+          $sheet->SetCellValue('E' . $row, '');
+          $sheet->SetCellValue('F' . $row, '');
+          $sheet->SetCellValue('G' . $row, '');
+
+          $row++;
+        }
+
+        $sheet->setColumnAutoWidth('A');
+        $sheet->setColumnAutoWidth('B');
+        $sheet->setColumnAutoWidth('C');
+        $sheet->setColumnAutoWidth('D');
+        $sheet->setColumnAutoWidth('E');
+        $sheet->setColumnAutoWidth('F');
+        $sheet->setColumnAutoWidth('G');
+      }
+
+      return $sheet->export('PrintERP-Expenses-BNI-' . date('Ymd_His'));
+    }
+
+    // Other report.
+  }
+
   // Called by service.
   public static function job_incomestatement(string $response = null)
   {
-    if (!isCLI()) {
-      self::response(400, ['message' => 'Bad request']);
-    }
-
     $param = getJSON($response);
 
     $startDate  = null;
@@ -1255,7 +1403,7 @@ class Report extends BaseController
       ->orLike('categories.code', 'EQUIP', 'none')
       ->groupEnd()
       ->orderBy('products.id', 'ASC');
-      
+
 
     if ($whNames) {
       $q->whereIn('products.warehouses', $whNames);
@@ -1522,10 +1670,6 @@ class Report extends BaseController
   // Called by service.
   public static function job_payment(string $response = null)
   {
-    if (!isCLI()) {
-      self::response(400, ['message' => 'Bad request']);
-    }
-
     $param = getJSON($response);
 
     $q = DB::table('payments')
@@ -1605,10 +1749,6 @@ class Report extends BaseController
   // Called by service.
   public static function job_receivable(string $response = null)
   {
-    if (!isCLI()) {
-      self::response(400, ['message' => 'Bad request']);
-    }
-
     $param = getJSON($response);
 
     $q = DB::table('sales')

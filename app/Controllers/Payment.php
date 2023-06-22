@@ -567,6 +567,11 @@ class Payment extends BaseController
         $data['bank_id'] = $id;
         $this->data['modeLang'] = $bank->name . ($bank->number ? " ($bank->number)" : '');
         break;
+      case 'bankname':
+        $bank = Bank::getRow(['name' => $id]);
+        $data['bank_id'] = $bank->id;
+        $this->data['modeLang'] = $bank->name . ($bank->number ? " ($bank->number)" : '');
+        break;
       case 'expense':
         $data['expense_id'] = $id;
         $this->data['modeLang'] = lang('App.expense');

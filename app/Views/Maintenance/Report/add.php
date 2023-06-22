@@ -138,6 +138,8 @@
       $('[name="note_ts"]').val(editor2.root.innerHTML);
     });
 
+    editor.root.innerHTML = ``;
+
     preSelect2('user', '#created_by', erp.user.id);
 
     initModalForm({

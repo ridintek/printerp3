@@ -1,6 +1,6 @@
 # PrintERP 3
 
-PrintERP 3 adalah aplikasi Enterprise Resource Planning (ERP) berbasis web milik CV. Indoprinting. Dibuat dari scratch sebagai optimalisasi dari PrintERP generasi pertama.
+PrintERP 3 adalah aplikasi Enterprise Resource Planning (ERP) yang dibuat untuk CV. Indoprinting. Dibuat dari scratch sebagai optimalisasi dari PrintERP generasi pertama.
 
 # Features
 * SPA (Single Page Application)

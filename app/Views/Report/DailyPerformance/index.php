@@ -5,7 +5,7 @@
         <div class="card-header bg-gradient-dark">
           <h5 class="card-title"><?= lang('App.dailyperformance') ?> <span class="daily-performance-title"></span></h5>
           <div class="card-tools">
-            <a class="btn btn-tool bg-gradient-success export-report" href="<?= base_url('report/export/dailyPerformance') ?>" data-action="export" data-toggle="tooltip" title="Export to excel">
+            <a class="btn btn-tool bg-gradient-success export-report" href="<?= base_url('report/export/dailyperformance') ?>" data-action="export" data-toggle="tooltip" title="Export to excel">
               <i class="fad fa-download"></i>
             </a>
             <a class="btn btn-tool bg-gradient-warning" href="#" data-widget="control-sidebar" data-toggle="tooltip" title="Filter" data-slide="true">

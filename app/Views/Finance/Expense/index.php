@@ -7,9 +7,17 @@
             <a class="btn btn-tool bg-gradient-success" href="<?= base_url('finance/expense/add') ?>" data-toggle="modal" data-target="#ModalStatic" data-modal-class="modal-dialog-centered modal-dialog-scrollable">
               <i class="fad fa-plus-circle"></i>
             </a>
-            <a class="btn btn-tool bg-gradient-info use-tooltip" href="#"  title="Export BNI format" >
-              <i class="fad fa-download"></i>
-            </a>
+            <div class="btn-group btn-tool">
+              <a class="btn bg-gradient-info dropdown-toggle" href="#" data-toggle="dropdown">
+                <i class="fad fa-download"></i>
+              </a>
+              <div class="dropdown-menu">
+                <a class="dropdown-item" href="<?= base_url('report/export/expense') ?>" data-action="export" data-param='{"bni_format": true}'>
+                  <i class="fad fa-download"></i> BNI Format
+                </a>
+                <a class="dropdown-item" href="#"><i class="fad fa-download"></i> Excel</a>
+              </div>
+            </div>
             <a class="btn btn-tool bg-gradient-warning use-tooltip" href="#" data-widget="control-sidebar" title="<?= lang('App.filter') ?>" data-slide="true">
               <i class="fad fa-filter"></i>
             </a>
@@ -217,7 +225,7 @@
           if (paymentStatus) {
             data.payment_status = paymentStatus;
           }
-          
+
           if (createdBy) {
             data.created_by = createdBy;
           }
@@ -248,8 +256,6 @@
         for (let a = 0; a < columns[0].length; a++) {
           grandTotal += filterNumber(columns[0][a]);
         }
-
-        console.log(grandTotal);
 
         $(api.column(6).footer()).html(`<span class="float-right">${formatNumber(grandTotal)}</span>`);
       },

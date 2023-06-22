@@ -2,7 +2,7 @@
 <?php $biller = \App\Models\Biller::getRow(['id' => $sale->biller_id]) ?>
 <?php $warehouse = \App\Models\Warehouse::getRow(['id' => $sale->warehouse_id]); ?>
 <?php $customer = \App\Models\Customer::getRow(['id' => $sale->customer_id]) ?>
-<?php $paymentValidation = \App\Models\PaymentValidation::select('*')->orderBy('date', 'DESC')->getRow(['sale_id' => $sale->id]) ?>
+<?php $paymentValidation = \App\Models\PaymentValidation::select('*')->where('status', 'pending')->orderBy('date', 'DESC')->getRow(['sale_id' => $sale->id]) ?>
 <div class="modal-header bg-gradient-dark">
   <h5 class="modal-title"><i class="fad fa-fw fa-magnifying-glass"></i> <?= $title ?></h5>
   <button type="button" class="close" data-dismiss="modal" aria-label="Close">

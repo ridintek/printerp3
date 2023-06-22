@@ -174,6 +174,12 @@ $(document).ready(function () {
     let type = $(this).closest('tr').find('[name="item[type][]"]');
     let quantity = $(this).closest('tr').find('[name="item[quantity][]"]');
     let subTotal = $(this).closest('tr').find('.saleitem-subtotal');
+    let customPrice = $(this).closest('tr').find('[name="item[customprice][]"]');
+
+    // We want custom price cannot be changed automatically by price ranges.
+    if (this.name == 'item[price][]') {
+      customPrice.val('true');
+    }
 
     if (quantity.val() < 0) {
       quantity.val(0);
@@ -202,7 +208,8 @@ $(document).ready(function () {
 
     area.val(width.val() * length.val());
 
-    if (this.name != 'item[price][]') {
+    // Custom price won't change.
+    if (this.name != 'item[price][]' && customPrice.val() == 'false') {
       price.val(formatCurrency(getSalePrice(area.val() * quantity.val(), ranges, prices)));
     }
 
@@ -443,7 +450,7 @@ $(document).ready(function () {
     e.preventDefault();
 
     let url = this.href;
-    let param = $(this.dataset.param).val();
+    let param = this.dataset.param;
     let fa = $(this).find('i')[0];
     let faClass = fa.className;
     let faClassProgress = 'fad fa-spinner-third fa-spin';
@@ -469,9 +476,25 @@ $(document).ready(function () {
     let status = $('#filter-status').val();
     let supplier = $('#filter-supplier').val();
     let warehouse = $('#filter-warehouse').val();
-    let whDetail = $('#filter-whdetail');
+    let whSummary = $('#filter-whsummary');
     let startDate = $('#filter-startdate').val();
     let endDate = $('#filter-enddate').val();
+    let check = $('.check-main');
+    let id = [];
+
+    data.nojob = 1; // Disable job report. Using old method instead.
+
+    if (check.length > 0) {
+      check.each((i, el) => {
+        if (el.checked) {
+          id.push(parseInt(el.value));
+        }
+      });
+    }
+
+    if (id) {
+      data.id = id;
+    }
 
     if (bank) {
       data.bank = bank;
@@ -509,8 +532,8 @@ $(document).ready(function () {
       data.warehouse = warehouse;
     }
 
-    if (whDetail.is(':checked')) {
-      data.warehouse_detail = true;
+    if (whSummary.is(':checked')) {
+      data.warehouse_summary = true;
     }
 
     if (startDate) {
@@ -536,12 +559,16 @@ $(document).ready(function () {
       },
       method: 'POST',
       processData: false,
-      success: (data) => {
+      success: (res) => {
         Swal.fire({
           icon: 'success',
-          text: data.message,
+          text: res.message,
           title: lang.App.success
         });
+
+        if (res.data) {
+          location.href = res.data;
+        }
 
         $(fa).removeClass(faClassProgress).addClass(faClass);
         delete this.dataset.progress;

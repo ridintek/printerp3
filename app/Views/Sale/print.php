@@ -1,7 +1,8 @@
 <?php $deliveryNote = (getGet('deliverynote') == 1) ?>
 <?php $biller = \App\Models\Biller::getRow(['id' => $sale->biller_id]) ?>
+<?php $warehouse = \App\Models\Warehouse::getRow(['id' => $sale->warehouse_id]); ?>
 <?php $customer = \App\Models\Customer::getRow(['id' => $sale->customer_id]) ?>
-<?php $paymentValidation = \App\Models\PaymentValidation::getRow(['sale_id' => $sale->id]) ?>
+<?php $paymentValidation = \App\Models\PaymentValidation::select('*')->where('status', 'pending')->orderBy('date', 'DESC')->getRow(['sale_id' => $sale->id]) ?>
 <!DOCTYPE html>
 <html lang="en">
 
@@ -73,7 +74,7 @@
             </div>
             <div class="row">
               <div class="col-md-4 text-bold"><?= lang('App.productionplace') ?></div>
-              <div class="col-md-8">: <?= \App\Models\Warehouse::getRow(['code' => $sale->warehouse])->name ?></div>
+              <div class="col-md-8">: <?= $warehouse->name ?></div>
             </div>
             <?php if (!empty($saleJS->cashier_by)) : ?>
               <div class="row">
@@ -89,6 +90,7 @@
           <div class="col-md-4 text-center">
             <label>Scan me to track order</label>
             <img src="<?= (new \chillerlan\QRCode\QRCode())->render('https://www.indoprinting.co.id/trackorder?inv=' . $sale->reference) ?>">
+            <div class="text-bold"><?= $sale->reference ?></div>
           </div>
         </div>
         <div class="row pb-5">

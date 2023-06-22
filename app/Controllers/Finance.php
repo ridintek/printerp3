@@ -132,8 +132,9 @@ class Finance extends BaseController
 
     $dt = new DataTables('expenses');
     $dt
-      ->select("expenses.id AS id, expenses.id AS cid, expenses.date, expenses.reference, biller.name AS biller_name,
-        expense_categories.name AS category_name, expenses.amount, expenses.note,
+      ->select("expenses.id AS id, expenses.id AS cid, expenses.date, expenses.reference,
+        biller.name AS biller_name, expense_categories.name AS category_name, expenses.amount,
+        expenses.note,
         (CASE
           WHEN banks.number IS NOT null THEN CONCAT(banks.name, ' (', banks.number, ')')
           ELSE banks.name
@@ -183,7 +184,7 @@ class Finance extends BaseController
           </div>';
       })
       ->editColumn('cid', function ($data) {
-        return '<input class="checkbox" type="checkbox" value="' . $data['cid'] . '">';
+        return '<input class="checkbox check-main" type="checkbox" value="' . $data['cid'] . '">';
       })
       ->editColumn('status', function ($data) {
         return renderStatus($data['status']);
@@ -649,7 +650,11 @@ class Finance extends BaseController
         return '<div class="float-right">' . formatNumber(round((float)$data['amount_mb'])) . '</div>';
       })
       ->editColumn('amount_erp', function ($data) {
-        $url = base_url('payment/view/accountno/' . $data['account_no']);
+        if (empty($data['account_no'])) {
+          $url = base_url('payment/view/bankname/' . $data['erp_acc_name']);
+        } else {
+          $url = base_url('payment/view/accountno/' . $data['account_no']);
+        }
 
         return '<div class="float-right">' .
           "<a href=\"{$url}\" data-toggle=\"modal\" data-target=\"#ModalDefault\" data-modal-class=\"modal-lg modal-dialog-centered modal-dialog-scrollable\">" .
@@ -1786,7 +1791,7 @@ class Finance extends BaseController
 
   protected function validation_cancel(string $mode = null, $id = null)
   {
-    checkPermission('PaymentValidation.Delete');
+    checkPermission('PaymentValidation.Cancel');
 
     $q = PaymentValidation::select('*')
       ->where('status', 'pending');
@@ -1800,7 +1805,18 @@ class Finance extends BaseController
     $pv = $q->getRow();
 
     if ($pv) {
-      $this->validation_delete((int)$pv->id);
+      if (PaymentValidation::update((int)$pv->id, ['status' => 'cancelled'])) {
+
+        if ($pv->sale_id) {
+          Sale::sync(['id' => $pv->sale_id]);
+        } else if ($pv->mutation_id) {
+          BankMutation::sync(['id' => $pv->mutation_id]);
+        }
+
+        $this->response(200, ['message' => 'Payment Validation has been cancelled.']);
+      }
+
+      $this->response(400, ['message' => 'Failed to cancel Payment Validation.']);
     }
 
     $this->response(404, ['message' => 'Payment Validation is not found.']);

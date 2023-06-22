@@ -22,6 +22,8 @@ class Customer
       $data['customer_group_name'] = $csGroup->name;
     }
 
+    $data = nulling($data, ['address', 'city', 'email']);
+
     DB::table('customers')->insert($data);
 
     if (DB::error()['code'] == 0) {

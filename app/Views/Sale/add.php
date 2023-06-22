@@ -241,6 +241,10 @@
       $('[name="note"]').val(editor.root.innerHTML);
     });
 
+    if (hasAccess('Sale.Approve')) {
+      $('#approved').iCheck('check');
+    }
+
     $('#attachment').change(function() {
       let src = '';
 
