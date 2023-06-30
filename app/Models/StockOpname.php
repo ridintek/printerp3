@@ -100,6 +100,11 @@ class StockOpname
     return DB::table('stock_opnames')->select($columns, $escape);
   }
 
+  public static function sync($where = [])
+  {
+    // TODO
+  }
+
   /**
    * Update StockOpname.
    */

@@ -119,6 +119,9 @@
   })();
 
   $(document).ready(function() {
+    erp.select2.bank = {};
+    erp.select2.biller = {};
+
     let bankToVal = '';
     let bankFromVal = '';
 

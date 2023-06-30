@@ -4,7 +4,7 @@
       <div class="card shadow">
         <div class="card-header bg-gradient-dark">
           <div class="card-tools">
-            <a class="btn btn-tool bg-gradient-success" href="<?= base_url('humanresource/user/add') ?>" data-toggle="modal" data-target="#ModalStatic" data-modal-class="modal-lg modal-dialog-centered modal-dialog-scrollable">
+            <a class="btn btn-tool bg-gradient-success" href="<?= base_url('finance/cashonhand/add') ?>" data-toggle="modal" data-target="#ModalStatic" data-modal-class="modal-dialog-centered modal-dialog-scrollable">
               <i class="fad fa-plus-circle"></i>
             </a>
             <div class="btn-group btn-tool">
@@ -12,8 +12,8 @@
                 <i class="fad fa-download"></i>
               </a>
               <div class="dropdown-menu">
-                <a class="dropdown-item" href="<?= base_url('report/export/user') ?>" data-action="export">
-                  <i class="fad fa-download"></i> User List
+                <a class="dropdown-item" href="<?= base_url('report/export/cashonhand') ?>" data-action="export">
+                  <i class="fad fa-download"></i> Excel
                 </a>
               </div>
             </div>
@@ -27,29 +27,25 @@
             <thead>
               <tr>
                 <th></th>
-                <th><?= lang('App.profileimage'); ?></th>
-                <th><?= lang('App.fullname'); ?></th>
-                <th><?= lang('App.username'); ?></th>
-                <th><?= lang('App.phone'); ?></th>
-                <th><?= lang('App.gender'); ?></th>
-                <th><?= lang('App.groups'); ?></th>
+                <th><input class="checkbox-parent" type="checkbox"></th>
+                <th><?= lang('App.date'); ?></th>
                 <th><?= lang('App.biller'); ?></th>
-                <th><?= lang('App.warehouse'); ?></th>
-                <th><?= lang('App.status'); ?></th>
+                <th><?= lang('App.bankaccount'); ?></th>
+                <th><?= lang('App.amount'); ?></th>
+                <th><?= lang('App.note'); ?></th>
+                <th><?= lang('App.createdby'); ?></th>
               </tr>
             </thead>
             <tfoot>
               <tr>
                 <th></th>
-                <th><?= lang('App.profileimage'); ?></th>
-                <th><?= lang('App.fullname'); ?></th>
-                <th><?= lang('App.username'); ?></th>
-                <th><?= lang('App.phone'); ?></th>
-                <th><?= lang('App.gender'); ?></th>
-                <th><?= lang('App.groups'); ?></th>
+                <th><input class="checkbox-parent" type="checkbox"></th>
+                <th><?= lang('App.date'); ?></th>
                 <th><?= lang('App.biller'); ?></th>
-                <th><?= lang('App.warehouse'); ?></th>
-                <th><?= lang('App.status'); ?></th>
+                <th><?= lang('App.bankaccount'); ?></th>
+                <th><?= lang('App.amount'); ?></th>
+                <th><?= lang('App.note'); ?></th>
+                <th><?= lang('App.createdby'); ?></th>
               </tr>
             </tfoot>
           </table>
@@ -83,39 +79,6 @@
               <div class="form-group">
                 <label for="filter-bank"><?= lang('App.bankaccount') ?></label>
                 <select id="filter-bank" class="select-bank" data-placeholder="<?= lang('App.bankaccount') ?>" style="width:100%" multiple>
-                </select>
-              </div>
-            </div>
-          </div>
-          <div class="row">
-            <div class="col-md-12">
-              <div class="form-group">
-                <label for="filter-category"><?= lang('App.category') ?></label>
-                <select id="filter-category" class="select-income-category" data-placeholder="<?= lang('App.category') ?>" style="width:100%" multiple>
-                </select>
-              </div>
-            </div>
-          </div>
-          <div class="row">
-            <div class="col-md-12">
-              <div class="form-group">
-                <label for="filter-status"><?= lang('App.status') ?></label>
-                <select id="filter-status" class="select-allow-clear" data-placeholder="<?= lang('App.status') ?>" style="width:100%" multiple>
-                  <option value=""></option>
-                  <option value="approved"><?= lang('Status.approved') ?></option>
-                  <option value="need_approval"><?= lang('Status.need_approval') ?></option>
-                </select>
-              </div>
-            </div>
-          </div>
-          <div class="row">
-            <div class="col-md-12">
-              <div class="form-group">
-                <label for="filter-paymentstatus"><?= lang('App.paymentstatus') ?></label>
-                <select id="filter-paymentstatus" class="select-allow-clear" data-placeholder="<?= lang('App.paymentstatus') ?>" style="width:100%" multiple>
-                  <option value=""></option>
-                  <option value="paid"><?= lang('Status.paid') ?></option>
-                  <option value="pending"><?= lang('Status.pending') ?></option>
                 </select>
               </div>
             </div>
@@ -167,9 +130,6 @@
   TableFilter.on('clear', () => {
     $('#filter-bank').val([]).trigger('change');
     $('#filter-biller').val([]).trigger('change');
-    $('#filter-category').val([]).trigger('change');
-    $('#filter-status').val([]).trigger('change');
-    $('#filter-paymentstatus').val([]).trigger('change');
     $('#filter-createdby').val([]).trigger('change');
     $('#filter-startdate').val('');
     $('#filter-enddate').val('');
@@ -186,9 +146,6 @@
 
           let bank = $('#filter-bank').val();
           let biller = $('#filter-biller').val();
-          let category = $('#filter-category').val();
-          let status = $('#filter-status').val();
-          let paymentStatus = $('#filter-paymentstatus').val();
           let createdBy = $('#filter-createdby').val();
           let startDate = $('#filter-startdate').val();
           let endDate = $('#filter-enddate').val();
@@ -199,18 +156,6 @@
 
           if (biller) {
             data.biller = biller;
-          }
-
-          if (category) {
-            data.category = category;
-          }
-
-          if (status) {
-            data.status = status;
-          }
-
-          if (paymentStatus) {
-            data.payment_status = paymentStatus;
           }
 
           if (createdBy) {
@@ -228,7 +173,7 @@
           return data;
         },
         method: 'POST',
-        url: base_url + '/humanresource/getUsers'
+        url: base_url + '/finance/getCashOnHand'
       },
       columnDefs: [{
         targets: [0, 1],
@@ -240,7 +185,7 @@
         [10, 25, 50, 100, lang.App.all]
       ],
       order: [
-        [2, 'asc']
+        [2, 'desc']
       ],
       pageLength: 50,
       processing: true,

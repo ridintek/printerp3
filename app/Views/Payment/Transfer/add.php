@@ -21,12 +21,7 @@
               <div class="col-md-6">
                 <div class="form-group">
                   <label for="biller"><?= lang('App.biller') ?> *</label>
-                  <select id="biller" name="biller" class="select" data-placeholder="<?= lang('App.biller') ?>" style="width:100%">
-                    <option value=""></option>
-                    <?php foreach (\App\Models\Biller::get(['active' => 1]) as $bl) : ?>
-                      <?php if (!empty(session('login')->biller) && session('login')->biller != $bl->code) continue; ?>
-                      <option value="<?= $bl->code ?>"><?= $bl->name ?></option>
-                    <?php endforeach; ?>
+                  <select id="biller" name="biller" class="select-biller" data-placeholder="<?= lang('App.biller') ?>" style="width:100%">
                   </select>
                 </div>
               </div>
@@ -41,21 +36,16 @@
               <div class="col-md-6">
                 <div class="form-group">
                   <label for="method"><?= lang('App.method') ?> *</label>
-                  <select id="method" name="method" class="select" data-placeholder="<?= lang('App.method') ?>" style=" width:100%">
-                    <option value=""></option>
-                    <?php $bankTypes = \App\Models\Bank::select('type')->distinct()->get(['active' => 1]); ?>
-                    <?php foreach ($bankTypes as $bankType) : ?>
-                      <option value="<?= $bankType->type ?>"><?= lang('App.' . strtolower($bankType->type)) ?></option>
-                    <?php endforeach; ?>
+                  <select id="method" name="method" class="select-bank-type" data-placeholder="<?= lang('App.method') ?>" style=" width:100%">
                   </select>
                 </div>
               </div>
             </div>
-            <div class="row bank-account-to" style="display: none">
+            <div class="row bank-account" style="display: none">
               <div class="col-md-6">
                 <div class="form-group">
-                  <label for="bankto"><?= lang('App.bankaccount') ?> *</label>
-                  <select id="bankto" name="bankto" class="select-bank" data-placeholder="<?= lang('App.bankaccountto') ?>" style="width:100%">
+                  <label for="bank"><?= lang('App.bankaccount') ?> *</label>
+                  <select id="bank" name="bank" class="select-bank" data-placeholder="<?= lang('App.bankaccount') ?>" style="width:100%">
                   </select>
                 </div>
               </div>
@@ -113,8 +103,8 @@
   })();
 
   $(document).ready(function() {
-    erp.bank = {}; // Init.
-    erp.bank.biller = $('#biller').val();
+    erp.select2.bank = {}; // Init.
+    erp.select2.biller = {};
 
     let hasSkipValidation = <?= hasAccess('PaymentValidation.Skip') ? 'true' : 'false' ?>;
 
@@ -127,7 +117,7 @@
     });
 
     $('#biller').change(function() {
-      erp.bank.biller = this.value;
+      erp.select2.bank.biller = [this.value];
     });
 
     $('#bank').change(function() {
@@ -145,7 +135,7 @@
 
     // Saat ubah method. Ubah juga bank.
     $('#method').change(function() {
-      erp.bank.type = this.value;
+      erp.select2.bank.type = [this.value];
 
       $('#bank').val('').trigger('change');
 
@@ -175,9 +165,6 @@
     if (!hasSkipValidation) {
       $('#skip_validation').iCheck('disable');
     }
-
-    preSelect2('bank', '#bank', '<?= $bank ?>');
-    $('#biller').val('<?= $biller ?>').trigger('change');
 
     initModalForm({
       form: '#form',

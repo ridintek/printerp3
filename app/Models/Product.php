@@ -104,9 +104,13 @@ class Product
         $productJS->pic_id = 0;
         $productJS->pic_note = '';
         $productJS->updated_at = $lastReport->created_at;
-      } else {
-        $productJS->condition = $lastReport->condition;
-        $productJS->updated_at = $lastReport->created_at;
+        $productJS->updated_by = intval($lastReport->created_by);
+      } else if ($lastReport) {
+        $productJS->condition   = $lastReport->condition;
+        $productJS->note        = ($lastReport->note ?? '');
+        $productJS->pic_note    = ($lastReport->pic_note ?? '');
+        $productJS->updated_at  = $lastReport->created_at;
+        $productJS->updated_by  = intval($lastReport->created_by);
       }
 
       $json = json_encode($productJS);

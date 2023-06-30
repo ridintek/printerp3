@@ -178,6 +178,21 @@ class Inventory extends BaseController
         ->groupEnd();
     }
 
+    if ($status) {
+      $dt->whereIn('internal_uses.status', $status);
+    }
+
+    if ($createdBy) {
+      $dt->whereIn('internal_uses.created_by', $createdBy);
+    }
+
+    if ($startDate) {
+      $dt->where("internal_uses.date >= '{$startDate} 00:00:00'");
+    }
+
+    if ($endDate) {
+      $dt->where("internal_uses.date <= '{$endDate} 23:59:59'");
+    }
 
     $dt->generate();
   }
@@ -305,14 +320,14 @@ class Inventory extends BaseController
     $dt = new DataTables('purchases');
 
     $dt
-      ->select("purchases.id AS id, purchases.date,
+      ->select("purchases.id AS id, purchases.id AS cid, purchases.date,
       purchases.reference, (
         CASE
           WHEN suppliers.company IS NOT NULL THEN CONCAT(suppliers.name, ' (', suppliers.company, ')')
           ELSE suppliers.name
         END
       ) AS supplier_name, purchases.status, purchases.payment_status,
-      purchases.grand_total, purchases.paid, (purchases.grand_total - purchases.paid) AS balance,
+      purchases.grand_total, purchases.paid, purchases.balance,
       purchases.attachment, purchases.created_at, creator.fullname")
       ->join('biller', 'biller.id = purchases.biller_id', 'left')
       ->join('suppliers', 'suppliers.id = purchases.supplier_id', 'left')
@@ -368,6 +383,9 @@ class Inventory extends BaseController
             </div>
           </div>';
       })
+      ->editColumn('cid', function ($data) {
+        return '<input class="checkbox check-main" type="checkbox" value="' . $data['cid'] . '">';
+      })
       ->editColumn('status', function ($data) {
         return renderStatus($data['status']);
       })
@@ -381,7 +399,7 @@ class Inventory extends BaseController
         return '<div class="float-right">' . formatNumber($data['paid']) . '</div>';
       })
       ->editColumn('balance', function ($data) {
-        return '<div class="float-right">' . formatNumber($data['balance']) . '</div>';
+        return '<div class="float-right">' . ($data['balance']) . '</div>';
       })
       ->editColumn('attachment', function ($data) {
         return renderAttachment($data['attachment']);
@@ -449,6 +467,23 @@ class Inventory extends BaseController
                 data-modal-class="modal-xl modal-dialog-centered modal-dialog-scrollable">
                 <i class="fad fa-fw fa-edit"></i> ' . lang('App.edit') . '
               </a>
+              <div class="dropdown-divider"></div>
+              <div class="dropdown-submenu dropdown-hover">
+                <a href="#" class="dropdown-item dropdown-toggle" data-toggle="dropdown">
+                  <i class="fad fa-fw fa-money-bill"></i> ' . lang('App.payment') . '</a>
+                <div class="dropdown-menu">
+                  <a class="dropdown-item" href="' . base_url('payment/add/transfer/' . $data['id']) . '"
+                    data-toggle="modal" data-target="#ModalStatic"
+                    data-modal-class="modal-dialog-centered modal-dialog-scrollable">
+                    <i class="fad fa-fw fa-money-bill"></i> ' . lang('App.addpayment') . '
+                  </a>
+                  <a class="dropdown-item" href="' . base_url('payment/view/transfer/' . $data['id']) . '"
+                      data-toggle="modal" data-target="#ModalStatic"
+                      data-modal-class="modal-lg modal-dialog-centered modal-dialog-scrollable">
+                      <i class="fad fa-fw fa-money-bill"></i> ' . lang('App.viewpayment') . '
+                  </a>
+                </div>
+              </div>
               <a class="dropdown-item" href="' . base_url('inventory/transfer/view/' . $data['id']) . '"
                 data-toggle="modal" data-target="#ModalStatic"
                 data-modal-class="modal-xl modal-dialog-centered modal-dialog-scrollable">
@@ -678,10 +713,10 @@ class Inventory extends BaseController
         return $menu;
       })
       ->editColumn('total_lost', function ($data) use ($xls) {
-        return ($xls ? $data['total_lost'] : formatNumber($data['total_lost']));
+        return ($xls ? $data['total_lost'] : formatNumber($data['total_lost'], false));
       })
       ->editColumn('total_plus', function ($data) use ($xls) {
-        return ($xls ? $data['total_plus'] : formatNumber($data['total_plus']));
+        return ($xls ? $data['total_plus'] : formatNumber($data['total_plus'], false));
       })
       ->editColumn('status', function ($data) use ($xls) {
         return ($xls ? $data['status'] : renderStatus($data['status']));
@@ -746,8 +781,7 @@ class Inventory extends BaseController
       $sheet->setCellValue('J1', 'Total Edited');
       $sheet->setCellValue('K1', 'Status');
       $sheet->setCellValue('L1', 'Note');
-      $sheet->setCellValue('M1', 'Created At');
-      $sheet->setCellValue('N1', 'Attachment');
+      $sheet->setCellValue('M1', 'Attachment');
 
       $r = 2;
 
@@ -764,11 +798,10 @@ class Inventory extends BaseController
         $sheet->setCellValue('J' . $r, $row['total_edited']);
         $sheet->setCellValue('K' . $r, $row['status']);
         $sheet->setCellValue('L' . $r, htmlRemove($row['note']));
-        $sheet->setCellValue('M' . $r, $row['created_at']);
 
         if ($row['attachment']) {
-          $sheet->setCellValue('N' . $r, lang('App.view'));
-          $sheet->setUrl('N' . $r, 'https://erp.indoprinting.co.id/attachment/' . $row['attachment']);
+          $sheet->setCellValue('M' . $r, lang('App.view'));
+          $sheet->setUrl('M' . $r, 'https://erp.indoprinting.co.id/attachment/' . $row['attachment']);
         }
 
         $r++;
@@ -1312,8 +1345,8 @@ class Inventory extends BaseController
         'name'        => $stock->product_name,
         'unit'        => $stock->unit,
         'quantity'    => floatval($stock->quantity),
-        'counter'     => $stock->spec,
-        'unique'      => $stock->unique_code,
+        'counter'     => ($stock->spec ?? ''),
+        'unique'      => ($stock->unique_code ?? ''),
         'ucr'         => $stock->ucr,
         'current_qty' => floatval($whp->quantity),
         'machine'     => intval($stock->machine_id),
@@ -1613,6 +1646,11 @@ class Inventory extends BaseController
     return $this->buildPage($this->data);
   }
 
+  protected function product_add()
+  {
+    $this->response(400, ['message' => 'Not implemented yet.']);
+  }
+
   protected function product_delete($id = null)
   {
     $product = Product::getRow(['id' => $id]);
@@ -1859,6 +1897,8 @@ class Inventory extends BaseController
 
   protected function product_sync()
   {
+    checkPermission('Product.Sync');
+
     if (requestMethod() == 'POST' && isAJAX()) {
       $ids = getPost('id');
 
@@ -2006,6 +2046,9 @@ class Inventory extends BaseController
 
     DB::transStart();
 
+    Payment::delete(['purchase_id' => $id]);
+    Stock::delete(['purchase_id' => $id]);
+
     if (!ProductPurchase::delete(['id' => $id])) {
       $this->response(400, ['message' => getLastError()]);
     }
@@ -2121,7 +2164,7 @@ class Inventory extends BaseController
         'current_qty'   => floatval($whp->quantity),
         'received_qty'  => floatval($stock->quantity),
         'unit'          => $unit->code,
-        'spec'          => $stock->spec
+        'spec'          => ($stock->spec ?? '')
       ];
     }
 
@@ -2249,7 +2292,11 @@ class Inventory extends BaseController
 
       foreach ($payments as $payment) {
         if ($payment->status == 'approved') {
-          if (!Payment::update((int)$payment->id, ['status' => 'paid', 'type' => 'sent'])) {
+          if (!Payment::update((int)$payment->id, [
+            'date'    => $date,
+            'status'  => 'paid',
+            'type'    => 'sent'
+          ])) {
             $this->response(400, ['message' => getLastError()]);
           }
         }

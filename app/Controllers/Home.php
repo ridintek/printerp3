@@ -550,7 +550,7 @@ class Home extends BaseController
     if ($limit) {
       $q->limit(intval($limit));
     } else {
-      $q->limit(30);
+      $q->limit(50);
     }
 
     if ($term && is_string($term)) {
@@ -596,7 +596,7 @@ class Home extends BaseController
     if ($limit) {
       $q->limit(intval($limit));
     } else {
-      $q->limit(30);
+      $q->limit(50);
     }
 
     if ($term && is_string($term)) {
@@ -631,7 +631,7 @@ class Home extends BaseController
     if ($limit) {
       $q->limit(intval($limit));
     } else {
-      $q->limit(30);
+      $q->limit(50);
     }
 
     if ($term && is_string($term)) {
@@ -669,7 +669,7 @@ class Home extends BaseController
       if ($limit) {
         $q->limit(intval($limit));
       } else {
-        $q->limit(30);
+        $q->limit(50);
       }
 
       if ($term && is_string($term)) {
@@ -688,7 +688,7 @@ class Home extends BaseController
         $q->whereIn('id', $id);
       }
 
-      return $q->get();
+      return $q->orderBy('name', 'ASC')->get();
     }
 
     return []; // Reserved for expense list.
@@ -706,7 +706,7 @@ class Home extends BaseController
       if ($limit) {
         $q->limit(intval($limit));
       } else {
-        $q->limit(30);
+        $q->limit(50);
       }
 
       if ($term && is_string($term)) {
@@ -725,7 +725,7 @@ class Home extends BaseController
         $q->whereIn('id', $id);
       }
 
-      return $q->get();
+      return $q->orderBy('name', 'ASC')->get();
     }
 
     return []; // Reserved for expense list.
@@ -746,7 +746,7 @@ class Home extends BaseController
       if ($limit) {
         $q->limit(intval($limit));
       } else {
-        $q->limit(30);
+        $q->limit(50);
       }
 
       if ($term && is_string($term)) {
@@ -772,7 +772,7 @@ class Home extends BaseController
     if ($limit) {
       $q->limit(intval($limit));
     } else {
-      $q->limit(30);
+      $q->limit(50);
     }
 
     if ($term && is_string($term)) {
@@ -805,7 +805,7 @@ class Home extends BaseController
       $q->notLike('code', 'W2P', 'after');
     }
 
-    return $q->get();
+    return $q->orderBy('name', 'ASC')->get();
   }
 
   protected function select2_supplier()
@@ -819,7 +819,7 @@ class Home extends BaseController
     if ($limit) {
       $q->limit(intval($limit));
     } else {
-      $q->limit(30);
+      $q->limit(50);
     }
 
     if ($term && is_string($term)) {
@@ -840,7 +840,7 @@ class Home extends BaseController
       $q->whereIn('id', $id);
     }
 
-    return $q->get();
+    return $q->orderBy('name', 'ASC')->get();
   }
 
   protected function select2_techsupport()
@@ -858,7 +858,7 @@ class Home extends BaseController
     if ($limit) {
       $q->limit(intval($limit));
     } else {
-      $q->limit(30);
+      $q->limit(50);
     }
 
     if ($term && is_string($term)) {
@@ -893,7 +893,7 @@ class Home extends BaseController
       }
     }
 
-    return $q->get();
+    return $q->orderBy('fullname', 'ASC')->get();
   }
 
   protected function select2_user()
@@ -910,7 +910,7 @@ class Home extends BaseController
     if ($limit) {
       $q->limit(intval($limit));
     } else {
-      $q->limit(30);
+      $q->limit(50);
     }
 
     if ($term && is_string($term)) {
@@ -943,7 +943,7 @@ class Home extends BaseController
       $q->whereIn('warehouse_id', $warehouses);
     }
 
-    return $q->get();
+    return $q->orderBy('fullname', 'ASC')->get();
   }
 
   protected function select2_usergroup()
@@ -957,7 +957,7 @@ class Home extends BaseController
     if ($limit) {
       $q->limit(intval($limit));
     } else {
-      $q->limit(30);
+      $q->limit(50);
     }
 
     if ($term && is_string($term)) {
@@ -995,7 +995,7 @@ class Home extends BaseController
     if ($limit) {
       $q->limit(intval($limit));
     } else {
-      $q->limit(30);
+      $q->limit(50);
     }
 
     if ($term && is_string($term)) {
@@ -1031,7 +1031,7 @@ class Home extends BaseController
     if ($limit) {
       $q->limit(intval($limit));
     } else {
-      $q->limit(30);
+      $q->limit(50);
     }
 
     if ($term && is_string($term)) {

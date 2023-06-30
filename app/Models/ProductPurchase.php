@@ -215,7 +215,9 @@ class ProductPurchase
         $status = 'pending';
       }
 
-      if (!self::update((int)$purchase->id, ['payment_status' => $status])) {
+      $balance = ($purchase->grand_total - $purchase->discount - $paid);
+
+      if (!self::update((int)$purchase->id, ['paid' => $paid, 'balance' => $balance, 'payment_status' => $status])) {
         return false;
       }
 

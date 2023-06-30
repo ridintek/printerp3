@@ -117,7 +117,7 @@
                     <?php endif; ?>
                     <td class="text-center"><?= round($restQty, 6) ?></td>
                     <td><span class="float-right"><?= formatNumber($item->price) ?></span></td>
-                    <td><span class="float-right"><?= formatNumber($item->subtotal) ?></span></td>
+                    <td><span class="float-right"><?= formatNumber($item->subtotal, false) ?></span></td>
                   </tr>
                   <?php $no++ ?>
                 <?php endforeach; ?>

@@ -22,14 +22,21 @@
               <?php endif; ?>
               <div class="col-md-6">
                 <div class="form-group">
+                  <label for="biller"><?= lang('App.biller') ?> *</label>
+                  <select id="biller" name="biller" class="select-biller" data-placeholder="<?= lang('App.biller') ?>" style=" width:100%">
+                  </select>
+                </div>
+              </div>
+            </div>
+            <div class="row">
+              <div class="col-md-6">
+                <div class="form-group">
                   <label for="method"><?= lang('App.method') ?> *</label>
                   <select id="method" name="method" class="select-bank-type" data-placeholder="<?= lang('App.method') ?>" style=" width:100%">
                   </select>
                 </div>
               </div>
-            </div>
-            <div class="row bank-account" style="display: none">
-              <div class="col-md-6">
+              <div class="col-md-6 bank-account" style="display: none">
                 <div class="form-group">
                   <label for="bank"><?= lang('App.bankaccount') ?> *</label>
                   <select id="bank" name="bank" class="select-bank" data-placeholder="<?= lang('App.bankaccount') ?>" style="width:100%">
@@ -101,7 +108,11 @@
   })();
 
   $(document).ready(function() {
+    erp.select2.bank = {};
+    erp.select2.biller = {};
+
     if (erp.biller.id) {
+      erp.select2.biller.id = [erp.biller.id];
       erp.select2.bank.biller = [erp.biller.id];
     }
 
@@ -185,6 +196,8 @@
     if (!hasSkipValidation) {
       $('#skip_validation').iCheck('disable');
     }
+
+    preSelect2('biller', '#biller', '<?= $inv->biller_id ?>').catch(err => console.warn(err));
 
     initModalForm({
       form: '#form',

@@ -7,12 +7,17 @@ namespace App\Controllers;
 use App\Libraries\FileUpload;
 use App\Models\{
   DB, Expense,
-  PaymentValidation, QueueTicket,
+  PaymentValidation, QRIS, QueueTicket,
   Sale, SaleItem, Stock, StockAdjustment, Test1, Test2, TrackingPOD
 };
 
 class Debug extends BaseController
 {
+  public function qris()
+  {
+    QRIS::add(['sale_id' => 1]);
+  }
+
   public function adjustment()
   {
     $date = '2023-06-16 08:05:00';

@@ -267,7 +267,7 @@
               </li>
             <?php endif; ?>
             <?php if (hasAccess([
-              'BankAccount.View', 'BankMutation.View', 'BankReconciliation.View',
+              'BankAccount.View', 'BankMutation.View', 'BankReconciliation.View', 'CashOnHand.Add',
               'Expense.View', 'Income.View', 'PaymentValidation.View'
             ])) : ?>
               <!-- Finance -->
@@ -299,6 +299,14 @@
                       <a href="<?= base_url('finance/reconciliation') ?>" class="nav-link" data-action="link" data-slug="reconciliation">
                         <i class="nav-icon fad fa-sync" style="color:#8040ff"></i>
                         <p><?= lang('App.bankreconciliation') ?></p>
+                      </a>
+                    </li>
+                  <?php endif; ?>
+                  <?php if (hasAccess('CashOnHand.View')) : ?>
+                    <li class="nav-item">
+                      <a href="<?= base_url('finance/cashonhand') ?>" class="nav-link" data-action="link" data-slug="cashonhand">
+                        <i class="nav-icon fad fa-hand-holding-dollar" style="color:#ffff00"></i>
+                        <p><?= lang('App.cashonhand') ?></p>
                       </a>
                     </li>
                   <?php endif; ?>
@@ -918,7 +926,15 @@
         erp.debug = true;
         toastr.info('Debug has been activated.');
       }
-    })
+    });
+
+    if (window.innerWidth <= 480 && window.innerHeight <= 700) {
+      console.log('Mobile Version:' + window.innerWidth + ':' + window.innerHeight);
+
+      if (erp.user.id == 1) {
+        toastr.error('Mobile Version:' + window.innerWidth + ':' + window.innerHeight);
+      }
+    }
   </script>
   <!-- Google tag (gtag.js) -->
   <script async src="https://www.googletagmanager.com/gtag/js?id=G-Y8FVKN22WM"></script>

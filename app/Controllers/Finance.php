@@ -10,6 +10,7 @@ use App\Models\{
   Bank,
   BankMutation,
   BankReconciliation,
+  CashOnHand,
   DB,
   Expense,
   Income,
@@ -112,6 +113,97 @@ class Finance extends BaseController
 
     if ($type) {
       $dt->whereIn('banks.type', $type);
+    }
+
+    $dt->generate();
+  }
+
+  public function getCashOnHand()
+  {
+    checkPermission('CashOnHand.View');
+
+    $bank           = getPostGet('bank');
+    $biller         = getPostGet('biller');
+    $createdBy      = getPostGet('created_by');
+    $startDate      = getPostGet('start_date');
+    $endDate        = getPostGet('end_date');
+
+    $dt = new DataTables('cashonhand');
+    $dt
+      ->select("cashonhand.id AS id, cashonhand.id AS cid, cashonhand.date,
+        biller.name AS biller_name, banks.name AS bank_name, cashonhand.amount,
+        cashonhand.note, creator.fullname AS creator_name")
+      ->join('banks', 'banks.id = cashonhand.bank_id', 'left')
+      ->join('biller', 'biller.id = cashonhand.biller_id', 'left')
+      ->join('users creator', 'creator.id = cashonhand.created_by', 'left')
+      ->editColumn('id', function ($data) {
+        return '
+          <div class="btn-group btn-action">
+            <a class="btn bg-gradient-primary btn-sm dropdown-toggle" href="#" data-toggle="dropdown">
+              <i class="fad fa-gear"></i>
+            </a>
+            <div class="dropdown-menu">
+              <a class="dropdown-item" href="' . base_url('finance/cashonhand/edit/' . $data['id']) . '"
+                data-toggle="modal" data-target="#ModalStatic"
+                data-modal-class="modal-dialog-centered modal-dialog-scrollable">
+                <i class="fad fa-fw fa-edit"></i> ' . lang('App.edit') . '
+              </a>
+              <a class="dropdown-item" href="' . base_url('finance/cashonhand/view/' . $data['id']) . '"
+                data-toggle="modal" data-target="#ModalStatic"
+                data-modal-class="modal-dialog-centered modal-dialog-scrollable">
+                <i class="fad fa-fw fa-magnifying-glass"></i> ' . lang('App.view') . '
+              </a>
+              <div class="dropdown-divider"></div>
+              <a class="dropdown-item" href="' . base_url('finance/cashonhand/delete/' . $data['id']) . '"
+                data-action="confirm">
+                <i class="fad fa-fw fa-trash"></i> ' . lang('App.delete') . '
+              </a>
+            </div>
+          </div>';
+      })
+      ->editColumn('cid', function ($data) {
+        return '<input class="checkbox check-main" type="checkbox" value="' . $data['cid'] . '">';
+      })
+      ->editColumn('amount', function ($data) {
+        return '<div class="float-right">' . formatNumber($data['amount']) . '</div>';
+      });
+
+    $userJS = getJSON(session('login')?->json);
+
+    if (isset($userJS->billers) && !empty($userJS->billers)) {
+      if ($biller) {
+        $biller = array_merge($biller, $userJS->billers);
+      } else {
+        $biller = $userJS->billers;
+      }
+    }
+
+    if (session('login')->biller_id) {
+      if ($biller) {
+        $biller[] = session('login')->biller_id;
+      } else {
+        $biller = [session('login')->biller_id];
+      }
+    }
+
+    if ($bank) {
+      $dt->whereIn('cashonhand.bank_id', $bank);
+    }
+
+    if ($biller) {
+      $dt->whereIn('cashonhand.biller_id', $biller);
+    }
+
+    if ($createdBy) {
+      $dt->whereIn('cashonhand.created_by', $createdBy);
+    }
+
+    if ($startDate) {
+      $dt->where("cashonhand.date >= '{$startDate} 00:00:00'");
+    }
+
+    if ($endDate) {
+      $dt->where("cashonhand.date <= '{$endDate} 23:59:59'");
     }
 
     $dt->generate();
@@ -900,6 +992,73 @@ class Finance extends BaseController
     $this->response(200, ['content' => view('Finance/Bank/view', $this->data)]);
   }
 
+  public function cashonhand()
+  {
+    if ($args = func_get_args()) {
+      $method = __FUNCTION__ . '_' . $args[0];
+
+      if (method_exists($this, $method)) {
+        array_shift($args);
+        return call_user_func_array([$this, $method], $args);
+      }
+    }
+
+    checkPermission('CashOnHand.View');
+
+    $this->data['page'] = [
+      'bc' => [
+        ['name' => lang('App.finance'), 'slug' => 'finance', 'url' => '#'],
+        ['name' => lang('App.cashonhand'), 'slug' => 'cashonhand', 'url' => '#']
+      ],
+      'content' => 'Finance/CashOnHand/index',
+      'title' => lang('App.cashonhand')
+    ];
+
+    return $this->buildPage($this->data);
+  }
+
+  protected function cashonhand_add()
+  {
+    checkPermission('CashOnHand.Add');
+
+    if (requestMethod() == 'POST' && isAJAX()) {
+      $data = [
+        'date'        => dateTimePHP(getPost('date')),
+        'biller_id'   => getPost('biller'),
+        'amount'      => filterNumber(getPost('amount')),
+        'note'        => stripTags(getPost('note'))
+      ];
+
+      if (empty($data['biller_id'])) {
+        $this->response(400, ['message' => 'Biller is required.']);
+      }
+
+      if (empty($data['amount'])) {
+        $this->response(400, ['message' => 'Amount is required.']);
+      }
+
+      DB::transStart();
+
+      $insertID = CashOnHand::add($data);
+
+      if (!$insertID) {
+        $this->response(400, ['message' => getLastError()]);
+      }
+
+      DB::transComplete();
+
+      if (DB::transStatus()) {
+        $this->response(201, ['message' => 'CashOnHand has been added.']);
+      }
+
+      $this->response(400, ['message' => getLastError()]);
+    }
+
+    $this->data['title'] = lang('App.cashonhand');
+
+    $this->response(200, ['content' => view('Finance/CashOnHand/add', $this->data)]);
+  }
+
   public function expense()
   {
     if ($args = func_get_args()) {
@@ -989,7 +1148,7 @@ class Finance extends BaseController
 
   protected function expense_approve($id = null)
   {
-    checkPermission('Expense.Approval');
+    checkPermission('Expense.Approve');
 
     $expense = Expense::getRow(['id' => $id]);
 
@@ -1794,7 +1953,7 @@ class Finance extends BaseController
     checkPermission('PaymentValidation.Cancel');
 
     $q = PaymentValidation::select('*')
-      ->where('status', 'pending');
+      ->whereIn('status', ['expired', 'pending']);
 
     if ($mode == 'expense') {
       $q->where('expense_id', $id);

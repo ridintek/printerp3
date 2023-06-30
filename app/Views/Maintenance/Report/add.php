@@ -107,7 +107,6 @@
 
     if (erp.warehouse.id) {
       erp.select2.warehouse.id = [erp.warehouse.id];
-      preSelect2('warehouse', '#warehouse', erp.warehouse.id).catch(err => console.warn(err));
     }
 
     $('#attachment').change(function() {
@@ -140,6 +139,7 @@
 
     editor.root.innerHTML = ``;
 
+    preSelect2('warehouse', '#warehouse', '<?= $warehouse_id ?>').catch(err => console.warn(err));
     preSelect2('user', '#created_by', erp.user.id);
 
     initModalForm({

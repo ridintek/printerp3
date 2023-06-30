@@ -14,6 +14,7 @@ use App\Models\{
   Notification,
   Payment,
   Product,
+  ProductPurchase,
   ProductReport,
   Stock,
   Supplier,
@@ -109,7 +110,7 @@ class Report extends BaseController
 
       $name = session('login')->fullname;
 
-      $sheet->export('PrintERP-DailyPerformance-' . date('Ymd_His') . "-($name)");
+      $sheet->export('PrintERP3-DailyPerformance-' . date('Ymd_His') . "-($name)");
     }
   }
 
@@ -793,7 +794,7 @@ class Report extends BaseController
 
     $sheet->setBold('A' . $r1);
 
-    return $sheet->export('PrintERP-DailyPerformance-' . date('Ymd_His'));
+    return $sheet->export('PrintERP3-DailyPerformance-' . date('Ymd_His'));
   }
 
   // Called by service.
@@ -865,13 +866,14 @@ class Report extends BaseController
       $r++;
     }
 
-    return $sheet->export('PrintERP-DebtReport-' . date('Ymd_His'));
+    return $sheet->export('PrintERP3-DebtReport-' . date('Ymd_His'));
   }
 
   public static function job_expense(string $response = null)
   {
     $param = getJSON($response);
 
+    // BNI format report
     if (isset($param->bni_format) && $param->bni_format == true) {
       if (empty($param->id) || !is_array($param->id)) {
         setLastError('Param ID is empty.');
@@ -1001,10 +1003,82 @@ class Report extends BaseController
         $sheet->setColumnAutoWidth('G');
       }
 
-      return $sheet->export('PrintERP-Expenses-BNI-' . date('Ymd_His'));
+      return $sheet->export('PrintERP3-Expenses-BNI-' . date('Ymd_His'));
     }
 
-    // Other report.
+    // Expense Report
+    $q = DB::table('expenses')
+      ->select("expenses.id, expenses.date, expenses.reference,
+        biller.name AS biller_name, suppliers.name AS supplier_name,
+        banks.name AS bank_name, expenses.status,
+        expenses.payment_status, expenses.amount,
+        category.name AS category_name, expenses.payment_date,
+        expenses.note, expenses.created_at, creator.fullname AS creator_name,
+        expenses.attachment")
+      ->join('banks', 'banks.id = expenses.bank_id', 'left')
+      ->join('biller', 'biller.id = expenses.biller_id', 'left')
+      ->join('expense_categories category', 'category.id = expenses.category_id', 'left')
+      ->join('suppliers', 'suppliers.id = expenses.supplier_id', 'left')
+      ->join('users creator', 'creator.id = expenses.created_by', 'left');
+
+    if (!empty($param->bank)) {
+      $q->whereIn('expenses.bank_id', $param->bank);
+    }
+
+    if (!empty($param->biller)) {
+      $q->whereIn('expenses.biller_id', $param->biller);
+    }
+
+    if (!empty($param->created_by)) {
+      $q->whereIn('expenses.created_by', $param->created_by);
+    }
+
+    if (!empty($param->status)) {
+      $q->whereIn('expenses.status', $param->status);
+    }
+
+    if (!empty($param->payment_status)) {
+      $q->whereIn('expenses.payment_status', $param->payment_status);
+    }
+
+    if (!empty($param->start_date)) {
+      $q->where("expenses.date >= '{$param->start_date} 00:00:00'");
+    }
+
+    if (!empty($param->end_date)) {
+      $q->where("expenses.date <= '{$param->end_date} 23:59:59'");
+    }
+
+    $sheet = new Spreadsheet();
+    $sheet->loadFile(FCPATH . 'files/templates/Expense_Report.xlsx');
+    $sheet->setTitle('Expense Report');
+
+    $r = 2;
+
+    foreach ($q->get() as $expense) {
+      $sheet->setCellValue('A' . $r, $expense->date);
+      $sheet->setCellValue('B' . $r, $expense->reference);
+      $sheet->setCellValue('C' . $r, $expense->biller_name);
+      $sheet->setCellValue('D' . $r, $expense->supplier_name);
+      $sheet->setCellValue('E' . $r, $expense->bank_name);
+      $sheet->setCellValue('F' . $r, lang('Status.' . $expense->status));
+      $sheet->setCellValue('G' . $r, lang('Status.' . $expense->payment_status));
+      $sheet->setCellValue('H' . $r, $expense->amount);
+      $sheet->setCellValue('I' . $r, $expense->category_name);
+      $sheet->setCellValue('J' . $r, $expense->payment_date);
+      $sheet->setCellValue('K' . $r, html2Note($expense->note));
+      $sheet->setCellValue('L' . $r, $expense->created_at);
+      $sheet->setCellValue('M' . $r, $expense->creator_name);
+
+      if ($expense->attachment) {
+        $sheet->setCellValue('N' . $r, lang('App.view'));
+        $sheet->setUrl('N' . $r, 'https://erp.indoprinting.co.id/attachment/' . $expense->attachment);
+      }
+
+      $r++;
+    }
+
+    return $sheet->export('PrintERP3-ExpenseReport-' . date('Ymd_His'));
   }
 
   // Called by service.
@@ -1100,7 +1174,7 @@ class Report extends BaseController
       $col++;
     }
 
-    return $sheet->export('PrintERP-IncomeStatementReport-' . date('Ymd_His'));
+    return $sheet->export('PrintERP3-IncomeStatementReport-' . date('Ymd_His'));
   }
 
   // Called by service.
@@ -1217,7 +1291,7 @@ class Report extends BaseController
         $sheet->setColumnAutoWidth('A');
         $sheet->setColumnAutoWidth('B');
 
-        return $sheet->export('PrintERP-InventoryBalanceReport-WarehouseSummary-' . date('Ymd_His'));
+        return $sheet->export('PrintERP3-InventoryBalanceReport-WarehouseSummary-' . date('Ymd_His'));
       }
     } else { // Item Details
       //* QUERIES
@@ -1347,7 +1421,7 @@ class Report extends BaseController
         }
       }
 
-      return $sheet->export('PrintERP-InventoryBalanceReport-' . date('Ymd_His'));
+      return $sheet->export('PrintERP3-InventoryBalanceReport-' . date('Ymd_His'));
     }
   }
 
@@ -1392,7 +1466,7 @@ class Report extends BaseController
         JSON_UNQUOTE(JSON_EXTRACT(products.json, '$.pic_note')) AS pic_note,
         JSON_UNQUOTE(JSON_EXTRACT(products.json, '$.updated_at')) AS last_update,
         JSON_UNQUOTE(JSON_EXTRACT(products.json, '$.purchased_at')) AS purchased_at,
-        pic.fullname AS pic_name,,
+        pic.fullname AS pic_name,
         creator.fullname AS creator_name")
       ->join('categories', 'categories.id = products.category_id', 'left')
       ->join('categories AS subcategories', 'subcategories.id = products.subcategory_id', 'left')
@@ -1495,8 +1569,8 @@ class Report extends BaseController
         } else if ($itemTotal == $checkCount) {
           $sheet->setCellValue($A1DateGrid[$x] . $r, 'V'); // Fully checked.
         } else {
-          // $sheet->setCellValue($A1DateGrid[$x] . $r, 'P'); // Partial checked.
-          $sheet->setCellValue($A1DateGrid[$x] . $r, 'V'); // Partial checked.
+          $sheet->setCellValue($A1DateGrid[$x] . $r, 'P'); // Partial checked.
+          // $sheet->setCellValue($A1DateGrid[$x] . $r, 'V'); // Partial checked.
         }
       }
 
@@ -1558,7 +1632,10 @@ class Report extends BaseController
       }
 
       $duration = ($reportBegin && $reportEnd ? getDaysInPeriod($reportBegin, $reportEnd) : '-');
-      // if ($duration < 0) $duration = -1;
+
+      if ($asset->active == 0) {
+        $duration = '-';
+      }
 
       $sheet->setCellValue('A' . $r, $r - 1);
       $sheet->setCellValue('B' . $r, $asset->product_code);
@@ -1664,7 +1741,7 @@ class Report extends BaseController
     $sheet->setCellValue('A1', date('F Y', strtotime($startDate)));
     $sheet->setBold('A1');
 
-    return $sheet->export('PrintERP-MachineReport-' . date('Ymd_His'));
+    return $sheet->export('PrintERP3-MachineReport-' . date('Ymd_His'));
   }
 
   // Called by service.
@@ -1743,7 +1820,222 @@ class Report extends BaseController
       $r++;
     }
 
-    return $sheet->export('PrintERP-PaymentReport-' . date('Ymd_His'));
+    return $sheet->export('PrintERP3-PaymentReport-' . date('Ymd_His'));
+  }
+
+  public static function job_purchase(string $response = null)
+  {
+    $param = getJSON($response);
+
+    // BNI format report
+    if (isset($param->bni_format) && $param->bni_format == true) {
+      if (empty($param->id) || !is_array($param->id)) {
+        setLastError('Param ID is empty.');
+        return false;
+      }
+
+      $antarBank = [];
+      $antarRek = [];
+      $rowAB = 1;
+      $rowAR = 1;
+
+      foreach ($param->id as $purchaseId) {
+        $payment  = Payment::getRow(['purchase_id' => $purchaseId]);
+        $purchase = ProductPurchase::getRow(['id' => $purchaseId]);
+        $supplier = Supplier::getRow(['id' => $purchase->supplier_id]);
+
+        if (!$payment) {
+          setLastError("Payment for {$purchase->reference} is not found.");
+          return false;
+        }
+
+        if (!$supplier) {
+          setLastError("Supplier id {$purchase->supplier_id} is not found.");
+          return false;
+        }
+
+        $supplierJS = getJSON($supplier->json);
+
+        if (!$supplierJS) {
+          setLastError("Supplier json data {$supplier->name} is not valid.");
+          return false;
+        }
+
+        if (stripos($supplierJS->acc_name, 'BNI') !== FALSE) { // InHouse
+          $antarRek[] = [
+            'rek_penerima'  => $supplierJS->acc_no,
+            'nama_penerima' => $supplierJS->acc_holder,
+            'nominal'       => filterNumber($payment->amount),
+            'keterangan'    => htmlRemove($purchase->note)
+          ];
+
+          $rowAR++;
+        } else {
+          $antarBank[] = [
+            'rek_penerima'  => $supplierJS->acc_no,
+            'nama_penerima' => $supplierJS->acc_holder,
+            'nominal'       => filterNumber($payment->amount),
+            'pesan'         => htmlRemove($purchase->note),
+            'pesan2'        => '',
+            'bic'           => $supplierJS->acc_bic,
+            'bank_penerima' => $supplierJS->acc_name
+          ];
+
+          $rowAB++;
+        }
+      }
+
+      $sheet = new Spreadsheet();
+      $sheet->setTitle('Expense Kliring');
+      $sheet->createSheet();
+      $sheet->setTitle('Expense InHouse');
+
+      if ($antarBank) { // ANTAR BANK (BCA, MANDIRI, BRI) (KLIRING)
+        $sheet->getSheet(0);
+        $sheet->SetCellValue('A1', 'Rek. Tujuan');
+        $sheet->SetCellValue('B1', 'Nama Penerima');
+        $sheet->SetCellValue('C1', 'Amount');
+        $sheet->SetCellValue('D1', 'Remark');
+        $sheet->SetCellValue('E1', 'Remark2');
+        $sheet->SetCellValue('F1', 'Remark3');
+        $sheet->SetCellValue('G1', 'Clearing Code');
+        $sheet->SetCellValue('H1', 'Bank Tujuan');
+        $sheet->SetCellValue('I1', 'Email');
+        $sheet->SetCellValue('J1', 'Reff Num');
+
+        $row = 2;
+        foreach ($antarBank as $data) {
+          $sheet->SetCellValue('A' . $row, $data['rek_penerima'], DataType::TYPE_STRING);
+          $sheet->SetCellValue('B' . $row, $data['nama_penerima']);
+          $sheet->SetCellValue('C' . $row, $data['nominal']);
+          $sheet->SetCellValue('D' . $row, getExcerpt($data['pesan'], 33));
+          $sheet->SetCellValue('E' . $row, '');
+          $sheet->SetCellValue('F' . $row, '');
+          $sheet->SetCellValue('G' . $row, $data['bic'], DataType::TYPE_STRING);
+          $sheet->SetCellValue('H' . $row, $data['bank_penerima']);
+          $sheet->SetCellValue('I' . $row, '');
+          $sheet->SetCellValue('J' . $row, '');
+
+          $row++;
+        }
+
+        $sheet->setColumnAutoWidth('A');
+        $sheet->setColumnAutoWidth('B');
+        $sheet->setColumnAutoWidth('C');
+        $sheet->setColumnAutoWidth('D');
+        $sheet->setColumnAutoWidth('E');
+        $sheet->setColumnAutoWidth('F');
+        $sheet->setColumnAutoWidth('G');
+        $sheet->setColumnAutoWidth('H');
+        $sheet->setColumnAutoWidth('I');
+        $sheet->setColumnAutoWidth('J');
+      }
+
+      if ($antarRek) { // ANTAR BNI / REKENING (INHOUSE)
+        $sheet->getSheet(1);
+        $sheet->SetCellValue('A1', 'Rek. Tujuan');
+        $sheet->SetCellValue('B1', 'Nama Penerima');
+        $sheet->SetCellValue('C1', 'Amount');
+        $sheet->SetCellValue('D1', 'Remark1');
+        $sheet->SetCellValue('E1', 'Remark2');
+        $sheet->SetCellValue('F1', 'Email');
+        $sheet->SetCellValue('G1', 'Reff Num');
+
+        $row = 2;
+        foreach ($antarRek as $data) {
+          $sheet->SetCellValue('A' . $row, $data['rek_penerima'], DataType::TYPE_STRING);
+          $sheet->SetCellValue('B' . $row, $data['nama_penerima']);
+          $sheet->SetCellValue('C' . $row, $data['nominal']);
+          $sheet->SetCellValue('D' . $row, getExcerpt($data['keterangan'], 33));
+          $sheet->SetCellValue('E' . $row, '');
+          $sheet->SetCellValue('F' . $row, '');
+          $sheet->SetCellValue('G' . $row, '');
+
+          $row++;
+        }
+
+        $sheet->setColumnAutoWidth('A');
+        $sheet->setColumnAutoWidth('B');
+        $sheet->setColumnAutoWidth('C');
+        $sheet->setColumnAutoWidth('D');
+        $sheet->setColumnAutoWidth('E');
+        $sheet->setColumnAutoWidth('F');
+        $sheet->setColumnAutoWidth('G');
+      }
+
+      return $sheet->export('PrintERP3-Purchase-BNI-' . date('Ymd_His'));
+    }
+
+    // Purchase Report
+
+    // Expense Report
+    $q = DB::table('purchases')
+      ->select("purchases.id, purchases.date, purchases.reference,
+        biller.name AS biller_name, suppliers.name AS supplier_name,
+        purchases.status,
+        purchases.payment_status, purchases.grand_total, purchases.paid, purchases.balance,
+        category.name AS category_name, purchases.payment_date,
+        purchases.note, purchases.created_at, creator.fullname AS creator_name,
+        purchases.attachment")
+      ->join('biller', 'biller.id = purchases.biller_id', 'left')
+      ->join('expense_categories category', 'category.id = purchases.category_id', 'left')
+      ->join('suppliers', 'suppliers.id = purchases.supplier_id', 'left')
+      ->join('users creator', 'creator.id = purchases.created_by', 'left');
+
+    if (!empty($param->biller)) {
+      $q->whereIn('purchases.biller_id', $param->biller);
+    }
+
+    if (!empty($param->created_by)) {
+      $q->whereIn('purchases.created_by', $param->created_by);
+    }
+
+    if (!empty($param->status)) {
+      $q->whereIn('purchases.status', $param->status);
+    }
+
+    if (!empty($param->payment_status)) {
+      $q->whereIn('purchases.payment_status', $param->payment_status);
+    }
+
+    if (!empty($param->start_date)) {
+      $q->where("purchases.date >= '{$param->start_date} 00:00:00'");
+    }
+
+    if (!empty($param->end_date)) {
+      $q->where("purchases.date <= '{$param->end_date} 23:59:59'");
+    }
+
+    $sheet = new Spreadsheet();
+    $sheet->loadFile(FCPATH . 'files/templates/Purchase_Report.xlsx');
+    $sheet->setTitle('Purchase Report');
+
+    $r = 2;
+
+    foreach ($q->get() as $purchase) {
+      $sheet->setCellValue('A' . $r, $purchase->date);
+      $sheet->setCellValue('B' . $r, $purchase->reference);
+      $sheet->setCellValue('C' . $r, $purchase->biller_name);
+      $sheet->setCellValue('D' . $r, $purchase->supplier_name);
+      $sheet->setCellValue('E' . $r, lang('Status.' . $purchase->status));
+      $sheet->setCellValue('F' . $r, lang('Status.' . $purchase->payment_status));
+      $sheet->setCellValue('G' . $r, $purchase->grand_total);
+      $sheet->setCellValue('H' . $r, $purchase->paid);
+      $sheet->setCellValue('I' . $r, $purchase->balance);
+      $sheet->setCellValue('J' . $r, $purchase->category_name);
+      $sheet->setCellValue('K' . $r, $purchase->payment_date);
+      $sheet->setCellValue('L' . $r, html2Note($purchase->note));
+      $sheet->setCellValue('M' . $r, $purchase->creator_name);
+
+      if ($purchase->attachment) {
+        $sheet->setCellValue('N' . $r, lang('App.view'));
+        $sheet->setUrl('N' . $r, 'https://erp.indoprinting.co.id/attachment/' . $purchase->attachment);
+      }
+
+      $r++;
+    }
+
+    return $sheet->export('PrintERP3-PurchaseReport-' . date('Ymd_His'));
   }
 
   // Called by service.
@@ -1752,7 +2044,7 @@ class Report extends BaseController
     $param = getJSON($response);
 
     $q = DB::table('sales')
-      ->select("sales.id, sales.date, sales.reference,
+      ->select("sales.id, sales.date, sales.reference, biller.name AS biller_name,
       (CASE
         WHEN customers.company IS NULL OR LENGTH(customers.company) = 0 THEN customers.name
         ELSE CONCAT(customers.name, ' (', customers.company, ')')
@@ -1760,9 +2052,11 @@ class Report extends BaseController
       sales.status, sales.payment_status,
       sales.grand_total, sales.paid, sales.balance, sales.due_date,
       sales.created_at, creator.fullname AS creator_name, sales.attachment")
+      ->join('biller', 'biller.id = sales.biller_id', 'left')
       ->join('customers', 'customers.id = sales.customer_id', 'left')
       ->join('users creator', 'creator.id = sales.created_by', 'left')
-      ->where('sales.balance > 0');
+      ->where('sales.balance > 0')
+      ->orWhere('sales.status', 'need_payment'); // Tambahan mas Ireng.
 
     if (!empty($param->created_by)) {
       $q->whereIn('sales.created_by', $param->created_by);
@@ -1797,25 +2091,77 @@ class Report extends BaseController
     foreach ($q->get() as $sale) {
       $sheet->setCellValue('A' . $r, $sale->date);
       $sheet->setCellValue('B' . $r, $sale->reference);
-      $sheet->setCellValue('C' . $r, $sale->supplier_name);
-      $sheet->setCellValue('D' . $r, $sale->status);
-      $sheet->setCellValue('E' . $r, $sale->payment_status);
-      $sheet->setCellValue('F' . $r, $sale->grand_total);
-      $sheet->setCellValue('G' . $r, $sale->paid);
-      $sheet->setCellValue('H' . $r, $sale->balance);
-      $sheet->setCellValue('I' . $r, $sale->due_date);
-      $sheet->setCellValue('J' . $r, $sale->created_at);
-      $sheet->setCellValue('K' . $r, $sale->creator_name);
+      $sheet->setCellValue('C' . $r, $sale->biller_name);
+      $sheet->setCellValue('D' . $r, $sale->supplier_name);
+      $sheet->setCellValue('E' . $r, $sale->status);
+      $sheet->setCellValue('F' . $r, $sale->payment_status);
+      $sheet->setCellValue('G' . $r, $sale->grand_total);
+      $sheet->setCellValue('H' . $r, $sale->paid);
+      $sheet->setCellValue('I' . $r, $sale->balance);
+      $sheet->setCellValue('J' . $r, $sale->due_date);
+      $sheet->setCellValue('K' . $r, $sale->created_at);
+      $sheet->setCellValue('L' . $r, $sale->creator_name);
 
       if ($sale->attachment) {
-        $sheet->setCellValue('L' . $r, lang('App.view'));
-        $sheet->setUrl('L' . $r, 'https://erp.indoprinting.co.id/attachment/' . $sale->attachment);
+        $sheet->setCellValue('M' . $r, lang('App.view'));
+        $sheet->setUrl('M' . $r, 'https://erp.indoprinting.co.id/attachment/' . $sale->attachment);
       }
 
       $r++;
     }
 
-    return $sheet->export('PrintERP-ReceivableReport-' . date('Ymd_His'));
+    return $sheet->export('PrintERP3-ReceivableReport-' . date('Ymd_His'));
+  }
+
+  public static function job_user(string $response = null)
+  {
+    $param = getJSON($response);
+
+    // Expense User
+    $q = DB::table('users')
+      ->select("users.id, users.fullname, users.username, users.groups, users.phone, users.gender,
+        biller.name AS biller_name, warehouse.name AS warehouse_name")
+      ->join('biller', 'biller.id = users.biller_id', 'left')
+      ->join('warehouse', 'warehouse.id = users.warehouse_id', 'left')
+      ->where('users.active', 1);
+
+    if (!empty($param->biller)) {
+      $q->whereIn('users.biller_id', $param->biller);
+    }
+
+    if (!empty($param->warehouse)) {
+      $q->whereIn('users.warehouse_id', $param->warehouse);
+    }
+
+    $sheet = new Spreadsheet();
+    // $sheet->loadFile(FCPATH . 'files/templates/Expense_Report.xlsx');
+    $sheet->setTitle('User');
+
+    $sheet->setCellValue('A1', 'ID');
+    $sheet->setCellValue('B1', 'Fullname');
+    $sheet->setCellValue('C1', 'Username');
+    $sheet->setCellValue('D1', 'Group');
+    $sheet->setCellValue('E1', 'Phone');
+    $sheet->setCellValue('F1', 'Gender');
+    $sheet->setCellValue('G1', 'Biller');
+    $sheet->setCellValue('H1', 'Warehouse');
+
+    $r = 2;
+
+    foreach ($q->get() as $user) {
+      $sheet->setCellValue('A' . $r, $user->id);
+      $sheet->setCellValue('B' . $r, $user->fullname);
+      $sheet->setCellValue('C' . $r, $user->username);
+      $sheet->setCellValue('D' . $r, $user->groups);
+      $sheet->setCellValue('E' . $r, $user->phone);
+      $sheet->setCellValue('F' . $r, $user->gender);
+      $sheet->setCellValue('G' . $r, $user->biller_name);
+      $sheet->setCellValue('H' . $r, $user->warehouse_name);
+
+      $r++;
+    }
+
+    return $sheet->export('PrintERP3-User-' . date('Ymd_His'));
   }
 
   public function payment()

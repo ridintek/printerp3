@@ -476,7 +476,6 @@ $(document).ready(function () {
     let status = $('#filter-status').val();
     let supplier = $('#filter-supplier').val();
     let warehouse = $('#filter-warehouse').val();
-    let whSummary = $('#filter-whsummary');
     let startDate = $('#filter-startdate').val();
     let endDate = $('#filter-enddate').val();
     let check = $('.check-main');
@@ -532,10 +531,6 @@ $(document).ready(function () {
       data.warehouse = warehouse;
     }
 
-    if (whSummary.is(':checked')) {
-      data.warehouse_summary = true;
-    }
-
     if (startDate) {
       data.start_date = startDate;
     }
@@ -560,11 +555,13 @@ $(document).ready(function () {
       method: 'POST',
       processData: false,
       success: (res) => {
-        Swal.fire({
-          icon: 'success',
-          text: res.message,
-          title: lang.App.success
-        });
+        if (res.code != 201) {
+          Swal.fire({
+            icon: 'success',
+            text: res.message,
+            title: lang.App.success
+          });
+        }
 
         if (res.data) {
           location.href = res.data;

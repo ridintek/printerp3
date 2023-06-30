@@ -153,7 +153,7 @@ class App extends BaseConfig
    *
    * @var string
    */
-  public $sessionDriver = RedisHandler::class;
+  public $sessionDriver = FileHandler::class;
 
   /**
    * --------------------------------------------------------------------------
@@ -195,8 +195,8 @@ class App extends BaseConfig
    *
    * @var string
    */
-  // public $sessionSavePath = WRITEPATH . 'session';
-  public $sessionSavePath = 'tcp://localhost:6379';
+  public $sessionSavePath = WRITEPATH . 'session';
+  // public $sessionSavePath = 'tcp://localhost:6379';
 
   /**
    * --------------------------------------------------------------------------

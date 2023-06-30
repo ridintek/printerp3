@@ -156,7 +156,7 @@ class Sale
   /**
    * Add sale payment.
    * @param int $saleId Sale ID.
-   * @param array $data [ *amount, *bank, attachment ]
+   * @param array $data [ *amount, *bank_id, attachment ]
    */
   public static function addPayment(int $saleId, array $data)
   {

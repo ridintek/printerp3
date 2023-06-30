@@ -19,8 +19,8 @@ use App\Models\{
   SaleItem,
   Stock,
   Unit,
-    User,
-    Voucher,
+  User,
+  Voucher,
   Warehouse,
   WarehouseProduct
 };
@@ -686,7 +686,6 @@ class Api extends BaseController
     $biller   = getPost('biller');
 
     if ($mode == 'edit') {
-
     }
   }
 }

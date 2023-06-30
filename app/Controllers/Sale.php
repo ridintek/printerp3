@@ -144,6 +144,11 @@ class Sale extends BaseController
                 data-modal-class="modal-dialog-centered modal-dialog-scrollable">
                 <i class="fad fa-fw fa-money-bill"></i> ' . lang('App.addpayment') . '
               </a>
+              <a class="dropdown-item" href="' . base_url('payment/qris/sale/' . $data['id']) . '"
+                data-toggle="modal" data-target="#ModalStatic"
+                data-modal-class="modal-dialog-centered modal-dialog-scrollable">
+                <i class="fad fa-fw fa-qrcode"></i> ' . lang('App.qrispayment') . '
+              </a>
               <a class="dropdown-item" href="' . base_url('payment/view/sale/' . $data['id']) . '"
                   data-toggle="modal" data-target="#ModalStatic"
                   data-modal-class="modal-lg modal-dialog-centered modal-dialog-scrollable">

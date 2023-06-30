@@ -70,8 +70,6 @@
             total += filterNumber(columns[0][a]);
           } else if (columns[1][a].search(/sent/i) >= 0 || columns[1][a].search(/terkirim/i) >= 0) {
             total -= filterNumber(columns[0][a]);
-          } else {
-            console.warn('Type is not received nor sent: ' + columns[1][a]);
           }
         }
 

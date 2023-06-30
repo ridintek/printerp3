@@ -14,6 +14,19 @@
                 <i class="fad fa-calendar-arrow-down"></i>
               </a>
             <?php endif; ?>
+            <div class="btn-group btn-tool">
+              <a class="btn bg-gradient-info dropdown-toggle" href="#" data-toggle="dropdown">
+                <i class="fad fa-download"></i>
+              </a>
+              <div class="dropdown-menu">
+                <a class="dropdown-item" href="<?= base_url('report/export/purchase') ?>" data-action="export" data-param='{"bni_format": true}'>
+                  <i class="fad fa-download"></i> BNI Format
+                </a>
+                <a class="dropdown-item" href="<?= base_url('report/export/purchase') ?>" data-action="export">
+                  <i class="fad fa-download"></i> Excel
+                </a>
+              </div>
+            </div>
             <a class="btn btn-tool bg-gradient-warning use-tooltip" href="#" data-widget="control-sidebar" title="<?= lang('App.filter') ?>" data-slide="true">
               <i class="fad fa-filter"></i>
             </a>
@@ -24,6 +37,7 @@
             <thead>
               <tr>
                 <th></th>
+                <th><input class="checkbox-parent" type="checkbox"></th>
                 <th><?= lang('App.date'); ?></th>
                 <th><?= lang('App.reference'); ?></th>
                 <th><?= lang('App.supplier'); ?></th>
@@ -40,6 +54,7 @@
             <tfoot>
               <tr>
                 <th></th>
+                <th><input class="checkbox-parent" type="checkbox"></th>
                 <th><?= lang('App.date'); ?></th>
                 <th><?= lang('App.reference'); ?></th>
                 <th><?= lang('App.supplier'); ?></th>
@@ -74,11 +89,7 @@
             <div class="col-md-12">
               <div class="form-group">
                 <label for="filter-biller"><?= lang('App.biller') ?></label>
-                <select id="filter-biller" class="select-allow-clear" data-placeholder="<?= lang('App.biller') ?>" style="width:100%" multiple>
-                  <option value=""></option>
-                  <?php foreach (\App\Models\Biller::get(['active' => 1]) as $bl) : ?>
-                    <option value="<?= $bl->code ?>"><?= $bl->name ?></option>
-                  <?php endforeach; ?>
+                <select id="filter-biller" class="select-biller" data-placeholder="<?= lang('App.biller') ?>" style="width:100%" multiple>
                 </select>
               </div>
             </div>
@@ -87,11 +98,7 @@
             <div class="col-md-12">
               <div class="form-group">
                 <label for="filter-warehouse"><?= lang('App.warehouse') ?></label>
-                <select id="filter-warehouse" class="select-allow-clear" data-placeholder="<?= lang('App.warehouse') ?>" style="width:100%" multiple>
-                  <option value=""></option>
-                  <?php foreach (\App\Models\Warehouse::get(['active' => 1]) as $wh) : ?>
-                    <option value="<?= $wh->code ?>"><?= $wh->name ?></option>
-                  <?php endforeach; ?>
+                <select id="filter-warehouse" class="select-warehouse" data-placeholder="<?= lang('App.warehouse') ?>" style="width:100%" multiple>
                 </select>
               </div>
             </div>
@@ -101,15 +108,11 @@
               <div class="form-group">
                 <label for="filter-status"><?= lang('App.status') ?></label>
                 <select id="filter-status" class="select-allow-clear" data-placeholder="<?= lang('App.status') ?>" style="width:100%" multiple>
-                  <option value=""></option>
-                  <option value="completed"><?= lang('Status.completed') ?></option>
-                  <option value="completed_partial"><?= lang('Status.completed_partial') ?></option>
-                  <option value="delivered"><?= lang('Status.delivered') ?></option>
-                  <option value="finished"><?= lang('Status.finished') ?></option>
-                  <option value="inactive"><?= lang('Status.inactive') ?></option>
-                  <option value="need_payment"><?= lang('Status.need_payment') ?></option>
-                  <option value="preparing"><?= lang('Status.preparing') ?></option>
-                  <option value="waiting_production"><?= lang('Status.waiting_production') ?></option>
+                  <option value="approved"><?= lang('Status.approved') ?></option>
+                  <option value="ordered"><?= lang('Status.ordered') ?></option>
+                  <option value="need_approval"><?= lang('Status.need_approval') ?></option>
+                  <option value="received"><?= lang('Status.received') ?></option>
+                  <option value="received_partial"><?= lang('Status.received_partial') ?></option>
                 </select>
               </div>
             </div>
@@ -119,14 +122,11 @@
               <div class="form-group">
                 <label for="filter-paymentstatus"><?= lang('App.paymentstatus') ?></label>
                 <select id="filter-paymentstatus" class="select-allow-clear" data-placeholder="<?= lang('App.paymentstatus') ?>" style="width:100%" multiple>
-                  <option value=""></option>
-                  <option value="due"><?= lang('Status.due') ?></option>
-                  <option value="due_partial"><?= lang('Status.due_partial') ?></option>
-                  <option value="expired"><?= lang('Status.expired') ?></option>
+                  <option value="approved"><?= lang('Status.approved') ?></option>
+                  <option value="need_approval"><?= lang('Status.need_approval') ?></option>
                   <option value="paid"><?= lang('Status.paid') ?></option>
                   <option value="partial"><?= lang('Status.partial') ?></option>
                   <option value="pending"><?= lang('Status.pending') ?></option>
-                  <option value="waiting_transfer"><?= lang('Status.waiting_transfer') ?></option>
                 </select>
               </div>
             </div>
@@ -137,23 +137,6 @@
                 <label for="filter-createdby"><?= lang('App.createdby') ?></label>
                 <select id="filter-createdby" class="select-user" data-placeholder="<?= lang('App.createdby') ?>" style="width:100%" multiple>
                 </select>
-              </div>
-            </div>
-          </div>
-          <div class="row">
-            <div class="col-md-12">
-              <div class="form-group">
-                <label for="filter-customer"><?= lang('App.customer') ?></label>
-                <select id="filter-customer" class="select-customer" data-placeholder="<?= lang('App.customer') ?>" style="width:100%" multiple>
-                </select>
-              </div>
-            </div>
-          </div>
-          <div class="row">
-            <div class="col-md-12">
-              <div class="form-group">
-                <input type="checkbox" id="filter-receivable" value="1">
-                <label for="filter-receivable"><?= lang('App.receivable') ?></label>
               </div>
             </div>
           </div>
@@ -193,6 +176,7 @@
   TableFilter.bind('clear', '.filter-clear');
 
   TableFilter.on('clear', () => {
+    $('#filter-biller').val([]).trigger('change');
     $('#filter-warehouse').val([]).trigger('change');
     $('#filter-status').val([]).trigger('change');
     $('#filter-createdby').val([]).trigger('change');
@@ -206,8 +190,41 @@
 
     erp.table = $('#Table').DataTable({
       ajax: {
-        data: {
-          <?= csrf_token() ?>: '<?= csrf_hash() ?>'
+        data: (data) => {
+          data.__ = __;
+
+          let biller = $('#filter-biller').val();
+          let status = $('#filter-status').val();
+          let paymentStatus = $('#filter-paymentstatus').val();
+          let createdBy = $('#filter-createdby').val();
+          let startDate = $('#filter-startdate').val();
+          let endDate = $('#filter-enddate').val();
+
+          if (biller) {
+            data.biller = biller;
+          }
+
+          if (status) {
+            data.status = status;
+          }
+
+          if (paymentStatus) {
+            data.payment_status = paymentStatus;
+          }
+
+          if (createdBy) {
+            data.created_by = createdBy;
+          }
+
+          if (startDate) {
+            data.start_date = startDate;
+          }
+
+          if (endDate) {
+            data.end_date = endDate;
+          }
+
+          return data;
         },
         method: 'POST',
         url: base_url + '/inventory/getProductPurchases'

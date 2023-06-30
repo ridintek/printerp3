@@ -99,7 +99,7 @@ class BankReconciliation
       ->get();
 
     // Add Cash
-    $cashGroups = Bank::select('number, name, holder, type')
+    $cashGroups = Bank::select('biller_id, number, name, holder, type')
       ->where('active', 1)
       ->whereIn('type', ['Cash'])
       ->get();
@@ -109,7 +109,8 @@ class BankReconciliation
     $banks = Bank::get(['active' => 1]);
 
     foreach ($accGroups as $row) { // Grouped by bank number.
-      $mutasiBank = null;
+      $mutasiBank   = null;
+      $lastCash     = 0;
       $totalBalance = 0;
 
       foreach ($banks as $bank) { // Collect balance.
@@ -119,6 +120,18 @@ class BankReconciliation
 
         if ($row->name == $bank->name && $bank->type == 'Cash') { // For cash.
           $totalBalance += $bank->amount;
+        }
+      }
+
+      if ($row->type == 'Cash') { // Recon CashOnHand.
+        $date = date('Y-m-d');
+
+        $coh = CashOnHand::select('amount')
+          ->orderBy('date', 'DESC')
+          ->getRow(['biller_id' => $row->biller_id]);
+
+        if ($coh) {
+          $lastCash = (int)$coh->amount;
         }
       }
 
@@ -142,6 +155,10 @@ class BankReconciliation
           'amount_erp'    => $totalBalance
         ];
 
+        if ($row->type == 'Cash') {
+          $reconData['amount_mb'] = $lastCash;
+        }
+
         if ($mutasiBank) {
           $reconData['mb_acc_name']     = $mutasiBank->account_name;
           $reconData['mb_bank_name']    = $mutasiBank->bank;
@@ -158,6 +175,10 @@ class BankReconciliation
           'account_no'   => $row->number,
           'amount_erp'   => $totalBalance
         ];
+
+        if ($row->type == 'Cash') {
+          $reconData['amount_mb'] = $lastCash;
+        }
 
         if ($mutasiBank) {
           $reconData['mb_acc_name']    = $mutasiBank->account_name;

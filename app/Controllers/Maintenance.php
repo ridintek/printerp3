@@ -254,8 +254,8 @@ class Maintenance extends BaseController
   {
     $productIds = getPostGet('product');
     $createdBy  = getPostGet('created_by');
-    $startDate  = getPostGet('start_date') ?? date('Y-m-d', strtotime('-30 day'));
-    $endDate    = getPostGet('end_date') ?? date('Y-m-d');
+    $startDate  = getPostGet('start_date');
+    $endDate    = getPostGet('end_date');
 
     checkPermission('MaintenanceReport.View');
 
@@ -391,6 +391,10 @@ class Maintenance extends BaseController
         $this->response(400, ['message' => lang('App.condition') . ' harus di isi.']);
       }
 
+      if (empty($warehouseId)) {
+        $this->response(400, ['message' => 'Warehouse tidak boleh kosong.']);
+      }
+
       $condLang = lang('App.' . $condition);
 
       if (($condition == 'off' || $condition == 'trouble') && empty($note)) {
@@ -425,13 +429,15 @@ class Maintenance extends BaseController
       }
 
       $data = [
-        'product_id'    => $productId,
-        'warehouse_id'  => $warehouse->id,
-        'condition'     => $condition,
-        'note'          => $note,
-        'pic_note'      => $noteTS,
-        'created_at'    => $date,
-        'created_by'    => $createdBy
+        'product_id'      => $productId,
+        'product_code'    => $product->code,
+        'warehouse_id'    => $warehouse->id,
+        'warehouse_code'  => $warehouse->code,
+        'condition'       => $condition,
+        'note'            => $note,
+        'pic_note'        => $noteTS,
+        'created_at'      => $date,
+        'created_by'      => $createdBy
       ];
 
       DB::transStart();
@@ -459,6 +465,7 @@ class Maintenance extends BaseController
       $itemJS->note       = $note;
       $itemJS->pic_note   = $noteTS;
       $itemJS->updated_at = date('Y-m-d H:i:s');
+      $itemJS->updated_by = intval($createdBy);
       $json = json_encode($itemJS);
 
       if (!Product::update((int)$productId, [
@@ -645,8 +652,15 @@ class Maintenance extends BaseController
       $this->response(400, ['message' => 'Failed to add report.']);
     }
 
-    $this->data['title']    = lang('App.addmaintenancereport');
-    $this->data['product']  = $product;
+    $warehouse = Warehouse::select('*')->like('name', $product->warehouses)->getRow();
+
+    if (!$warehouse) {
+      $this->response(400, ['message' => 'Item tidak memiliki Warehouse.']);
+    }
+
+    $this->data['title']        = lang('App.addmaintenancereport');
+    $this->data['product']      = $product;
+    $this->data['warehouse_id'] = $warehouse->id;
 
     $this->response(200, ['content' => view('Maintenance/Report/add', $this->data)]);
   }
@@ -708,24 +722,7 @@ class Maintenance extends BaseController
         $this->response(400, ['message' => getLastError()]);
       }
 
-      $lastReport = ProductReport::select('*')->where('product_id', $product->id)->orderBy('id', 'DESC')->getRow();
-
-      if ($lastReport) {
-        $itemJS = getJSON($product->json);
-
-        $itemJS->condition  = $lastReport->condition;
-        $itemJS->note       = $lastReport->note;
-        $itemJS->pic_note   = $lastReport->pic_note;
-        $itemJS->updated_at = $lastReport->created_at;
-        $json = json_encode($itemJS);
-
-        if (!Product::update((int)$product->id, [
-          'json'      => $json,
-          'json_data' => $json
-        ])) {
-          $this->response(400, ['message' => getLastError()]);
-        }
-      }
+      Product::sync(['id' => $product->id]);
 
       DB::transComplete();
 
@@ -771,21 +768,21 @@ class Maintenance extends BaseController
 
       $warehouse = Warehouse::getRow(['id' => $warehouseId]);
 
-      $lastReport = ProductReport::select('*')->where('product_id', $product->id)->orderBy('id', 'DESC')->getRow();
-
       $data = [
-        'product_id'    => $product->id,
-        'warehouse_id'  => $warehouse->id,
-        'condition'     => $condition,
-        'note'          => $note,
-        'pic_note'      => $noteTS,
-        'created_at'    => $date,
-        'created_by'    => $createdBy
+        'product_id'      => $product->id,
+        'product_code'    => $product->code,
+        'warehouse_id'    => $warehouse->id,
+        'warehouse_code'  => $warehouse->code,
+        'condition'       => $condition,
+        'note'            => $note,
+        'pic_note'        => $noteTS,
+        'created_at'      => $date,
+        'created_by'      => $createdBy
       ];
 
       DB::transStart();
 
-      $data = $this->useAttachment($data, null, function ($upload) use ($condition) {
+      $data = $this->useAttachment($data, null, function ($upload) {
         if ($upload->has('attachment')) {
           if ($upload->getSize('mb') > 2) {
             $this->response(400, ['message' => 'Attachment tidak boleh lebih dari 2MB.']);
@@ -793,23 +790,7 @@ class Maintenance extends BaseController
         }
       });
 
-      // If last report is edited. Product get edited too.
-      if ($lastReport->id == $report->id) {
-        $itemJS = getJSON($product->json);
-
-        $itemJS->condition  = $condition;
-        $itemJS->note       = $note;
-        $itemJS->pic_note   = $noteTS;
-        $itemJS->updated_at = $date;
-        $json = json_encode($itemJS);
-
-        if (!Product::update((int)$product->id, [
-          'json'      => $json,
-          'json_data' => $json
-        ])) {
-          $this->response(400, ['message' => getLastError()]);
-        }
-      }
+      Product::sync(['id' => $product->id]);
 
       if (!ProductReport::update((int)$id, $data)) {
         $this->response(400, ['message' => getLastError()]);

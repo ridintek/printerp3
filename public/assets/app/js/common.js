@@ -234,21 +234,23 @@ function dtRenderStatus(status) {
 }
 
 function filterDecimal(str) {
-  if (str == null) str = 0;
-  if (str.toString().length == 0) str = 0;
-  if (typeof str == 'string') str = str.replaceAll(/([^0-9\.\-])/g, '');
-  if (isNaN(parseFloat(str))) str = 0;
+  let buff = str;
+  if (buff == null) buff = 0;
+  if (buff.toString().length == 0) buff = 0;
+  if (typeof buff == 'string') buff = buff.replaceAll(/([^0-9\.\-])/g, '');
+  if (isNaN(parseFloat(buff))) buff = 0;
 
-  return parseFloat(str);
+  return parseFloat(buff);
 }
 
 function filterNumber(str) {
-  if (str == null) str = 0;
-  if (str.toString().length == 0) str = 0;
-  if (typeof str == 'string') str = str.replaceAll(/([^0-9])/g, '');
-  if (isNaN(parseFloat(str))) str = 0;
+  let buff = str;
+  if (buff == null) buff = 0;
+  if (buff.toString().length == 0) buff = 0;
+  if (typeof buff == 'string') buff = buff.replaceAll(/([^0-9])/g, '');
+  if (isNaN(parseFloat(buff))) buff = 0;
 
-  return parseFloat(str);
+  return Math.round(parseFloat(buff));
 }
 
 function formatCurrency(str) {
@@ -762,20 +764,12 @@ function initModalForm(opt = {}) {
 
           // Pre-select customer after add from add customer button.
           if ($('#customer').length && $('#phone').length) {
-            try {
-              preSelect2('customer', '#customer', $('#phone').val());
-            } catch (e) {
-              console.warn(e);
-            }
+            preSelect2('customer', '#customer', $('#phone').val()).catch(err => console.warn(err));
           }
 
           // Pre-select supplier after add from supplier button.
-          if ($('#supplier').length && $('#supplier').length) {
-            try {
-              preSelect2('customer', '#customer', $('#phone').val());
-            } catch (e) {
-              console.warn(e);
-            }
+          if ($('#supplier').length && $('#phone').length) {
+            preSelect2('supplier', '#supplier', $('#phone').val()).catch(err => console.warn(err));
           }
 
           reDrawDataTable();

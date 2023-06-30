@@ -15,7 +15,9 @@
                 <a class="dropdown-item" href="<?= base_url('report/export/expense') ?>" data-action="export" data-param='{"bni_format": true}'>
                   <i class="fad fa-download"></i> BNI Format
                 </a>
-                <a class="dropdown-item" href="#"><i class="fad fa-download"></i> Excel</a>
+                <a class="dropdown-item" href="<?= base_url('report/export/expense') ?>" data-action="export">
+                  <i class="fad fa-download"></i> Excel
+                </a>
               </div>
             </div>
             <a class="btn btn-tool bg-gradient-warning use-tooltip" href="#" data-widget="control-sidebar" title="<?= lang('App.filter') ?>" data-slide="true">

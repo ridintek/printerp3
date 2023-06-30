@@ -4,9 +4,19 @@
       <div class="card shadow">
         <div class="card-header bg-gradient-dark">
           <div class="card-tools">
-            <a id="export" class="btn btn-tool bg-gradient-success" href="<?= base_url('report/export/inventorybalance') ?>" data-action="export">
-              <i class="fad fa-download"></i>
-            </a>
+            <div class="btn-group btn-tool">
+              <a class="btn bg-gradient-info dropdown-toggle" href="#" data-toggle="dropdown">
+                <i class="fad fa-download"></i>
+              </a>
+              <div class="dropdown-menu">
+                <a class="dropdown-item" href="<?= base_url('report/export/inventorybalance') ?>" data-action="export">
+                  <i class="fad fa-download"></i> Product Details
+                </a>
+                <a class="dropdown-item" href="<?= base_url('report/export/inventorybalance') ?>" data-action="export" data-param='{"warehouse_summary": true}'>
+                  <i class="fad fa-download"></i> Warehouse Summary
+                </a>
+              </div>
+            </div>
             <a class="btn btn-tool bg-gradient-warning" href="#" data-widget="control-sidebar" data-toggle="tooltip" title="Filter" data-slide="true">
               <i class="fad fa-filter"></i>
             </a>
@@ -126,16 +136,11 @@
           data.__ = __;
 
           let warehouse = $('#filter-warehouse').val();
-          let whSummary = $('#filter-whsummary');
           let startDate = $('#filter-startdate').val();
           let endDate = $('#filter-enddate').val();
 
           if (warehouse) {
             data.warehouse = warehouse;
-          }
-
-          if (whSummary.is(':checked')) {
-            data.warehouse_summary = true;
           }
 
           if (startDate) {

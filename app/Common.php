@@ -387,11 +387,11 @@ function formatCurrency($num)
 /**
  * Convert number into formatted number.
  */
-function formatNumber($num)
+function formatNumber($num, $useDecimal = true)
 {
   $dec = 0;
 
-  if (strpos(strval(floatval($num)), '.') !== false) {
+  if (strpos(strval(floatval($num)), '.') !== false && $useDecimal) { // Check if has decimal point.
     $dec = strlen(explode('.', strval(floatval($num)))[1]);
 
     if ($dec > 6) {
@@ -1104,6 +1104,14 @@ function getPostGet($name)
 }
 
 /**
+ * Return QRIS bank.
+ */
+function getQRISBank(int $billerId)
+{
+  return Bank::getRow(['biller' => $billerId, 'number' => '1360000555323']);
+}
+
+/**
  * Get queue date time for customer who commit ticket registration.
  * @param string $dateTime Initial datetime string.
  * @return string return Working date for customer who commit ticket registration.
@@ -1787,6 +1795,9 @@ function renderStatus($status)
     'bad', 'decrease', 'due', 'due_partial', 'expired', 'need_approval', 'need_payment', 'off',
     'over_due', 'over_received', 'overwrite', 'returned', 'sent', 'skipped'
   ];
+  $purple = [
+    'solved'
+  ];
   $info = [
     'calling', 'completed_partial', 'confirmed', 'delivered', 'excellent', 'finished',
     'installed_partial', 'ordered', 'partial', 'percent', 'preparing',
@@ -1794,7 +1805,7 @@ function renderStatus($status)
   ];
   $success = [
     'active', 'approved', 'completed', 'consumable', 'currency', 'increase', 'formula',
-    'good', 'installed', 'paid', 'received', 'served', 'solved', 'verified'
+    'good', 'installed', 'paid', 'received', 'served', 'verified'
   ];
   $warning = [
     'called', 'cancelled', 'checked', 'draft', 'inactive', 'packing', 'pending', 'slow', 'sparepart',
@@ -1803,6 +1814,8 @@ function renderStatus($status)
 
   if (array_search($st, $danger) !== false) {
     $type = 'danger';
+  } elseif (array_search($st, $purple) !== false) {
+    $type = 'purple';
   } elseif (array_search($st, $info) !== false) {
     $type = 'info';
   } elseif (array_search($st, $success) !== false) {

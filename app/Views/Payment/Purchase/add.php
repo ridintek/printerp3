@@ -105,12 +105,27 @@
     erp.select2.bank.biller = [<?= $inv->biller_id ?>];
     erp.select2.biller.id = [<?= $inv->biller_id ?>];
 
+    let amount = <?= intval($amount) ?>;
+
     let editor = new Quill('#editor', {
       theme: 'snow'
     });
 
     editor.on('text-change', (delta, oldDelta, source) => {
       $('[name="note"]').val(editor.root.innerHTML);
+    });
+
+    $('#amount').change(function() {
+      console.log('changed: ' + this.value);
+      let current = filterNumber(this.value);
+
+      if (current > amount) {
+        $(this).val(formatCurrency(amount));
+        Swal.fire({
+          icon: 'error',
+          text: 'Amount tidak boleh lebih dari ' + this.value
+        });
+      }
     });
 
     $('#attachment').change(function() {

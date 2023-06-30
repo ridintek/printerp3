@@ -20,6 +20,15 @@
               </div>
               <div class="col-md-6">
                 <div class="form-group">
+                  <label for="biller"><?= lang('App.biller') ?> *</label>
+                  <select id="biller" name="biller" class="select-biller" data-placeholder="<?= lang('App.biller') ?>" style="width:100%">
+                  </select>
+                </div>
+              </div>
+            </div>
+            <div class="row">
+              <div class="col-md-6">
+                <div class="form-group">
                   <label for="amount"><?= lang('App.amount') ?> *</label>
                   <input id="amount" name="amount" class="form-control form-control-border form-control-sm currency" value="<?= $amount ?>">
                 </div>
@@ -68,6 +77,10 @@
   })();
 
   $(document).ready(function() {
+    erp.select2.biller = {};
+
+    erp.select2.biller.id = [<?= $inv->biller_id ?>];
+
     let editor = new Quill('#editor', {
       theme: 'snow'
     });
@@ -124,6 +137,8 @@
         }
       }
     });
+
+    preSelect2('biller', '#biller', '<?= $inv->biller_id ?>').catch(err => console.warn(err));
 
     initModalForm({
       form: '#form',

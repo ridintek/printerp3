@@ -15,6 +15,7 @@ use App\Models\{
   PaymentValidation,
   ProductPurchase,
   ProductTransfer,
+  QRIS,
   Sale
 };
 
@@ -46,6 +47,7 @@ class Payment extends BaseController
     $incomeId   = getPost('income_id');
     $mutationId = getPost('mutation_id');
     $purchaseId = getPost('purchase_id');
+    $transferId = getPost('transfer_id');
     $saleId     = getPost('sale_id');
 
     $startDate  = getPost('start_date');
@@ -113,6 +115,10 @@ class Payment extends BaseController
 
     if ($purchaseId) {
       $dt->where('payments.purchase_id', $purchaseId);
+    }
+
+    if ($transferId) {
+      $dt->where('payments.transfer_id', $transferId);
     }
 
     if ($saleId) {
@@ -252,7 +258,6 @@ class Payment extends BaseController
         $inv = Expense::getRow(['id' => $id]);
         $modeLang = lang('App.expense');
         $data['expense_id'] = $inv->id;
-        $data['biller_id']  = $inv->biller_id;
         $data['type']       = 'sent';
 
         $this->data['inv']    = $inv;
@@ -288,7 +293,6 @@ class Payment extends BaseController
         $modeLang = lang('App.productpurchase');
         $data['purchase']     = $inv->reference;
         $data['purchase_id']  = $inv->id;
-        $data['biller_id']  = $inv->biller_id;
         $data['type']         = 'need_approval';
         $data['status']       = 'need_approval';
         $this->data['inv']    = $inv;
@@ -298,7 +302,6 @@ class Payment extends BaseController
         $inv = Sale::getRow(['id' => $id]);
         $modeLang = lang('App.sale');
         $data['sale_id']    = $inv->id;
-        $data['biller_id']  = $inv->biller_id;
         $data['type']       = 'received';
 
         if ($inv->payment_status == 'paid') {
@@ -308,14 +311,13 @@ class Payment extends BaseController
         $this->data['inv']    = $inv;
         $this->data['amount'] = ($inv->grand_total - $inv->paid);
         break;
-      case 'transfer': // NOT IMPLEMENTED
-        // $inv = ProductTransfer::getRow(['id' => $id]);
-        // $modeLang = lang('App.producttransfer');
-        // $data['transfer']     = $inv->reference;
-        // $data['transfer_id']  = $inv->id;
-        // $data['type']         = 'sent';
-        // $this->data['amount'] = ($inv->grand_total - $inv->paid);
-        // $this->data['bank']   = $inv->bank;
+      case 'transfer': // NOT COMPLETED
+        $inv = ProductTransfer::getRow(['id' => $id]);
+        $modeLang = lang('App.producttransfer');
+        $data['transfer']     = $inv->reference;
+        $data['transfer_id']  = $inv->id;
+        $data['type']         = 'sent';
+        $this->data['amount'] = ($inv->grand_total - $inv->paid);
         break;
       default:
         $modeLang = '';
@@ -347,6 +349,7 @@ class Payment extends BaseController
       $data['reference']      = $inv->reference;
       $data['reference_date'] = $inv->date;
       $data['bank_id']        = getPost('bank');
+      $data['biller_id']      = getPost('biller');
       $data['method']         = getPost('method'); // Cash / EDC / Transfer
       $data['note']           = getPost('note');
 
@@ -407,6 +410,10 @@ class Payment extends BaseController
         ProductPurchase::update((int)$inv->id, ['payment_status' => 'need_approval']);
       }
 
+      if (isset($data['transfer_id'])) {
+        ProductTransfer::update((int)$inv->id, ['payment_status' => 'paid']);
+      }
+
       if (isset($data['sale_id'])) {
         Sale::sync(['id' => $inv->id]);
       }
@@ -464,6 +471,7 @@ class Payment extends BaseController
       } else if (!empty($payment->sale_id)) {
         Sale::sync(['id' => $payment->sale_id]);
       } else if (!empty($payment->transfer_id)) {
+        ProductTransfer::update((int)$payment->transfer_id, ['payment_status' => 'pending']);
       }
 
       DB::transComplete();
@@ -499,6 +507,9 @@ class Payment extends BaseController
     } else if ($payment->mutation_id) {
       $this->response(400, ['message' => 'Edit from Bank Mutation']);
     } else if ($payment->purchase_id) {
+      // $this->response(400, ['message' => 'Edit from Product Purchase']);
+      $inv = ProductPurchase::getRow(['id' => $payment->purchase_id]);
+      $this->data['modeLang'] = lang('App.productpurchase');
     } else if ($payment->sale_id) {
       $inv = Sale::getRow(['id' => $payment->sale_id]);
       $this->data['modeLang'] = lang('App.invoice');
@@ -542,6 +553,108 @@ class Payment extends BaseController
     $this->data['title']    = lang('App.editpayment');
 
     $this->response(200, ['content' => view('Payment/edit', $this->data)]);
+  }
+
+  public function qris($mode = null, $id = null)
+  {
+    if (session('login')->biller_code != 'DUR' && session('login')->user_id == 1) {
+      $this->response(400, ['message' => 'Still in development.']);
+    }
+
+    if (!$mode) {
+      $this->response(400, ['message' => 'Payment mode is empty']);
+    }
+
+    if (!$id) {
+      $this->response(400, ['message' => 'ID is empty']);
+    }
+
+    if ($mode == 'sale') {
+      $inv = Sale::getRow(['id' => $id]);
+
+      if (!$inv) {
+        $this->response(404, ['message' => 'Sale is not found.']);
+      }
+
+      DB::transStart();
+
+      $qris = QRIS::getRow(['sale_id' => $inv->id]);
+
+      if (!$qris) { // Create QRIS
+        if ($qrId = QRIS::add(['sale_id' => $inv->id])) {
+          $qris = QRIS::getRow(['id' => $qrId]);
+        }
+      } else {
+        QRIS::sync(['id' => $qris->id]); // Sync if it has expired.
+
+        $qris = QRIS::getRow(['id' => $qris->id]); // Get synced QRIS status.
+
+        if ($qris->status == 'expired') { // Re-create QRIS after expired
+          $response = QRIS::createInvoice($qris->reference, (int)$qris->amount);
+
+          if ($response === false) {
+            $this->response(400, ['message' => getLastError()]);
+          }
+
+          $reqDate = $response->data->qris_request_date;
+
+          $qrData = [
+            'invoice_id'  => $response->data->qris_invoiceid,
+            'content'     => $response->data->qris_content,
+            'nm_id'       => $response->data->qris_nmid,
+            'request_at'  => $reqDate,
+            'expired_at'  => date('Y-m-d H:i:s', strtotime('+30 minutes', strtotime($reqDate))),
+            'status'      => 'pending'
+          ];
+
+          if (!QRIS::update((int)$qris->id, $qrData)) {
+            $this->response(400, ['message' => getLastError()]);
+          }
+        }
+      }
+
+      DB::transComplete();
+
+      if (DB::transStatus()) {
+        $this->data['qris'] = $qris;
+      }
+    }
+
+    $this->data['title'] = lang('App.qrispayment');
+
+    $this->response(200, ['content' => view('Payment/qris', $this->data)]);
+  }
+
+  public function qrischeck($qrId = null)
+  {
+    $qris = QRIS::getRow(['id' => $qrId]);
+
+    if (!$qris) {
+      $this->response(404, ['message' => 'QRIS is not found.']);
+    }
+
+    $response = QRIS::checkStatus((int)$qrId);
+
+    if ($response && $response->status == 'success') {
+      $sale = Sale::getRow(['id' => $qris->sale_id]);
+
+      if (!$sale) {
+        $this->response(404, ['message' => 'Sale is not found.']);
+      }
+
+      $bank = getQRISBank((int)$sale->biller_id);
+
+      if (!Sale::addPayment((int)$sale->id, [
+        'amount'  => $qris->amount,
+        'bank_id' => $bank->id
+      ])) {
+        $this->response(400, ['message' => getLastError()]);
+      }
+
+      $this->response(200, ['message' => 'Pembayaran QRIS berhasil.']);
+    }
+
+    $this->response(400, ['message' => 'Pembayaran QRIS belum masuk.']);
   }
 
   public function view($mode = null, $id = null)
