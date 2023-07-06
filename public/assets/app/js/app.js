@@ -265,23 +265,24 @@ $(document).ready(function () {
         $.ajax({
           data: data,
           error: (xhr) => {
-            Swal.fire({
-              icon: 'error',
-              text: xhr.responseJSON.message,
-              title: lang.App.failed
-            });
-
+            toastr.error(xhr.responseJSON.message, lang.App.failed);
+            // Swal.fire({
+            //   icon: 'error',
+            //   text: xhr.responseJSON.message,
+            //   title: lang.App.failed
+            // });
 
             $(fa).removeClass(faClassProgress).addClass(faClass);
             delete this.dataset.progress;
           },
           method: 'POST',
           success: (data) => {
-            Swal.fire({
-              icon: 'success',
-              text: data.message,
-              title: lang.App.success
-            });
+            toastr.success(data.message, lang.App.success);
+            // Swal.fire({
+            //   icon: 'success',
+            //   text: data.message,
+            //   title: lang.App.success
+            // });
 
             $(fa).removeClass(faClassProgress).addClass(faClass);
             delete this.dataset.progress;
@@ -343,11 +344,12 @@ $(document).ready(function () {
     $.ajax({
       data: data,
       error: (xhr) => {
-        Swal.fire({
-          icon: 'error',
-          text: xhr.responseJSON.message,
-          title: lang.App.failed
-        });
+        toastr.error(xhr.responseJSON.message, lang.App.failed);
+        // Swal.fire({
+        //   icon: 'error',
+        //   text: xhr.responseJSON.message,
+        //   title: lang.App.failed
+        // });
 
         $(fa).removeClass(faClassProgress).addClass(faClass);
         delete this.dataset.progress;
@@ -358,11 +360,13 @@ $(document).ready(function () {
           erp.http.callback(response);
         };
 
-        Swal.fire({
-          icon: 'success',
-          text: response.message,
-          title: lang.App.success
-        });
+        toastr.success(response.message, lang.App.success);
+
+        // Swal.fire({
+        //   icon: 'success',
+        //   text: response.message,
+        //   title: lang.App.success
+        // });
 
         $(fa).removeClass(faClassProgress).addClass(faClass);
         delete this.dataset.progress;
@@ -396,11 +400,12 @@ $(document).ready(function () {
     $.ajax({
       data: data,
       error: (xhr) => {
-        Swal.fire({
-          icon: 'error',
-          text: xhr.responseJSON.message,
-          title: lang.App.failed
-        });
+        toastr.error(xhr.responseJSON.message, lang.App.failed);
+        // Swal.fire({
+        //   icon: 'error',
+        //   text: xhr.responseJSON.message,
+        //   title: lang.App.failed
+        // });
 
         $(fa).removeClass(faClassProgress).addClass(faClass);
         delete this.dataset.progress;
@@ -411,11 +416,12 @@ $(document).ready(function () {
           erp.http.callback(response);
         };
 
-        Swal.fire({
-          icon: 'success',
-          text: response.message,
-          title: lang.App.success
-        });
+        toastr.success(response.message, lang.App.success);
+        // Swal.fire({
+        //   icon: 'success',
+        //   text: response.message,
+        //   title: lang.App.success
+        // });
 
         $(fa).removeClass(faClassProgress).addClass(faClass);
         delete this.dataset.progress;
@@ -543,11 +549,13 @@ $(document).ready(function () {
       contentType: false,
       data: JSON.stringify(data),
       error: (xhr) => {
-        Swal.fire({
-          icon: 'error',
-          text: xhr.responseJSON.message,
-          title: lang.App.failed
-        });
+        toastr.error(xhr.responseJSON.message, lang.App.failed);
+
+        // Swal.fire({
+        //   icon: 'error',
+        //   text: xhr.responseJSON.message,
+        //   title: lang.App.failed
+        // });
 
         $(fa).removeClass(faClassProgress).addClass(faClass);
         delete this.dataset.progress;
@@ -556,11 +564,12 @@ $(document).ready(function () {
       processData: false,
       success: (res) => {
         if (res.code != 201) {
-          Swal.fire({
-            icon: 'success',
-            text: res.message,
-            title: lang.App.success
-          });
+          toastr.success(res.message, lang.App.success);
+          // Swal.fire({
+          //   icon: 'success',
+          //   text: res.message,
+          //   title: lang.App.success
+          // });
         }
 
         if (res.data) {
@@ -602,7 +611,8 @@ $(document).ready(function () {
         if (data.code == 200) {
           location.reload();
         } else {
-          Swal.fire({ icon: 'error', text: data.message, title: data.title });
+          toastr.error(data.message, data.title);
+          // Swal.fire({ icon: 'error', text: data.message, title: data.title });
         }
       },
       url: this.href

@@ -1648,7 +1648,45 @@ class Inventory extends BaseController
 
   protected function product_add()
   {
-    $this->response(400, ['message' => 'Not implemented yet.']);
+    checkPermission('Product.Add');
+
+    if (requestMethod() == 'POST' && isAJAX()) {
+      $pcat = ProductCategory::getRow(['id' => getPost('pcategory')]);
+      $pscat  = ProductCategory::getRow(['id' => getPost('pscategory')]);
+
+      $productData = [
+        'code'               => getPost('code'),
+        'name'               => getPost('name'),
+        'unit'               => getPost('unit'),
+        'cost'               => filterNumber(getPost('cost')),
+        'price'              => filterNumber(getPost('price')),
+        'warehouses'         => getPost('warehouses'),
+        'markon_price'       => filterNumber(getPost('markon_price')),
+        'markon'             => getPost('markon'),
+        'safety_stock_ratio' => getPost('safety_stock_ratio'),
+        'min_order_qty'      => getPost('min_order_qty'),
+        'iuse_type'          => getPost('iuse_type'),
+        'active'             => getPost('active'),
+        'autocomplete'       => getPost('autocomplete'),
+        'category_id'        => ($pcat ? $pcat->id : null),
+        'subcategory_id'     => ($pscat ? $pscat->id : null),
+        'type'               => getPost('type'),
+        'supplier_id'        => getPost('supplier'),
+        'sale_unit'          => getPost('sale_unit'),
+        'purchase_unit'      => getPost('purchase_unit'),
+        'price_ranges_value' => getPost('price_ranges_value'),
+        'min_prod_time'      => getPost('min_prod_time'),
+        'prod_time_qty'      => getPost('prod_time_qty'),
+        'sn'                 => getPost('sn'),
+        'priority'           => getPost('priority'),
+        'purchased_at'       => getPost('purchased_at'),
+        'purchase_source'    => getPost('purchase_source')
+      ];
+    }
+
+    $this->data['title'] = lang('App.addproduct');
+
+    $this->response(200, ['content' => view('Inventory/Product/add', $this->data)]);
   }
 
   protected function product_delete($id = null)
@@ -1679,6 +1717,11 @@ class Inventory extends BaseController
     }
 
     $this->response(400, ['message' => 'Bad request.']);
+  }
+
+  protected function product_edit($id = null)
+  {
+    $this->response(400, ['message' => 'Not implemented yet.']);
   }
 
   protected function product_history($id = null)
@@ -2257,6 +2300,10 @@ class Inventory extends BaseController
     $hasPartial     = false;
     $receivedValue  = 0;
 
+    if (empty($status)) {
+      $this->response(400, ['message' => 'Status is empty.']);
+    }
+
     $data = [
       'status'  => $status
     ];
@@ -2313,6 +2360,20 @@ class Inventory extends BaseController
       }
 
       $this->response(400, ['message' => 'Failed to approve payment.']);
+    }
+
+    if ($status == 'disapprove_payment') {
+      if (!ProductPurchase::update((int)$id, ['payment_status' => 'need_approval'])) {
+        $this->response(400, ['message' => getLastError()]);
+      }
+
+      DB::transComplete();
+
+      if (DB::transStatus()) {
+        $this->response(200, ['message' => 'Purchase payment has been disapproved.']);
+      }
+
+      $this->response(400, ['message' => 'Failed to disapprove payment.']);
     }
 
     foreach ($purchaseItems as $purchaseItem) {
@@ -2804,7 +2865,7 @@ class Inventory extends BaseController
                 'quantity'  => ($soItem->last_qty ?? $soItem->first_qty)
               ];
 
-              $data['total_lost'] += floatval($soItem->subtotal);
+              $data['total_lost'] -= floatval($soItem->subtotal);
             }
 
             if (StockOpnameItem::isModified((int)$soItem->id)) {

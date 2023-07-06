@@ -328,6 +328,7 @@ class PaymentValidation
     }
 
     $validateTotal = 0;
+    $msg = [];
 
     foreach ($mutasiBanks as $mb) {
       $dm = getJSON($mb->data);
@@ -336,6 +337,8 @@ class PaymentValidation
       if ($dm->type != 'CR') continue; // Only incoming amount is accepted. CR = Credit, DB = Debit
 
       foreach ($paymentValidations as $pv) {
+        $msg[] = "$dm->amount == $pv->amount + $pv->unique";
+
         if (intval($dm->amount) == intval($pv->amount + $pv->unique)) {
           $bank = Bank::getRow(['number' => $mb->account, 'biller_id' => $pv->biller_id]);
 
@@ -404,10 +407,12 @@ class PaymentValidation
             $mutation = BankMutation::getRow(['id' => $pv->mutation_id]);
 
             if (!$mutation) {
+              setLastError('Mutation is not found.');
               continue;
             }
 
             if ($mutation->status == 'paid') {
+              setLastError('Mutation is already paid.');
               continue;
             }
 

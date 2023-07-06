@@ -557,10 +557,6 @@ class Payment extends BaseController
 
   public function qris($mode = null, $id = null)
   {
-    if (session('login')->biller_code != 'DUR' && session('login')->user_id == 1) {
-      $this->response(400, ['message' => 'Still in development.']);
-    }
-
     if (!$mode) {
       $this->response(400, ['message' => 'Payment mode is empty']);
     }
@@ -643,6 +639,10 @@ class Payment extends BaseController
       }
 
       $bank = getQRISBank((int)$sale->biller_id);
+
+      if (!$bank) {
+        $this->response(404, ['Bank QRIS tidak ditemukan.']);
+      }
 
       if (!Sale::addPayment((int)$sale->id, [
         'amount'  => $qris->amount,

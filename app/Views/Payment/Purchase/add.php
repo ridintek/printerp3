@@ -99,11 +99,12 @@
   })();
 
   $(document).ready(function() {
-    erp.select2.bank = {};
-    erp.select2.biller = {};
-
-    erp.select2.bank.biller = [<?= $inv->biller_id ?>];
-    erp.select2.biller.id = [<?= $inv->biller_id ?>];
+    erp.select2.bank = {
+      biller: <?= $inv->biller_id ?>,
+    };
+    erp.select2.biller = {
+      id: <?= $inv->biller_id ?>
+    };
 
     let amount = <?= intval($amount) ?>;
 

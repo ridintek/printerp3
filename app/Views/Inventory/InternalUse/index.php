@@ -89,9 +89,13 @@
               <div class="form-group">
                 <label for="filter-status"><?= lang('App.status') ?></label>
                 <select id="filter-status" class="select-allow-clear" data-placeholder="<?= lang('App.status') ?>" style="width:100%" multiple>
-                  <option value="packing"><?= lang('Status.completed') ?></option>
-                  <option value="received"><?= lang('Status.delivered') ?></option>
-                  <option value="sent"><?= lang('Status.completed_partial') ?></option>
+                  <option value="approved"><?= lang('Status.approved') ?></option>
+                  <option value="cancelled"><?= lang('Status.cancelled') ?></option>
+                  <option value="completed"><?= lang('Status.completed') ?></option>
+                  <option value="installed"><?= lang('Status.installed') ?></option>
+                  <option value="need_approval"><?= lang('Status.need_approval') ?></option>
+                  <option value="packing"><?= lang('Status.packing') ?></option>
+                  <option value="returned"><?= lang('Status.returned') ?></option>
                 </select>
               </div>
             </div>

@@ -36,6 +36,11 @@
                 <th><?= lang('App.createdby'); ?></th>
               </tr>
             </thead>
+            <tbody>
+              <tr>
+                <td colspan="8" class="p-3"></td>
+              </tr>
+            </tbody>
             <tfoot>
               <tr>
                 <th></th>

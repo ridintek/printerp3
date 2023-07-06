@@ -15,7 +15,7 @@
   <link rel="stylesheet" href="<?= base_url() ?>/assets/modules/fullcalendar/lib/main.min.css">
   <link rel="stylesheet" href="<?= base_url() ?>/assets/modules/icheck/skins/all.css">
   <link rel="stylesheet" href="<?= base_url() ?>/assets/modules/jquery-ui/jquery-ui.min.css">
-  <link rel="stylesheet" href="<?= base_url() ?>/assets/modules/overlayscrollbars/css/OverlayScrollbars.min.css">
+  <!-- <link rel="stylesheet" href="<?= base_url() ?>/assets/modules/overlayscrollbars/css/OverlayScrollbars.min.css"> -->
   <link rel="stylesheet" href="<?= base_url() ?>/assets/modules/quill/quill.snow.css">
   <link rel="stylesheet" href="<?= base_url() ?>/assets/modules/select2/css/select2.min.css">
   <link rel="stylesheet" href="<?= base_url() ?>/assets/modules/sweetalert2/sweetalert2.min.css">
@@ -880,7 +880,7 @@
   <script src="<?= base_url() ?>/assets/modules/fullcalendar/lib/main.min.js"></script>
   <script src="<?= base_url() ?>/assets/modules/icheck/icheck.min.js"></script>
   <script src="<?= base_url() ?>/assets/modules/jquery-ui/jquery-ui.min.js"></script>
-  <script src="<?= base_url() ?>/assets/modules/overlayscrollbars/js/OverlayScrollbars.min.js"></script>
+  <!-- <script src="<?= base_url() ?>/assets/modules/overlayscrollbars/js/OverlayScrollbars.min.js"></script> -->
   <script src="<?= base_url() ?>/assets/modules/quill/quill.min.js"></script>
   <script src="<?= base_url() ?>/assets/modules/select2/js/select2.min.js"></script>
   <script src="<?= base_url() ?>/assets/modules/sweetalert2/sweetalert2.min.js"></script>

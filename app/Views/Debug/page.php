@@ -1,74 +1,31 @@
 <div class="container-fluid">
   <div class="row">
     <div class="col-12">
-      <div class="card shadow">
-        <div class="card-header bg-gradient-dark">
-          <div class="card-tools">
-            <a class="btn btn-tool bg-gradient-success" href="<?= base_url('division/warehouse/add') ?>" data-toggle="modal" data-target="#ModalStatic" data-modal-class="modal-lg modal-dialog-centered modal-dialog-scrollable">
-              <i class="fad fa-plus-circle"></i>
-            </a>
-          </div>
-        </div>
-        <div class="card-body">
-          <table id="Table" class="table table-bordered table-hover" style="width:100%;">
-            <thead>
-              <tr>
-                <th class="col-sm-1"></th>
-                <th><?= lang('App.code'); ?></th>
-                <th><?= lang('App.name'); ?></th>
-                <th><?= lang('App.address'); ?></th>
-                <th><?= lang('App.phone'); ?></th>
-                <th><?= lang('App.email'); ?></th>
-                <th class="col-sm-2"><?= lang('App.status'); ?></th>
-              </tr>
-            </thead>
-            <tfoot>
-              <tr>
-                <th></th>
-                <th><?= lang('App.code'); ?></th>
-                <th><?= lang('App.name'); ?></th>
-                <th><?= lang('App.address'); ?></th>
-                <th><?= lang('App.phone'); ?></th>
-                <th><?= lang('App.email'); ?></th>
-                <th class="col-sm-2"><?= lang('App.status'); ?></th>
-              </tr>
-            </tfoot>
-          </table>
-        </div>
-      </div>
+      <div>User List</div>
+      <button class="btn btn-success" onclick="addUser()">Add User</button>
+      <ul id="list">
+
+      </ul>
     </div>
   </div>
 </div>
+<template id="tlist">
+  <li>{name}</li>
+</template>
 <script>
-  $(document).ready(function() {
-    "use strict";
+  function addUser() {
+    let tlist = document.querySelector('#tlist');
+    let list = document.querySelector('#list');
 
-    window.Table = $('#Table').DataTable({
-      ajax: {
-        data: {
-          <?= csrf_token() ?>: '<?= csrf_hash() ?>'
-        },
-        method: 'POST',
-        url: base_url + '/division/getWarehouses'
-      },
-      columnDefs: [{
-        targets: [0],
-        orderable: false
-      }],
-      fixedHeader: false,
-      lengthMenu: [
-        [10, 25, 50, 100, -1],
-        [10, 25, 50, 100, lang.App.all]
-      ],
-      order: [
-        [1, 'asc']
-      ],
-      processing: true,
-      responsive: true,
-      scrollX: false,
-      searchDelay: 1000,
-      serverSide: true,
-      stateSave: false
-    });
-  });
+    let clone = tlist.content.cloneNode(true);
+
+    let li = clone.querySelector('li');
+
+    li.textContent = 'RIYAN';
+
+    erp.clone = clone;
+    erp.data = li;
+
+    list.appendChild(li);
+  }
 </script>

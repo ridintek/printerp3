@@ -135,19 +135,19 @@
                   <div class="form-group row">
                     <label for="username" class="col-sm-2 col-form-label"><?= lang('App.username') ?></label>
                     <div class="col-sm-10">
-                      <input type="text" id="username" name="username" class="form-control form-control-border form-control-sm" placeholder="<?= lang('App.username') ?>">
+                      <input type="text" id="username" name="username" class="form-control form-control-border form-control-sm" placeholder="<?= lang('App.username') ?>" readonly>
                     </div>
                   </div>
                   <div class="form-group row">
                     <label for="fullname" class="col-sm-2 col-form-label"><?= lang('App.fullname') ?></label>
                     <div class="col-sm-10">
-                      <input type="text" id="fullname" name="fullname" class="form-control form-control-border form-control-sm" placeholder="<?= lang('App.fullname') ?>">
+                      <input type="text" id="fullname" name="fullname" class="form-control form-control-border form-control-sm" placeholder="<?= lang('App.fullname') ?>" readonly>
                     </div>
                   </div>
                   <div class="form-group row">
                     <label for="phone" class="col-sm-2 col-form-label"><?= lang('App.phone') ?></label>
                     <div class="col-sm-10">
-                      <input type="text" id="phone" name="phone" class="form-control form-control-border form-control-sm" placeholder="<?= lang('App.phone') ?>">
+                      <input type="text" id="phone" name="phone" class="form-control form-control-border form-control-sm" placeholder="<?= lang('App.phone') ?>" readonly>
                     </div>
                   </div>
                   <div class="form-group row">
@@ -162,7 +162,7 @@
                   <div class="form-group row">
                     <label for="division" class="col-sm-2 col-form-label"><?= lang('App.division') ?></label>
                     <div class="col-sm-10">
-                      <input type="division" id="division" name="division" class="form-control form-control-border form-control-sm" placeholder="<?= lang('App.division') ?>">
+                      <input type="division" id="division" name="division" class="form-control form-control-border form-control-sm" placeholder="<?= lang('App.division') ?>" readonly>
                     </div>
                   </div>
                   <div class="form-group row">

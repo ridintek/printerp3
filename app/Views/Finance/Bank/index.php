@@ -31,6 +31,11 @@
                 <th class="col-sm-2"><?= lang('App.status'); ?></th>
               </tr>
             </thead>
+            <tbody>
+              <tr>
+                <td colspan="10" class="p-3"></td>
+              </tr>
+            </tbody>
             <tfoot>
               <tr>
                 <th></th>

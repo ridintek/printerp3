@@ -172,7 +172,7 @@
     <button type="button" class="btn bg-gradient-success commit-status status-approve_payment"><i class="fad fa-fw fa-box-check"></i> <?= lang('App.approvepayment') ?></button>
   <?php endif; ?>
   <?php if ($purchase->payment_status != 'need_approval' && hasAccess('ProductPurchase.DisapprovePayment')) : ?>
-    <button type="button" class="btn bg-gradient-success commit-status status-approve_payment"><i class="fad fa-fw fa-box-check"></i> <?= lang('App.approvepayment') ?></button>
+    <button type="button" class="btn bg-gradient-warning commit-status status-disapprove_payment"><i class="fad fa-fw fa-box-check"></i> <?= lang('App.disapprovepayment') ?></button>
   <?php endif; ?>
   <?php if ($purchase->payment_status == 'approved' && hasAccess('ProductPurchase.CommitPayment')) : ?>
     <button type="button" class="btn bg-gradient-success commit-status status-commit_payment"><i class="fad fa-fw fa-box-check"></i> <?= lang('App.commitpayment') ?></button>
@@ -196,6 +196,8 @@
         status = 'approve_payment';
       } else if (this.classList.contains('status-commit_payment')) {
         status = 'commit_payment';
+      } else if (this.classList.contains('status-disapprove_payment')) {
+        status = 'disapprove_payment';
       } else if (this.classList.contains('status-ordered')) {
         status = 'ordered';
       } else if (this.classList.contains('status-received')) {

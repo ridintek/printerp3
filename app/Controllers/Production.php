@@ -238,6 +238,7 @@ class Production extends BaseController
         $totalQty     = floatval($items['total_qty'][$a]);
 
         $sale = Sale::getRow(['id' => $saleId]);
+        $dueDate = ($sale->due_date ?? date('Y-m-d H:i:s', strtotime('+1 hour')));
 
         if (!$sale) {
           $this->response(404, ['message' => 'Invoice is missing.']);
@@ -257,13 +258,13 @@ class Production extends BaseController
           $this->response(400, ['message' => "Sale item {$itemCode} quantity cannot be zero or less."]);
         }
 
-        if (time() > strtotime($sale->due_date)) {
+        if (time() > strtotime($dueDate)) {
           $isCompleteOverTime = true;
         }
 
         if ($isCompleteOverTime && $_dbg) {
           $minutes      = rand(10, (60 * 5)); // 10 minute to 5 hours
-          $completeDate = date('Y-m-d H:i:s', strtotime("-{$minutes} minute", strtotime($sale->due_date)));
+          $completeDate = date('Y-m-d H:i:s', strtotime("-{$minutes} minute", strtotime($dueDate)));
         }
 
         $res = SaleItem::complete($itemId, [

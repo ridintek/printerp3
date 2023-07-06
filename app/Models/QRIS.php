@@ -83,6 +83,10 @@ class QRIS
     $response = getJSON($res);
 
     if ($response && $response->status == 'success') {
+      if (!self::update($qrId, ['status' => 'paid', 'check_at' => date('Y-m-d H:i:s')])) {
+        return false;
+      }
+
       return $response;
     }
 

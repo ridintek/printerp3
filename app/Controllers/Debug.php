@@ -6,9 +6,18 @@ namespace App\Controllers;
 
 use App\Libraries\FileUpload;
 use App\Models\{
-  DB, Expense,
-  PaymentValidation, QRIS, QueueTicket,
-  Sale, SaleItem, Stock, StockAdjustment, Test1, Test2, TrackingPOD
+  DB,
+  Expense,
+  PaymentValidation,
+  QRIS,
+  QueueTicket,
+  Sale,
+  SaleItem,
+  Stock,
+  StockAdjustment,
+  Test1,
+  Test2,
+  TrackingPOD
 };
 
 class Debug extends BaseController
@@ -375,7 +384,7 @@ class Debug extends BaseController
       'title' => lang('App.debug')
     ];
 
-    $this->buildPage($this->data);
+    return $this->buildPage($this->data);
   }
 
   public function password(string $pass = 'Durian100')

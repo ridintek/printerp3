@@ -152,8 +152,11 @@
   } from "<?= base_url('assets/app/js/ridintek.js?v=' . $resver); ?>";
 
   $(document).ready(function() {
-    erp.select2.product = {};
-    erp.select2.product.type = ['standard'];
+    erp.select2.product = {
+      type: ['standard']
+    };
+    erp.select2.biller = {};
+    erp.select2.warehouse = {};
 
     if (!hasAccess('ProductPurchase.Edit')) {
       erp.select2.user.id = [erp.user.id];
@@ -167,7 +170,7 @@
       $('[name="note"]').val(editor.root.innerHTML);
     });
 
-    $('#product').change(async function() {
+    $('#product').change(function() {
       if (!this.value) return false;
 
       let biller = $('#biller').val();

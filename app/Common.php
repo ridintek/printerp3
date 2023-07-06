@@ -1984,9 +1984,9 @@ function setJSONColumn($data = [], $columns = [], $jsonData = [])
 
 /**
  * Set last error message.
- * @param string $message Error message.
+ * @param mixed $message Error message.
  */
-function setLastError(string $message = null)
+function setLastError($message = null)
 {
   if ($message) {
     session()->set('lastErrMsg', $message);

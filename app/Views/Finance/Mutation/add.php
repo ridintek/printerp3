@@ -152,8 +152,10 @@
 
       $.ajax({
         success: (data) => {
+          // if (hasAccess('BankMutation.Edit')) {
           bankFromVal = this.value;
           $('#bankfrombalance').val(formatCurrency(data.data));
+          // }
         },
         url: base_url + '/finance/bank/balance/' + this.value
       })
@@ -174,14 +176,16 @@
 
       $.ajax({
         success: (data) => {
+          // if (hasAccess('BankMutation.Edit')) {
           bankToVal = this.value;
           $('#banktobalance').val(formatCurrency(data.data));
+          // }
         },
         url: base_url + '/finance/bank/balance/' + this.value
       })
     });
 
-    $('#biller').change(function () {
+    $('#biller').change(function() {
       erp.select2.bank.biller = [this.value];
     });
 

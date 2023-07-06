@@ -644,6 +644,14 @@ class Finance extends BaseController
             </a>
             <div class="dropdown-menu">';
 
+        if (hasAccess('PaymentValidation.Activate')) {
+          $menu .= '
+            <a class="dropdown-item" href="' . base_url('finance/validation/activate/' . $data['id']) . '"
+              data-action="confirm">
+              <i class="fad fa-fw fa-check"></i> ' . lang('App.activate') . '
+            </a>';
+        }
+
         $menu .= '<a class="dropdown-item" href="' . base_url('finance/validation/view/' . $data['id']) . '"
             data-toggle="modal" data-target="#ModalStatic"
             data-modal-class="modal-dialog-centered modal-dialog-scrollable">
@@ -1946,6 +1954,32 @@ class Finance extends BaseController
     ];
 
     return $this->buildPage($this->data);
+  }
+
+  protected function validation_activate($id = null)
+  {
+    checkPermission('PaymentValidation.Activate');
+
+    $pv = PaymentValidation::getRow(['id' => $id]);
+
+    if (!$pv) {
+      $this->response(404, ['message' => 'Payment validation is not found.']);
+    }
+
+    if ($pv->status == 'pending') {
+      $this->response(400, ['message' => 'Payment validation is already activated.']);
+    } else if ($pv->status == 'expired') {
+      $date = date('Y-m-d H:i:s', strtotime('+1 day', time()));
+      $now = date('Y-m-d H:i:s');
+
+      if (!PaymentValidation::update((int)$id, ['date' => $now, 'status' => 'pending', 'expired_at' => $date])) {
+        $this->response(400, ['message' => getLastError()]);
+      }
+
+      $this->response(200, ['message' => 'Payment status has been reactivated.']);
+    }
+
+    $this->response(400, ['message' => 'Payment status is already paid.']);
   }
 
   protected function validation_cancel(string $mode = null, $id = null)

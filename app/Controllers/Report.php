@@ -9,6 +9,7 @@ use App\Models\{
   Biller,
   DB,
   Expense,
+  InternalUse,
   Jobs,
   MaintenanceLog,
   Notification,
@@ -16,6 +17,7 @@ use App\Models\{
   Product,
   ProductPurchase,
   ProductReport,
+  Sale,
   Stock,
   Supplier,
   User,
@@ -413,6 +415,7 @@ class Report extends BaseController
     $createdBy  = getPostGet('created_by');
     $customer   = getPostGet('customer');
     $status     = getPostGet('status');
+    $type       = getPostGet('type');
 
     $startDate  = getPostGet('start_date');
     $endDate    = getPostGet('end_date');
@@ -498,6 +501,10 @@ class Report extends BaseController
 
     if ($status) {
       $dt->whereIn('payments.type', $status);
+    }
+
+    if ($type) {
+      $dt->whereIn('payments.method', $type);
     }
 
     if ($startDate) {
@@ -802,8 +809,7 @@ class Report extends BaseController
   {
     $param = getJSON($response);
 
-    $q = DB::table('purchases')
-      ->select("purchases.id, purchases.date, purchases.reference,
+    $q = Product::select("purchases.id, purchases.date, purchases.reference,
       (CASE
         WHEN suppliers.company IS NULL THEN suppliers.name
         ELSE CONCAT(suppliers.name, ' (', suppliers.company, ')')
@@ -1007,8 +1013,7 @@ class Report extends BaseController
     }
 
     // Expense Report
-    $q = DB::table('expenses')
-      ->select("expenses.id, expenses.date, expenses.reference,
+    $q = Expense::select("expenses.id, expenses.date, expenses.reference,
         biller.name AS biller_name, suppliers.name AS supplier_name,
         banks.name AS bank_name, expenses.status,
         expenses.payment_status, expenses.amount,
@@ -1175,6 +1180,84 @@ class Report extends BaseController
     }
 
     return $sheet->export('PrintERP3-IncomeStatementReport-' . date('Ymd_His'));
+  }
+
+  public static function job_internaluse(string $response = null)
+  {
+    $param = getJSON($response);
+
+    $q = InternalUse::select("internal_uses.date, internal_uses.reference,
+        creator.fullname AS creator_name,
+        whfrom.name AS warehouse_from_name, whto.name AS warehouse_to_name,
+        internal_uses.items, internal_uses.grand_total, internal_uses.category, internal_uses.counter,
+        internal_uses.note, suppliers.name AS supplier_name, internal_uses.status, internal_uses.attachment")
+      ->join('suppliers', 'suppliers.id = internal_uses.supplier_id', 'left')
+      ->join('users creator', 'creator.id = internal_uses.created_by', 'left')
+      ->join('warehouse whfrom', 'whfrom.id = internal_uses.from_warehouse_id', 'left')
+      ->join('warehouse whto', 'whto.id = internal_uses.to_warehouse_id', 'left');
+
+    if (!empty($param->category)) {
+      $q->whereIn('internal_uses.category', $param->category);
+    }
+
+    if (!empty($param->created_by)) {
+      $q->whereIn('internal_uses.created_by', $param->created_by);
+    }
+
+    if (!empty($param->status)) {
+      $q->whereIn('internal_uses.status', $param->status);
+    }
+
+    if (!empty($param->start_date)) {
+      $q->where("internal_uses.date >= '{$param->start_date} 00:00:00'");
+    }
+
+    if (!empty($param->end_date)) {
+      $q->where("internal_uses.date <= '{$param->end_date} 23:59:59'");
+    }
+
+    $sheet = new Spreadsheet();
+    $sheet->setTitle('Internal Uses');
+
+    $sheet->setCellValue('A1', 'Date');
+    $sheet->setCellValue('B1', 'Reference');
+    $sheet->setCellValue('C1', 'PIC');
+    $sheet->setCellValue('D1', 'Warehouse From');
+    $sheet->setCellValue('E1', 'Warehouse To');
+    $sheet->setCellValue('F1', 'Items');
+    $sheet->setCellValue('G1', 'Grand Total');
+    $sheet->setCellValue('H1', 'Category');
+    $sheet->setCellValue('I1', 'Counter');
+    $sheet->setCellValue('J1', 'Note');
+    $sheet->setCellValue('K1', 'Supplier');
+    $sheet->setCellValue('L1', 'Status');
+    $sheet->setCellValue('M1', 'Attachment');
+
+    $r = 2;
+
+    foreach ($q->get() as $iuse) {
+      $sheet->setCellValue('A' . $r, $iuse->date);
+      $sheet->setCellValue('B' . $r, $iuse->reference);
+      $sheet->setCellValue('C' . $r, $iuse->creator_name);
+      $sheet->setCellValue('D' . $r, $iuse->warehouse_from_name);
+      $sheet->setCellValue('E' . $r, $iuse->warehouse_to_name);
+      $sheet->setCellValue('F' . $r, html2Note($iuse->items));
+      $sheet->setCellValue('G' . $r, $iuse->grand_total);
+      $sheet->setCellValue('H' . $r, $iuse->category);
+      $sheet->setCellValue('I' . $r, $iuse->counter);
+      $sheet->setCellValue('J' . $r, html2Note($iuse->note));
+      $sheet->setCellValue('K' . $r, $iuse->supplier_name);
+      $sheet->setCellValue('L' . $r, lang('Status.' . $iuse->status));
+
+      if ($iuse->attachment) {
+        $sheet->setCellValue('M' . $r, lang('App.view'));
+        $sheet->setUrl('M' . $r, 'https://erp.indoprinting.co.id/attachment/' . $iuse->attachment);
+      }
+
+      $r++;
+    }
+
+    return $sheet->export('PrintERP3-InternalUses-' . date('Ymd_His'));
   }
 
   // Called by service.
@@ -1446,8 +1529,8 @@ class Report extends BaseController
       }
     }
 
-    $q = DB::table('products')
-      ->select("products.id AS product_id, products.code AS product_code, products.name AS product_name,
+    $q = Product::select("products.id AS product_id, products.code AS product_code,
+        products.name AS product_name,
         JSON_UNQUOTE(JSON_EXTRACT(products.json, '$.sn')) AS sn,
         categories.name AS category_name,
         subcategories.name AS subcategory_name,
@@ -1749,8 +1832,7 @@ class Report extends BaseController
   {
     $param = getJSON($response);
 
-    $q = DB::table('payments')
-      ->select("payments.id, payments.date, payments.reference_date, payments.reference,
+    $q = Payment::select("payments.id, payments.date, payments.reference_date, payments.reference,
         creator.fullname AS creator_name, biller.name AS biller_name,
         customers.name AS customer_name,
         (CASE
@@ -1782,6 +1864,10 @@ class Report extends BaseController
 
     if (!empty($param->status)) {
       $q->whereIn('payments.status', $param->status);
+    }
+
+    if (!empty($param->type)) {
+      $q->whereIn('banks.type', $param->type);
     }
 
     if (!empty($param->start_date)) {
@@ -1969,8 +2055,7 @@ class Report extends BaseController
     // Purchase Report
 
     // Expense Report
-    $q = DB::table('purchases')
-      ->select("purchases.id, purchases.date, purchases.reference,
+    $q = ProductPurchase::select("purchases.id, purchases.date, purchases.reference,
         biller.name AS biller_name, suppliers.name AS supplier_name,
         purchases.status,
         purchases.payment_status, purchases.grand_total, purchases.paid, purchases.balance,
@@ -2043,8 +2128,7 @@ class Report extends BaseController
   {
     $param = getJSON($response);
 
-    $q = DB::table('sales')
-      ->select("sales.id, sales.date, sales.reference, biller.name AS biller_name,
+    $q = Sale::select("sales.id, sales.date, sales.reference, biller.name AS biller_name,
       (CASE
         WHEN customers.company IS NULL OR LENGTH(customers.company) = 0 THEN customers.name
         ELSE CONCAT(customers.name, ' (', customers.company, ')')
@@ -2055,8 +2139,10 @@ class Report extends BaseController
       ->join('biller', 'biller.id = sales.biller_id', 'left')
       ->join('customers', 'customers.id = sales.customer_id', 'left')
       ->join('users creator', 'creator.id = sales.created_by', 'left')
+      ->groupStart()
       ->where('sales.balance > 0')
-      ->orWhere('sales.status', 'need_payment'); // Tambahan mas Ireng.
+      ->orWhere('sales.status', 'need_payment')
+      ->groupEnd(); // Tambahan mas Ireng.
 
     if (!empty($param->created_by)) {
       $q->whereIn('sales.created_by', $param->created_by);
@@ -2093,8 +2179,8 @@ class Report extends BaseController
       $sheet->setCellValue('B' . $r, $sale->reference);
       $sheet->setCellValue('C' . $r, $sale->biller_name);
       $sheet->setCellValue('D' . $r, $sale->supplier_name);
-      $sheet->setCellValue('E' . $r, $sale->status);
-      $sheet->setCellValue('F' . $r, $sale->payment_status);
+      $sheet->setCellValue('E' . $r, lang('Status.' . $sale->status));
+      $sheet->setCellValue('F' . $r, lang('Status.' . $sale->payment_status));
       $sheet->setCellValue('G' . $r, $sale->grand_total);
       $sheet->setCellValue('H' . $r, $sale->paid);
       $sheet->setCellValue('I' . $r, $sale->balance);
@@ -2118,8 +2204,7 @@ class Report extends BaseController
     $param = getJSON($response);
 
     // Expense User
-    $q = DB::table('users')
-      ->select("users.id, users.fullname, users.username, users.groups, users.phone, users.gender,
+    $q = User::select("users.id, users.fullname, users.username, users.groups, users.phone, users.gender,
         biller.name AS biller_name, warehouse.name AS warehouse_name")
       ->join('biller', 'biller.id = users.biller_id', 'left')
       ->join('warehouse', 'warehouse.id = users.warehouse_id', 'left')

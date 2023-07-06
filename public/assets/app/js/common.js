@@ -372,17 +372,17 @@ function initControls() {
   }
 
   if (isFunction('$.fn.overlayScrollbars')) {
-    $('body').overlayScrollbars({
-      scrollbars: {
-        autoHide: 'l'
-      }
-    });
+    // $('body').overlayScrollbars({
+    //   scrollbars: {
+    //     autoHide: 'l'
+    //   }
+    // });
 
-    $('.modal-body').css('min-height', '400px').overlayScrollbars({
-      scrollbars: {
-        autoHide: 'l'
-      }
-    });
+    // $('.modal-body').css('min-height', '400px').overlayScrollbars({
+    //   scrollbars: {
+    //     autoHide: 'l'
+    //   }
+    // });
   }
 
   if (isFunction('$.fn.iCheck')) {
@@ -565,14 +565,32 @@ function initControls() {
       allowClear: true,
       ajax: {
         data: (params) => {
-          if (erp?.select2?.product?.category) {
-            params.category = erp.select2.product.category;
+          if (erp?.select2?.product?.category?.id) {
+            params.id = erp.select2.product.category.id;
           }
 
           return params;
         },
         delay: 1000,
         url: base_url + '/select2/product/category'
+      }
+    });
+    $('.select-product-subcategory').select2({
+      allowClear: true,
+      ajax: {
+        data: (params) => {
+          if (erp?.select2?.product?.subcategory?.id) {
+            params.id = erp.select2.product.subcategory.id;
+          }
+
+          if (erp?.select2?.product?.subcategory?.parent) {
+            params.parent = erp.select2.product.subcategory.parent;
+          }
+
+          return params;
+        },
+        delay: 1000,
+        url: base_url + '/select2/product/subcategory'
       }
     });
     $('.select-product-standard').select2({
@@ -738,11 +756,12 @@ function initModalForm(opt = {}) {
       contentType: false,
       data: formData,
       error: function (xhr) {
-        Swal.fire({
-          icon: 'error',
-          text: (xhr.responseJSON?.message ?? 'Unknown error'),
-          title: xhr.statusText
-        });
+        toastr.error((xhr.responseJSON?.message ?? 'Unknown error'), xhr.statusText);
+        // Swal.fire({
+        //   icon: 'error',
+        //   text: (xhr.responseJSON?.message ?? 'Unknown error'),
+        //   title: xhr.statusText
+        // });
 
         $(opt.submit).prop('disabled', false);
 
@@ -756,11 +775,12 @@ function initModalForm(opt = {}) {
       processData: false,
       success: function (data) {
         if (isObject(data)) {
-          Swal.fire({
-            icon: 'success',
-            text: data.message,
-            title: 'Success'
-          });
+          toastr.success((data.message ?? 'Success'), 'Success');
+          // Swal.fire({
+          //   icon: 'success',
+          //   text: data.message,
+          //   title: 'Success'
+          // });
 
           // Pre-select customer after add from add customer button.
           if ($('#customer').length && $('#phone').length) {

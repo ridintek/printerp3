@@ -242,7 +242,7 @@ class SaleItem
                 return false;
               }
 
-              $finalCompletedQty = filterDecimal($comboItem->quantity) * filterDecimal($completedQty);
+              $finalCompletedQty = filterNumber($comboItem->quantity) * filterNumber($completedQty);
 
               if ($rawItem->type == 'standard') { // COMBOITEM. Decrement. POSTMN, POCT15, FFC280
                 if ($rawItem->id == $klikpod->id) {

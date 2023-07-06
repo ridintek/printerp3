@@ -90,6 +90,15 @@
           <div class="row">
             <div class="col-md-12">
               <div class="form-group">
+                <label for="filter-type"><?= lang('App.type') ?></label>
+                <select id="filter-type" class="select-bank-type" data-placeholder="<?= lang('App.status') ?>" style="width:100%" multiple>
+                </select>
+              </div>
+            </div>
+          </div>
+          <div class="row">
+            <div class="col-md-12">
+              <div class="form-group">
                 <label for="filter-createdby"><?= lang('App.createdby') ?></label>
                 <select id="filter-createdby" class="select-user" data-placeholder="<?= lang('App.createdby') ?>" style="width:100%" multiple>
                 </select>
@@ -141,11 +150,9 @@
     .bind('clear', '.filter-clear')
     .on('clear', () => {
       $('#filter-biller').val([]).trigger('change');
-      $('#filter-warehouse').val([]).trigger('change');
       $('#filter-status').val([]).trigger('change');
-      $('#filter-paymentstatus').val([]).trigger('change');
+      $('#filter-type').val([]).trigger('change');
       $('#filter-createdby').val([]).trigger('change');
-      $('#filter-receivable').iCheck('uncheck');
       $('#filter-startdate').val('');
       $('#filter-enddate').val('');
     });
@@ -163,6 +170,7 @@
           let createdBy = $('#filter-createdby').val();
           let customers = $('#filter-customer').val();
           let status = $('#filter-status').val();
+          let type = $('#filter-type').val();
           let startDate = $('#filter-startdate').val();
           let endDate = $('#filter-enddate').val();
 
@@ -180,6 +188,10 @@
 
           if (status) {
             data.status = status;
+          }
+
+          if (type) {
+            data.type = type;
           }
 
           if (startDate) {

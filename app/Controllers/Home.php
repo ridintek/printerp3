@@ -286,6 +286,10 @@ class Home extends BaseController
           ->getRow()->total ?? 0);
       }
 
+      if ($activeDays < 1) {
+        $activeDays = 1;
+      }
+
       $avgRevenue = ($revenue / $activeDays);
 
       $labels[]       = $biller->name;
@@ -343,6 +347,7 @@ class Home extends BaseController
       $row = DB::table('sales')
         ->select("COALESCE(SUM(grand_total), 0) AS revenue, COALESCE(SUM(paid), 0) AS paid, COALESCE(SUM(balance), 0) AS receivable")
         ->where("date LIKE '{$dateMonth}%'")
+        ->whereNotIn('status', ['inactive'])
         ->getRow();
 
       if ($row) {
@@ -739,6 +744,7 @@ class Home extends BaseController
     $types      = getGet('type');
     $iuseTypes  = getGet('iuse_type');
     $isW2P      = getGet('w2p');
+    $parent     = getGet('parent');
 
     if ($submode == 'category') {
       $q = ProductCategory::select("id, CONCAT('(', code, ') ', name) text");
@@ -761,6 +767,44 @@ class Home extends BaseController
           ->orWhereIn('name', $term)
           ->orWhereIn('code', $term)
           ->groupEnd();
+      }
+
+      if ($id) {
+        $q->whereIn('id', $id);
+      }
+
+      return $q->get();
+    }
+
+    if ($submode == 'subcategory') {
+      $q = ProductCategory::select("id, CONCAT('(', code, ') ', name) text");
+
+      if ($limit) {
+        $q->limit(intval($limit));
+      } else {
+        $q->limit(50);
+      }
+
+      if ($term && is_string($term)) {
+        $q->groupStart()
+          ->where('id', $term)
+          ->orLike('name', $term, 'both')
+          ->orLike('code', $term, 'both')
+          ->groupEnd();
+      } else if ($term && is_array($term)) {
+        $q->groupStart()
+          ->whereIn('id', $term)
+          ->orWhereIn('name', $term)
+          ->orWhereIn('code', $term)
+          ->groupEnd();
+      }
+
+      if ($id) {
+        $q->whereIn('id', $id);
+      }
+
+      if ($parent) { // parent:id
+        $q->whereIn('parent_code', $parent);
       }
 
       return $q->get();
