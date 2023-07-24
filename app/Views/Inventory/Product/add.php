@@ -74,21 +74,6 @@
                   <input id="serial" name="serial" class="form-control form-control-border form-control-sm" placeholder="Serial Number">
                 </div>
               </div>
-              <div class="col-md-4 standard">
-                <div class="form-group">
-                  <label for="purchasedate">Purchase Date</label>
-                  <input id="purchasedate" name="purchasedate" class="form-control form-control-border form-control-sm" placeholder="Purchase Date">
-                </div>
-              </div>
-              <div class="col-md-4 standard">
-                <div class="form-group">
-                  <label for="purchasesource">Purchase Source</label>
-                  <select id="purchasesource" name="purchasesource" class="select" data-placeholder="Purchase Source" style="width:100%">
-                    <option value="import">Import</option>
-                    <option value="local">Local</option>
-                  </select>
-                </div>
-              </div>
             </div>
             <div class="row">
               <div class="col-md-4">
@@ -135,7 +120,172 @@
           <div class="card-header bg-gradient-info">Unit</div>
           <div class="card-body">
             <div class="row">
-              <div class="col-md-6"></div>
+              <div class="col-md-12">
+                <div class="form-group">
+                  <label for="unit">Unit</label>
+                  <select id="unit" name="unit" class="select-product-unit" data-placeholder="Unit" style="width:100%">
+                  </select>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-6 combo" style="display:none">
+        <div class="card">
+          <div class="card-header bg-gradient-info">Combo Items</div>
+          <div class="card-body">
+            <div class="row">
+              <div class="col-md-12">
+                <div class="form-group">
+                  <label for="comboitem">Combo Item</label>
+                  <select id="comboitem" class="select-product" data-placeholder="Item" style="width:100%">
+                  </select>
+                </div>
+              </div>
+              <div class="col-md-12">
+                <table id="comboitemlist" class="table">
+                  <thead>
+                    <tr>
+                      <th>Name</th>
+                      <th>Quantity</th>
+                      <th><i class="fad fa-trash"></i></th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-6 standard">
+        <div class="card">
+          <div class="card-header bg-gradient-info">Internal Use Type</div>
+          <div class="card-body">
+            <div class="row">
+              <div class="col-md-6">
+                <div class="form-group">
+                  <label for="iuse_type">Type</label>
+                  <select id="iuse_type" name="iuse_type" class="select-allow-clear" data-placeholder="Unit" style="width:100%">
+                    <option value="consumable">Consumable</option>
+                    <option value="sparepart">Sparepart</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-6 standard">
+        <div class="card">
+          <div class="card-header bg-gradient-info">Purchase</div>
+          <div class="card-body">
+            <div class="row">
+              <div class="col-md-6">
+                <div class="form-group">
+                  <label for="purchasedate">Purchase Date</label>
+                  <input id="purchasedate" name="purchasedate" class="form-control form-control-border form-control-sm" placeholder="Purchase Date" type="date">
+                </div>
+              </div>
+              <div class="col-md-6">
+                <div class="form-group">
+                  <label for="purchasesource">Purchase Source</label>
+                  <select id="purchasesource" name="purchasesource" class="select" data-placeholder="Purchase Source" style="width:100%">
+                    <option value="import">Import</option>
+                    <option value="local">Local</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-6 standard">
+        <div class="card">
+          <div class="card-header bg-gradient-info">Supplier</div>
+          <div class="card-body">
+            <div class="row">
+              <div class="col-md-12">
+                <div class="form-group">
+                  <label for="supplier">Supplier</label>
+                  <select id="supplier" name="supplier" class="select-supplier" data-placeholder="Supplier" style="width:100%">
+                  </select>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-6 standard">
+        <div class="card">
+          <div class="card-header bg-gradient-info">Mark-On Price</div>
+          <div class="card-body">
+            <div class="row">
+              <div class="col-md-6">
+                <div class="form-group">
+                  <label for="markon">Mark-On (%)</label>
+                  <input name="markon" class="form-control form-control-border form-control-sm" min="0" type="number">
+                </div>
+              </div>
+              <div class="col-md-6">
+                <div class="form-group">
+                  <label for="markon_price">Mark-On Price</label>
+                  <input name="markon_price" class="form-control form-control-border form-control-sm currency" type="text">
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-6 standard">
+        <div class="card">
+          <div class="card-header bg-gradient-info">Stock Opname</div>
+          <div class="card-body">
+            <?php foreach (\App\Models\Warehouse::get(['active' => 1]) as $warehouse) : ?>
+              <div class="row">
+                <div class="col-md-6">
+                  <div class="form-group">
+                    <label>PIC <?= $warehouse->name ?></label>
+                    <select name="so[pic][]" class="select-user" data-placeholder="PIC" style="width:100%"></select>
+                    <input name="so[warehouse][]" type="hidden" value="<?= $warehouse->id ?>">
+                  </div>
+                </div>
+                <div class="col-md-6">
+                  <div class="form-group">
+                    <label>Sequence Cycle</label>
+                    <input name="so[cycle][]" class="form-control form-control-border form-control-sm" min="0" type="number">
+                  </div>
+                </div>
+              </div>
+            <?php endforeach; ?>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-6 standard">
+        <div class="card">
+          <div class="card-header bg-gradient-info">Warehouse Stock</div>
+          <div class="card-body">
+            <div class="row">
+              <div class="col-md-12">
+                <table class="table">
+                  <thead>
+                    <tr>
+                      <th>Warehouse</th>
+                      <th>Quantity</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <?php foreach (\App\Models\Warehouse::get(['active' => 1]) as $warehouse) : ?>
+                      <tr>
+                        <td><?= $warehouse->name ?></td>
+                        <td>0</td>
+                      </tr>
+                    <?php endforeach; ?>
+                  </tbody>
+                </table>
+              </div>
             </div>
           </div>
         </div>
@@ -155,12 +305,44 @@
   $(document).ready(function() {
     erp.select2.product = {
       category: {},
-      subcategory: {}
+      subcategory: {},
+      type: ['standard']
     };
 
     $('#category').change(function() {
+      $('#subcategory').val('').trigger('change');
+
       erp.select2.product.subcategory.parent = [this.value];
     });
+
+    $('#comboitem').change(function() {
+      if (!this.value) return false;
+
+      let tbody = $('#comboitemlist').find('tbody');
+
+      $.ajax({
+        data: {
+          active: 1,
+          id: this.value,
+        },
+        success: (response) => {
+          let item = response.data[0];
+
+          console.log(response);
+          tbody.prepend(`
+            <tr>
+              <td>${item.name}
+                <input name="combo[item][]" type="hidden" value="${item.id}">
+              </td>
+              <td><input name="combo[quantity][]" class="form-control form-control-sm" value="0"></td>
+              <td><a href="#" class="table-row-delete"><i class="fad fa-times"></i></a></td>
+            </tr>
+          `);
+          $(this).val('').trigger('change');
+        },
+        url: base_url + '/api/v1/product'
+      })
+    })
 
     $('#type').change(function() {
       if (this.value == 'standard') {

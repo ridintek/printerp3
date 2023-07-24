@@ -111,7 +111,7 @@
                   <?php $restQty  = ($item->purchased_qty - $item->quantity); ?>
                   <tr>
                     <td>
-                      <input name="item[id][]" type="hidden" value="<?= $product->id ?>">
+                      <input name="item[id][]" type="hidden" value="<?= $item->id ?>">
                       <input name="item[code][]" type="hidden" value="<?= $product->code ?>">
                       <span class="float-right"><?= $no ?></span>
                     </td>
@@ -129,6 +129,7 @@
                       <td><input type="number" name="item[rest][]" class="form-control form-control-border form-control-sm" value="<?= $restQty ?>"></td>
                     <?php else : ?>
                       <td class="text-center"><?= $restQty ?></td>
+                      <input type="hidden" name="item[rest][]" value="<?= $restQty ?>">
                     <?php endif; ?>
                     <td><span class="float-right"><?= formatNumber($item->cost * $item->purchased_qty) ?></span></td>
                   </tr>

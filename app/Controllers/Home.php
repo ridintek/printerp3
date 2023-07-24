@@ -18,7 +18,8 @@ use App\Models\{
   ProductTransfer,
   Sale,
   Supplier,
-  User,
+    Unit,
+    User,
   UserGroup,
   Voucher,
   Warehouse
@@ -618,7 +619,7 @@ class Home extends BaseController
         ->groupEnd();
     }
 
-    if ($id) {
+    if ($id && is_array($id)) {
       $q->whereIn('id', $id);
     }
 
@@ -777,6 +778,18 @@ class Home extends BaseController
     }
 
     if ($submode == 'subcategory') {
+      if ($parent) {
+        $parent = array_map(function ($data) {
+          $pcat = ProductCategory::getRow(['id' => $data]);
+
+          if ($pcat) {
+            return $pcat->code;
+          }
+
+          return $data;
+        }, $parent);
+      }
+
       $q = ProductCategory::select("id, CONCAT('(', code, ') ', name) text");
 
       if ($limit) {
@@ -803,7 +816,41 @@ class Home extends BaseController
         $q->whereIn('id', $id);
       }
 
-      if ($parent) { // parent:id
+      if ($parent) { // parent:code
+        $q->whereIn('parent_code', $parent);
+      }
+
+      return $q->get();
+    }
+
+    if ($submode == 'unit') {
+      $q = Unit::select("id, CONCAT('(', code, ') ', name) text");
+
+      if ($limit) {
+        $q->limit(intval($limit));
+      } else {
+        $q->limit(50);
+      }
+
+      if ($term && is_string($term)) {
+        $q->groupStart()
+          ->where('id', $term)
+          ->orLike('name', $term, 'both')
+          ->orLike('code', $term, 'both')
+          ->groupEnd();
+      } else if ($term && is_array($term)) {
+        $q->groupStart()
+          ->whereIn('id', $term)
+          ->orWhereIn('name', $term)
+          ->orWhereIn('code', $term)
+          ->groupEnd();
+      }
+
+      if ($id) {
+        $q->whereIn('id', $id);
+      }
+
+      if ($parent) { // parent:code
         $q->whereIn('parent_code', $parent);
       }
 

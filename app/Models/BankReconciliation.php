@@ -157,13 +157,15 @@ class BankReconciliation
 
         if ($row->type == 'Cash') {
           $reconData['amount_mb'] = $lastCash;
+          $reconData['last_sync_date']  = date('Y-m-d H:i:s');
         }
 
         if ($mutasiBank) {
           $reconData['mb_acc_name']     = $mutasiBank->account_name;
           $reconData['mb_bank_name']    = $mutasiBank->bank;
           $reconData['amount_mb']       = $mutasiBank->balance;
-          $reconData['last_sync_date']  = $mutasiBank->last_bot_activity;
+          // $reconData['last_sync_date']  = $mutasiBank->last_bot_activity;
+          $reconData['last_sync_date']  = date('Y-m-d H:i:s');
         }
 
         if (!self::update((int)$recon->id, $reconData)) {
@@ -178,13 +180,15 @@ class BankReconciliation
 
         if ($row->type == 'Cash') {
           $reconData['amount_mb'] = $lastCash;
+          $reconData['last_sync_date']  = date('Y-m-d H:i:s');
         }
 
         if ($mutasiBank) {
           $reconData['mb_acc_name']    = $mutasiBank->account_name;
           $reconData['mb_bank_name']   = $mutasiBank->bank;
           $reconData['amount_mb']      = $mutasiBank->balance;
-          $reconData['last_sync_date'] = $mutasiBank->last_bot_activity;
+          // $reconData['last_sync_date']  = $mutasiBank->last_bot_activity;
+          $reconData['last_sync_date']  = date('Y-m-d H:i:s');
         }
 
         if (!self::add($reconData)) {

@@ -1200,7 +1200,11 @@ class Inventory extends BaseController
 
       DB::transStart();
 
-      $data = $this->useAttachment($data);
+      $data = $this->useAttachment($data, null, function ($upload) use ($category) {
+        if (!$upload->has('attachment') && $category == 'consumable') {
+          $this->response(400, ['message' => 'Attachment harus disertakan.']);
+        }
+      });
 
       $insertID = InternalUse::add($data, $items);
 
@@ -1426,6 +1430,8 @@ class Inventory extends BaseController
   protected function internaluse_view($id = null)
   {
     checkPermission('InternalUse.View');
+
+    InternalUse::sync(['id' => $id]);
 
     $internalUse = InternalUse::getRow(['id' => $id]);
 
@@ -1682,6 +1688,8 @@ class Inventory extends BaseController
         'purchased_at'       => getPost('purchased_at'),
         'purchase_source'    => getPost('purchase_source')
       ];
+
+      
     }
 
     $this->data['title'] = lang('App.addproduct');
@@ -2295,7 +2303,7 @@ class Inventory extends BaseController
 
     $date           = date('Y-m-d H:i:s'); // Tgl. sekarang.
     $status         = getPost('status');
-    $itemId         = getPost('item[id]');
+    $itemId         = getPost('item[id]'); // Stock ID.
     $itemRest       = getPost('item[rest]');
     $hasPartial     = false;
     $receivedValue  = 0;
@@ -2378,7 +2386,7 @@ class Inventory extends BaseController
 
     foreach ($purchaseItems as $purchaseItem) {
       for ($a = 0; $a < count($itemId); $a++) {
-        if ($purchaseItem->product_id == $itemId[$a]) {
+        if ($purchaseItem->id == $itemId[$a]) {
           if ($status == 'received') {
             $receivedQty = floatval($purchaseItem->quantity + $itemRest[$a]);
 
@@ -2450,7 +2458,6 @@ class Inventory extends BaseController
 
     $this->response(200, ['content' => view('Inventory/Purchase/view', $this->data)]);
   }
-
 
   public function stockadjustment()
   {
@@ -2850,7 +2857,7 @@ class Inventory extends BaseController
           if ($status == 'confirmed') {
             $itemData = [
               'last_qty'  => $itemLast[$a],
-              'subtotal'  => (($soItem->quantity - $itemLast[$a]) * $soItem->price)
+              'subtotal'  => (($itemLast[$a] - $soItem->quantity + $soItem->reject_qty) * $soItem->price)
             ];
 
             if (!StockOpnameItem::update((int)$soItem->id, $itemData)) {
@@ -2903,6 +2910,8 @@ class Inventory extends BaseController
       $this->response(400, ['message' => getLastError()]);
     }
 
+    StockOpname::sync(['id' => $id]);
+
     DB::transComplete();
 
     if (DB::transStatus()) {
@@ -2952,9 +2961,28 @@ class Inventory extends BaseController
     ]]);
   }
 
+  protected function stockopname_sync($id = null)
+  {
+    if ($id) {
+      if (StockOpname::sync(['id' => $id])) {
+        $this->response(200, ['message' => 'Sync success.']);
+      }
+
+      $this->response(400, ['message' => 'Sync failed.']);
+    } else {
+      if (StockOpname::sync()) {
+        $this->response(200, ['message' => 'Sync success.']);
+      }
+
+      $this->response(400, ['message' => 'Sync failed.']);
+    }
+  }
+
   protected function stockopname_view($id = null)
   {
     checkPermission('StockOpname.View');
+
+    StockOpname::sync(['id' => $id]);
 
     $opname = StockOpname::getRow(['id' => $id]);
 

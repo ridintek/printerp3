@@ -346,14 +346,16 @@ class PaymentValidation
             'bank_id'           => $bank->id,
             'transaction_at'    => $dm->system_date,
             'transaction_date'  => $dm->system_date,
+            'note'              => $dm->description,
             'description'       => $dm->description,
             'status'            => 'verified'
           ];
 
           if ($useManual) {
             $pvData = setCreatedBy($pvData);
-            $pvData['verified_at'] = null; // Manual not verified automatically.
-            $pvData['description'] = '(MANUAL) ' . $pvData['description'];
+            $pvData['verified_at']  = null; // Manual not verified automatically.
+            $pvData['description']  = '(MANUAL) ' . $pvData['description'];
+            $pvData['note']         = $pvData['description'];
           } else {
             $pvData['verified_at'] = date('Y-m-d H:i:s');
           }

@@ -3,6 +3,10 @@
 
 <head>
   <meta charset="utf-8">
+  <meta name="author" content="Riyan Widiyanto">
+  <meta name="company" content="Ridintek Industri">
+  <meta name="developer" content="Riyan Widiyanto">
+  <meta name="website" content="https://ridintek.com">
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
   <meta name="<?= csrf_token() ?>" content="<?= csrf_hash() ?>">
   <title>PrintERP 3</title>
@@ -915,8 +919,8 @@
   </script>
   <script async src="https://maps.googleapis.com/maps/api/js?key=<?= env('API_GMAPS') ?>&libraries=places&v=weekly&callback=initmap"></script>
   <!-- Custom -->
-  <script src="<?= base_url() ?>/assets/app/js/app.js?v=<?= $resver ?>"></script>
   <script src="<?= base_url() ?>/assets/app/js/common.js?v=<?= $resver ?>"></script>
+  <script src="<?= base_url() ?>/assets/app/js/app.js?v=<?= $resver ?>"></script>
   <script>
     typing('nopgboss', () => {
       if (erp.debug) {

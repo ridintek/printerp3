@@ -186,6 +186,8 @@ class SaleItem
         return false;
       }
 
+      $saleItemJS->operator_id = $operator->id; // Set operator after complete.
+
       // Get completed date. Default current date.
       $completedDate = new \DateTime($data['completed_at'] ?? date('Y-m-d H:i:s'));
 

@@ -17,12 +17,12 @@ class ProductPurchase
     $data['status'] = 'need_approval'; // Default status.
     $data['payment_status'] = 'pending'; // Default payment status.
 
-    if (!isset($data['biller_id'])) {
+    if (empty($data['biller_id'])) {
       setLastError('Biller id is not set.');
       return false;
     }
 
-    if (isset($data['warehouse_id'])) {
+    if (!empty($data['warehouse_id'])) {
       $wh = Warehouse::getRow(['id' => $data['warehouse_id']]);
 
       $data['warehouse_code'] = $wh->code;
@@ -32,7 +32,7 @@ class ProductPurchase
       return false;
     }
 
-    if (isset($data['supplier_id'])) {
+    if (!empty($data['supplier_id'])) {
       $supplier = Supplier::getRow(['id' => $data['supplier_id']]);
 
       $data['supplier_name'] = $supplier->name;
@@ -196,8 +196,13 @@ class ProductPurchase
 
     foreach ($purchases as $purchase) {
       $paid = 0;
-      $payments = Payment::get(['purchase_id' => $purchase->id]);
-      $status = $purchase->payment_status;
+      $payments = Payment::select('*')->orderBy('id', 'DESC')->get(['purchase_id' => $purchase->id]);
+      $paymentStatus = $purchase->payment_status;
+      $lastPayment = null;
+
+      if ($payments) {
+        $lastPayment = $payments[0];
+      }
 
       foreach ($payments as $payment) {
         if ($payment->status == 'paid') {
@@ -208,16 +213,22 @@ class ProductPurchase
       }
 
       if ($purchase->grand_total == $paid) {
-        $status = 'paid';
+        $paymentStatus = 'paid';
       } else if ($paid > 0 && $purchase->grand_total > $paid) {
-        $status = 'partial';
+        $paymentStatus = 'partial';
       } else if (!$hasPayment) {
-        $status = 'pending';
+        $paymentStatus = 'pending';
+      }
+
+      if ($lastPayment) {
+        if ($lastPayment->status != 'paid') {
+          $paymentStatus = $lastPayment->status;
+        }
       }
 
       $balance = ($purchase->grand_total - $purchase->discount - $paid);
 
-      if (!self::update((int)$purchase->id, ['paid' => $paid, 'balance' => $balance, 'payment_status' => $status])) {
+      if (!self::update((int)$purchase->id, ['paid' => $paid, 'balance' => $balance, 'payment_status' => $paymentStatus])) {
         return false;
       }
 

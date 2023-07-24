@@ -6,6 +6,7 @@ namespace App\Models;
 
 class QRIS
 {
+  protected static $baseURL = 'https://qris.id/restapi/qris';
   protected static $api = '139139211228911';
   protected static $mID = '195255685725';
 
@@ -69,7 +70,7 @@ class QRIS
       'trxdate'       => date('Y-m-d', strtotime($qris->request_at))
     ]);
 
-    $curl = curl_init("https://qris.id/restapi/qris/checkpaid_qris.php?{$query}");
+    $curl = curl_init(rtrim(self::$baseURL, '/') . "/checkpaid_qris.php?{$query}");
 
     curl_setopt_array($curl, [
       CURLOPT_CUSTOMREQUEST   => 'GET',
@@ -83,7 +84,11 @@ class QRIS
     $response = getJSON($res);
 
     if ($response && $response->status == 'success') {
-      if (!self::update($qrId, ['status' => 'paid', 'check_at' => date('Y-m-d H:i:s')])) {
+      if (!self::update($qrId, [
+        'status' => 'paid',
+        'check_at' => date('Y-m-d H:i:s'),
+        'paid_at' => $response->data->qris_paid_date
+      ])) {
         return false;
       }
 
@@ -109,7 +114,7 @@ class QRIS
       'cliTrxAmount' => $amount
     ]);
 
-    $curl = curl_init("https://qris.id/restapi/qris/show_qris.php?{$query}");
+    $curl = curl_init(rtrim(self::$baseURL, '/') . "/show_qris.php?{$query}");
 
     curl_setopt_array($curl, [
       CURLOPT_CUSTOMREQUEST   => 'GET',

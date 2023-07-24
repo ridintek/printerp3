@@ -58,30 +58,30 @@ class Api extends BaseController
   {
     $data = [];
 
-    $account1 = $this->http_get('https://mutasi.indoprinting.co.id/api/accounts_list', [
-      'Authorization: Bearer tikXCBSpl2JGVr49ILhme7dHfbaQuOPFYNozMEc6'
-    ]);
+    // $account1 = $this->http_get('https://mutasi.indoprinting.co.id/api/accounts_list', [
+    //   'Authorization: Bearer tikXCBSpl2JGVr49ILhme7dHfbaQuOPFYNozMEc6'
+    // ]);
 
     $account2 = $this->http_get('https://mutasibank.co.id/api/v1/accounts', [
       'Authorization: eExKRGtkRTNFYzVmUzNRTnQwV0RHa0V5OW1Zd0poVkNZRXZCYkI3a21MdWt2YTRtNFhYZzFMd0FCUmt5644c9272f1653'
     ]);
 
-    $acc1 = json_decode($account1);
+    // $acc1 = json_decode($account1);
     $acc2 = json_decode($account2);
 
-    if ($acc1 && $acc1->status == true) {
-      foreach ($acc1->data as $row) {
-        $data[] = [
-          'id'                => $row->id,
-          'account_name'      => $row->account_name,
-          'account_no'        => $row->account_number,
-          'balance'           => $row->balance,
-          'bank'              => $row->bank_name,
-          'module'            => $row->module_name,
-          'last_bot_activity' => $row->last_run
-        ];
-      }
-    }
+    // if ($acc1 && $acc1->status == true) {
+    //   foreach ($acc1->data as $row) {
+    //     $data[] = [
+    //       'id'                => $row->id,
+    //       'account_name'      => $row->account_name,
+    //       'account_no'        => $row->account_number,
+    //       'balance'           => $row->balance,
+    //       'bank'              => $row->bank_name,
+    //       'module'            => $row->module_name,
+    //       'last_bot_activity' => $row->last_run
+    //     ];
+    //   }
+    // }
 
     if ($acc2 && $acc2->error == false) {
       foreach ($acc2->data as $row) {

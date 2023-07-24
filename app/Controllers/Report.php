@@ -224,6 +224,8 @@ class Report extends BaseController
 
     $is = getIncomeStatementReport($opt);
 
+    // $this->response(400, ['message' => $is]); // debug
+
     if (!$is) {
       $this->response(400, ['message' => getLastError()]);
     }
@@ -1098,7 +1100,7 @@ class Report extends BaseController
       $billers = $param->biller;
     } else { // Default biller to NOT Lucretai.
       $billers = [];
-      $bills = Biller::select('*')->whereNotIn('code', ['LUC'])->where('active', 1)->get();
+      $bills = Biller::select('*')->where('active', 1)->get();
 
       foreach ($bills as $bill) {
         $billers[] = $bill->id;
@@ -1926,11 +1928,11 @@ class Report extends BaseController
       $rowAR = 1;
 
       foreach ($param->id as $purchaseId) {
-        $payment  = Payment::getRow(['purchase_id' => $purchaseId]);
+        $payments  = Payment::get(['purchase_id' => $purchaseId]);
         $purchase = ProductPurchase::getRow(['id' => $purchaseId]);
         $supplier = Supplier::getRow(['id' => $purchase->supplier_id]);
 
-        if (!$payment) {
+        if (!$payments) {
           setLastError("Payment for {$purchase->reference} is not found.");
           return false;
         }
@@ -1947,11 +1949,24 @@ class Report extends BaseController
           return false;
         }
 
+        $approvedPayment = null;
+
+        foreach ($payments as $payment) {
+          if ($payment->type == 'approved') {
+            $approvedPayment = $payment;
+            break;
+          }
+        }
+
+        if (!$approvedPayment) {
+          continue;
+        }
+
         if (stripos($supplierJS->acc_name, 'BNI') !== FALSE) { // InHouse
           $antarRek[] = [
             'rek_penerima'  => $supplierJS->acc_no,
             'nama_penerima' => $supplierJS->acc_holder,
-            'nominal'       => filterNumber($payment->amount),
+            'nominal'       => filterNumber($approvedPayment->amount),
             'keterangan'    => htmlRemove($purchase->note)
           ];
 
@@ -1960,7 +1975,7 @@ class Report extends BaseController
           $antarBank[] = [
             'rek_penerima'  => $supplierJS->acc_no,
             'nama_penerima' => $supplierJS->acc_holder,
-            'nominal'       => filterNumber($payment->amount),
+            'nominal'       => filterNumber($approvedPayment->amount),
             'pesan'         => htmlRemove($purchase->note),
             'pesan2'        => '',
             'bic'           => $supplierJS->acc_bic,

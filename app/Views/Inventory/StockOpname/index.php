@@ -7,6 +7,9 @@
             <a class="btn btn-tool bg-gradient-success" href="<?= base_url('inventory/stockopname/add') ?>" data-toggle="modal" data-target="#ModalStatic" data-modal-class="modal-lg modal-dialog-centered modal-dialog-scrollable">
               <i class="fad fa-plus-circle"></i>
             </a>
+            <a id="sync" class="btn btn-tool bg-gradient-indigo use-tooltip" href="<?= base_url('inventory/stockopname/sync') ?>" data-action="confirm" title="<?= lang('App.sync') ?>">
+              <i class="fad fa-sync"></i>
+            </a>
             <a id="export" class="btn btn-tool bg-gradient-primary use-tooltip" href="#" title="<?= lang('App.export') ?>">
               <i class="fad fa-download"></i>
             </a>

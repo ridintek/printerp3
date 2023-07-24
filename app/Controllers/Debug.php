@@ -8,6 +8,7 @@ use App\Libraries\FileUpload;
 use App\Models\{
   DB,
   Expense,
+  InternalUse,
   PaymentValidation,
   QRIS,
   QueueTicket,
@@ -17,11 +18,42 @@ use App\Models\{
   StockAdjustment,
   Test1,
   Test2,
-  TrackingPOD
+  TrackingPOD,
+  Warehouse
 };
 
 class Debug extends BaseController
 {
+  public function warehousestock()
+  {
+    $warehouse = Warehouse::getRow(['code' => 'LUC']);
+    $opt = [
+      'start_date' => '2023-07-01',
+      'end_date'    => '2023-07-23'
+    ];
+
+    $res = getWarehouseStockValue((int)$warehouse->id, $opt);
+
+    dbgprint($res);
+  }
+
+  public function dailyperformance()
+  {
+    $opt = [
+      'period' => '2023-07'
+    ];
+
+    $res = getDailyPerformanceReport($opt);
+
+    dbgprint($res);
+  }
+
+  public function synciuse()
+  {
+    $r = InternalUse::sync();
+    dbgprint($r);
+  }
+
   public function qris()
   {
     QRIS::add(['sale_id' => 1]);

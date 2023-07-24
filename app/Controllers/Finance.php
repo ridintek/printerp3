@@ -1158,7 +1158,8 @@ class Finance extends BaseController
   {
     checkPermission('Expense.Approve');
 
-    $expense = Expense::getRow(['id' => $id]);
+    $expense  = Expense::getRow(['id' => $id]);
+    $date     = date('Y-m-d H:i:s');
 
     if (!$expense) {
       $this->response(404, ['message' => 'Expense is not found.']);
@@ -1166,16 +1167,34 @@ class Finance extends BaseController
 
     if (requestMethod() == 'POST' && isAJAX()) {
       $data = [
-        'approved_at' => date('Y-m-d H:i:s'),
+        'approved_at' => $date,
         'approved_by' => session('login')->user_id
       ];
 
       if ($expense->status == 'need_approval') {
-        $data['status'] = 'approved';
+        $data['status']         = 'approved';
+        $data['payment_date']   = $date;
+        $data['payment_status'] = 'paid';
+
+        $paymentData = [
+          'expense_id'  => $expense->id,
+          'bank_id'     => $expense->bank_id,
+          'biller_id'   => $expense->biller_id,
+          'amount'      => $expense->amount,
+          'type'        => 'sent'
+        ];
+
+        if (!Payment::add($paymentData)) {
+          $this->response(400, ['message' => getLastError()]);
+        }
       } else {
         $data['status'] = 'need_approval';
         $data['approved_at'] = null;
         $data['approved_by'] = null;
+        $data['payment_date'] = null;
+        $data['payment_status'] = 'pending';
+
+        Payment::delete(['expense_id' => $expense->id]);
       }
 
       DB::transStart();

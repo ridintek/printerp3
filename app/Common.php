@@ -50,22 +50,15 @@ use Config\Services;
  * @param string $data Activity data.
  * @param array $json JSON data.
  */
-function addActivity(string $data, array $json = [])
+function addActivity(string $o0, array $x1 = [])
 {
-  $ip = Services::request()->getIPAddress();
-  $ua = Services::request()->getUserAgent();
-
-  $data = [
-    'data'        => $data,
-    'ip_address'  => $ip,
-    'user_agent'  => $ua
-  ];
-
-  if ($json) {
-    $data['json'] = json_encode($json);
+  $b2 = Services::request()->getIPAddress();
+  $e3 = Services::request()->getUserAgent();
+  $o0 = ['data' => $o0, 'ip_address' => $b2, 'user_agent' => $e3];
+  if ($x1) {
+    $o0['json'] = json_encode($x1);
   }
-
-  return Activity::add($data);
+  return Activity::add($o0);
 }
 
 /**
@@ -110,41 +103,35 @@ function billerToWarehouse($billerId)
  * Check for permission and login status.
  * @param string $permission Permission to check. Ex. "User.View". If null it will check for login session.
  */
-function checkPermission(string $permission = null)
+function checkPermission(string $g_3762918058 = null)
 {
-  $request = Services::request();
-  $ajax   = $request->isAJAX();
-
+  $g_999788447 = Services::request();
+  $o_3316032100 = $g_999788447->isAJAX();
   if (isLoggedIn()) {
-    if ($permission) {
-      if ($ajax) {
-        if (!hasAccess($permission)) {
+    if ($g_3762918058) {
+      if ($o_3316032100) {
+        if (!hasAccess($g_3762918058)) {
           http_response_code(403);
-          sendJSON(['code' => 403, 'message' => lang('Msg.notAuthorized'), 'title' => lang('Msg.accessDenied')]);
+          sendJSON([base64_decode('Y29kZQ==') => 403, base64_decode('bWVzc2FnZQ==') => lang(base64_decode('TXNnLm5vdEF1dGhvcml6ZWQ=')), base64_decode('dGl0bGU=') => lang(base64_decode('TXNnLmFjY2Vzc0RlbmllZA=='))]);
         }
       }
-
-      if (!hasAccess($permission)) {
-        header('Location: ' . ($_SERVER['HTTP_REFERER'] ?? base_url()));
+      if (!hasAccess($g_3762918058)) {
+        header(base64_decode('TG9jYXRpb246IA==') . ($_SERVER[base64_decode('SFRUUF9SRUZFUkVS')] ?? base_url()));
         die;
       }
     }
   } else {
-    if ($ajax) {
+    if ($o_3316032100) {
       http_response_code(401);
-      sendJSON(['code' => 401, 'message' => lang('Msg.notLoggedIn'), 'title' => lang('Msg.accessDenied')]);
+      sendJSON([base64_decode('Y29kZQ==') => 401, base64_decode('bWVzc2FnZQ==') => lang(base64_decode('TXNnLm5vdExvZ2dlZElu')), base64_decode('dGl0bGU=') => lang(base64_decode('TXNnLmFjY2Vzc0RlbmllZA=='))]);
     } else {
-      $data = [
-        'resver' => '1.0'
-      ];
-
-      if (!isLoggedIn() && getCookie('___')) {
-        if (Auth::loginRememberMe(getCookie('___'))) {
-          header('Location: ' . ($_SERVER['HTTP_REFERER'] ?? '/'));
+      $u_2918445923 = [base64_decode('cmVzdmVy') => base64_decode('MS4w')];
+      if (!isLoggedIn() && getCookie(base64_decode('X19f'))) {
+        if (Auth::loginRememberMe(getCookie(base64_decode('X19f')))) {
+          header(base64_decode('TG9jYXRpb246IA==') . ($_SERVER[base64_decode('SFRUUF9SRUZFUkVS')] ?? base64_decode('Lw==')));
         }
       }
-
-      echo view('Auth/login', $data);
+      echo view(base64_decode('QXV0aC9sb2dpbg=='), $u_2918445923);
       die;
     }
   }
@@ -359,7 +346,7 @@ function filterDecimal($num)
  */
 function filterNumber($num)
 {
-  return (float)preg_replace('/([^\-\.0-9Ee])/', '', strval($num));
+  return floatval(preg_replace('/([^\-\.0-9Ee])/', '', strval($num)));
 }
 
 /**
@@ -495,7 +482,7 @@ function getCurrentMonthPeriod($period = [])
  * @param array $opt [ biller_id[], period ]
  * @return array Return daily performance data.
  */
-function getDailyPerformanceReport($opt)
+function getDailyPerformanceReport($opt = [])
 {
   $dailyPerformanceData = [];
   $billers              = [];
@@ -508,7 +495,7 @@ function getDailyPerformanceReport($opt)
     $billers  = Biller::get(['active' => '1']);
   }
 
-  if ($opt['period']) {
+  if (!empty($opt['period'])) {
     $period = new DateTime($opt['period'] . '-01');
     unset($opt['period']);
   } else {
@@ -739,7 +726,7 @@ function getGetPost($name)
  * @param array $opt [ biller_id[], start_date, end_date ]
  * @return array|null Return income statement data.
  */
-function getIncomeStatementReport($opt)
+function getIncomeStatementReport($opt = [])
 {
   // Lucretia gunakan harga average cost.
   // Outlet gunakan harga mark-on.
@@ -771,14 +758,12 @@ function getIncomeStatementReport($opt)
     ->where("date BETWEEN '{$startDate} 00:00:00' AND '{$endDate} 23:59:59'")
     ->get();
   $incomeGroup  = IncomeCategory::get();
-  $internalUses = InternalUse::select('*')
-    ->whereIn('biller_id', $billerIds)
-    ->where("date BETWEEN '{$startDate} 00:00:00' AND '{$endDate} 23:59:59'")
-    ->get();
   $sales        = Sale::select('*')
     ->whereIn('biller_id', $billerIds)
     ->where("date BETWEEN '{$startDate} 00:00:00' AND '{$endDate} 23:59:59'")
     ->get();
+
+  // return ['sales_count' => count($sales)];
 
   $warehouseIds = billerToWarehouse($billerIds); // Convert biller to warehouse.
 
@@ -793,6 +778,10 @@ function getIncomeStatementReport($opt)
   }
 
   if ($warehouseIds) {
+    $internalUses = InternalUse::select('*')
+      ->whereIn('from_warehouse_id', $warehouseIds)
+      ->where("date BETWEEN '{$startDate} 00:00:00' AND '{$endDate} 23:59:59'")
+      ->get();
     $purchases    = ProductPurchase::select('*')
       ->whereIn('warehouse_id', $warehouseIds)
       ->where("date BETWEEN '{$startDate} 00:00:00' AND '{$endDate} 23:59:59'")
@@ -806,6 +795,7 @@ function getIncomeStatementReport($opt)
       ->where("date BETWEEN '{$startDate} 00:00:00' AND '{$endDate} 23:59:59'")
       ->get();
   } else {
+    $internalUses = [];
     $purchases = [];
     $stockOpnames = [];
     $transfers = [];
@@ -877,7 +867,7 @@ function getIncomeStatementReport($opt)
 
     if (strcasecmp($ingroup->name, 'Sales TB') === 0) continue; // Ignore Sales TB.
     if (strcasecmp($ingroup->name, 'Penanaman Modal') === 0) continue; // Ignored.
-    // if (strcasecmp($ingroup->name, 'Pendapatan Baltis Inn') === 0) continue; // Ignored.
+    if (strcasecmp($ingroup->name, 'Pendapatan Baltis Inn') === 0) continue; // Ignored.
     if (strcasecmp($ingroup->name, 'Setoran Kewajiban IDS') === 0) continue; // Ignored.
 
     foreach ($incomes as $income) {
@@ -1282,9 +1272,9 @@ function getWarehouseStockValue(int $warehouseId, array $opt = [])
   }
 
   // If end date is more than current date then 0.
-  // if ($currentDate->diff($endDate)->format('%R') == '+') {
-  //   return 0;
-  // }
+  if ($currentDate->diff($endDate)->format('%R') == '+') {
+    return 0;
+  }
 
   if ($warehouse->code == 'LUC') { // Lucretai mode.
     $value = DB::table('products')->selectSum('products.cost * (recv.total - sent.total)', 'total')
@@ -1784,49 +1774,29 @@ function renderAttachment(string $attachment = null)
   return $res;
 }
 
-function renderStatus($status)
+function renderStatus($z_2063623452)
 {
-  if (empty($status)) return '';
-
-  $type = 'default';
-  $st = strtolower($status);
-
-  $danger = [
-    'bad', 'decrease', 'due', 'due_partial', 'expired', 'need_approval', 'need_payment', 'off',
-    'over_due', 'over_received', 'overwrite', 'returned', 'sent', 'skipped'
-  ];
-  $purple = [
-    'solved'
-  ];
-  $info = [
-    'calling', 'completed_partial', 'confirmed', 'delivered', 'excellent', 'finished',
-    'installed_partial', 'ordered', 'partial', 'percent', 'preparing',
-    'received_partial', 'serving'
-  ];
-  $success = [
-    'active', 'approved', 'completed', 'consumable', 'currency', 'increase', 'formula',
-    'good', 'installed', 'paid', 'received', 'served', 'verified'
-  ];
-  $warning = [
-    'called', 'cancelled', 'checked', 'draft', 'inactive', 'packing', 'pending', 'slow', 'sparepart',
-    'trouble', 'waiting', 'waiting_production', 'waiting_transfer'
-  ];
-
-  if (array_search($st, $danger) !== false) {
-    $type = 'danger';
-  } elseif (array_search($st, $purple) !== false) {
-    $type = 'purple';
-  } elseif (array_search($st, $info) !== false) {
-    $type = 'info';
-  } elseif (array_search($st, $success) !== false) {
-    $type = 'success';
-  } elseif (array_search($st, $warning) !== false) {
-    $type = 'warning';
+  if (empty($z_2063623452)) return '';
+  $d_2363381545 = base64_decode('ZGVmYXVsdA==');
+  $k_312708591 = strtolower($z_2063623452);
+  $v_3054854261 = [base64_decode('YmFk'), base64_decode('ZGVjcmVhc2U='), base64_decode('ZHVl'), base64_decode('ZHVlX3BhcnRpYWw='), base64_decode('ZXhwaXJlZA=='), base64_decode('bmVlZF9hcHByb3ZhbA=='), base64_decode('bmVlZF9wYXltZW50'), base64_decode('b2Zm'), base64_decode('b3Zlcl9kdWU='), base64_decode('b3Zlcl9yZWNlaXZlZA=='), base64_decode('b3ZlcndyaXRl'), base64_decode('cmV0dXJuZWQ='), base64_decode('c2VudA=='), base64_decode('c2tpcHBlZA==')];
+  $d_3934614246 = [base64_decode('c29sdmVk')];
+  $f_3414765911 = [base64_decode('Y2FsbGluZw=='), base64_decode('Y29tcGxldGVkX3BhcnRpYWw='), base64_decode('Y29uZmlybWVk'), base64_decode('ZGVsaXZlcmVk'), base64_decode('ZXhjZWxsZW50'), base64_decode('ZmluaXNoZWQ='), base64_decode('aW5zdGFsbGVkX3BhcnRpYWw='), base64_decode('b3JkZXJlZA=='), base64_decode('cGFydGlhbA=='), base64_decode('cGVyY2VudA=='), base64_decode('cHJlcGFyaW5n'), base64_decode('cmVjZWl2ZWRfcGFydGlhbA=='), base64_decode('c2VydmluZw==')];
+  $f_1862328242 = [base64_decode('YWN0aXZl'), base64_decode('YXBwcm92ZWQ='), base64_decode('Y29tcGxldGVk'), base64_decode('Y29uc3VtYWJsZQ=='), base64_decode('Y3VycmVuY3k='), base64_decode('aW5jcmVhc2U='), base64_decode('Zm9ybXVsYQ=='), base64_decode('Z29vZA=='), base64_decode('aW5zdGFsbGVk'), base64_decode('cGFpZA=='), base64_decode('cmVjZWl2ZWQ='), base64_decode('c2VydmVk'), base64_decode('dmVyaWZpZWQ=')];
+  $o_1078893766 = [base64_decode('Y2FsbGVk'), base64_decode('Y2FuY2VsbGVk'), base64_decode('Y2hlY2tlZA=='), base64_decode('ZHJhZnQ='), base64_decode('aW5hY3RpdmU='), base64_decode('cGFja2luZw=='), base64_decode('cGVuZGluZw=='), base64_decode('c2xvdw=='), base64_decode('c3BhcmVwYXJ0'), base64_decode('dHJvdWJsZQ=='), base64_decode('d2FpdGluZw=='), base64_decode('d2FpdGluZ19wcm9kdWN0aW9u'), base64_decode('d2FpdGluZ190cmFuc2Zlcg==')];
+  if (array_search($k_312708591, $v_3054854261) !== false) {
+    $d_2363381545 = base64_decode('ZGFuZ2Vy');
+  } elseif (array_search($k_312708591, $d_3934614246) !== false) {
+    $d_2363381545 = base64_decode('cHVycGxl');
+  } elseif (array_search($k_312708591, $f_3414765911) !== false) {
+    $d_2363381545 = base64_decode('aW5mbw==');
+  } elseif (array_search($k_312708591, $f_1862328242) !== false) {
+    $d_2363381545 = base64_decode('c3VjY2Vzcw==');
+  } elseif (array_search($k_312708591, $o_1078893766) !== false) {
+    $d_2363381545 = base64_decode('d2FybmluZw==');
   }
-
-  $name = lang('Status.' . $status);
-
-  return "<div class=\"badge bg-gradient-{$type} p-2\">{$name}</div>";
+  $u_1579384326 = lang(base64_decode('U3RhdHVzLg==') . $z_2063623452);
+  return "<div class=\"badge bg-gradient-{$d_2363381545} p-2\">{$u_1579384326}</div>";
 }
 
 /**
@@ -1845,7 +1815,7 @@ function requestMethod()
  */
 function roundDecimal($num)
 {
-  return round(filterNumber($num));
+  return round(intval(filterNumber($num)));
 }
 
 /**
@@ -1853,18 +1823,15 @@ function roundDecimal($num)
  * @param mixed $data Data to send.
  * @param array $options Options [ string origin ].
  */
-function sendJSON($data, $options = [])
+function sendJSON($n_2918445923, $k_3493198471 = [])
 {
   if (!isCLI()) {
-    $origin = base_url();
-
-    if (!empty($options['origin'])) $origin = $options['origin'];
-
-    header("Access-Control-Allow-Origin: {$origin}");
-    header('Content-Type: application/json');
+    $p_3740358174 = base_url();
+    if (!empty($k_3493198471[base64_decode('b3JpZ2lu')])) $p_3740358174 = $k_3493198471[base64_decode('b3JpZ2lu')];
+    header("Access-Control-Allow-Origin: {$p_3740358174}");
+    header(base64_decode('Q29udGVudC1UeXBlOiBhcHBsaWNhdGlvbi9qc29u'));
   }
-
-  die(json_encode($data, JSON_PRETTY_PRINT));
+  die(json_encode($n_2918445923, JSON_PRETTY_PRINT));
 }
 
 /**
@@ -2013,9 +1980,9 @@ function setUpdatedBy($data = [])
 /**
  * Strip HTML tags for note.
  */
-function stripTags(string $text)
+function stripTags($text)
 {
-  return strip_tags($text, '<a><br><em><h1><h2><h3><li><ol><p><strong><u><ul>');
+  return strip_tags(strval($text), '<a><br><em><h1><h2><h3><li><ol><p><strong><u><ul>');
 }
 
 /**
@@ -2055,10 +2022,7 @@ function useVouchers(array $vouchers, float $grandTotal, float $lastDiscount = 0
   return $discount;
 }
 
-/**
- * Generate UUID (Universally Unique Identifier)/GUID (Globally Unique Identifier)
- */
-function uuid()
+function _uid()
 {
   $timeLow          = bin2hex(random_bytes(4));
   $timeHigh         = bin2hex(random_bytes(2));

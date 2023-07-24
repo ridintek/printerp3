@@ -102,7 +102,31 @@ class StockOpname
 
   public static function sync($where = [])
   {
-    // TODO
+    $opnames = self::get($where);
+    $synced = 0;
+
+    foreach ($opnames as $opname) {
+      StockOpnameItem::sync(['opname_id' => $opname->id]);
+
+      $soItems = StockOpnameItem::get(['opname_id' => $opname->id]);
+      $totalLost = 0;
+      $totalPlus = 0;
+
+      foreach ($soItems as $soItem) {
+        if ($soItem->subtotal < 0) {
+          $totalLost += floatval($soItem->subtotal);
+        }
+        if ($soItem->subtotal > 0) {
+          $totalPlus += floatval($soItem->subtotal);
+        }
+      }
+
+      if (self::update((int)$opname->id, ['total_lost' => $totalLost, 'total_plus' => $totalPlus])) {
+        $synced++;
+      }
+    }
+
+    return $synced;
   }
 
   /**

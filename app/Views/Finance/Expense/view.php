@@ -108,7 +108,7 @@
 <div class="modal-footer">
   <button type="button" class="btn bg-gradient-danger" data-dismiss="modal"><i class="fad fa-fw fa-times"></i> <?= lang('App.cancel') ?></button>
   <?php if (hasAccess('Expense.Approve') && $expense->status == 'need_approval') : ?>
-    <button type="button" id="submit" class="btn bg-gradient-primary"><i class="fad fa-fw fa-check"></i> <?= lang('App.approve') ?></button>
+    <button type="button" id="submit" class="btn bg-gradient-primary"><i class="fad fa-fw fa-check"></i> <?= lang('App.approve') . ' ' . lang('App.and') . ' ' . lang('App.paid') ?></button>
   <?php endif; ?>
   <?php if (hasAccess('Expense.Disapprove') && $expense->status == 'approved') : ?>
     <button type="button" id="submit" class="btn bg-gradient-primary"><i class="fad fa-fw fa-times"></i> <?= lang('App.disapprove') ?></button>

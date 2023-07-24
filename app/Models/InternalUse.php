@@ -124,6 +124,7 @@ class InternalUse
           'internal_use_id' => $insertId,
           'machine_id'      => $item['machine_id'],
           'product_id'      => $product->id,
+          'price'           => getMarkonPrice((float)$product->cost, (float)$product->markon),
           'quantity'        => $item['quantity'],
           'spec'            => $item['counter'], // Spec is counter in InternalUse.
           'status'          => $data['status'],
@@ -190,6 +191,36 @@ class InternalUse
   public static function select(string $columns, $escape = TRUE)
   {
     return DB::table('internal_uses')->select($columns, $escape);
+  }
+
+  public static function sync(array $where = [])
+  {
+    $iuses = self::get($where);
+    $synced = 0;
+
+    foreach ($iuses as $iuse) {
+      $iuseItem = Stock::get(['internal_use_id' => $iuse->id]);
+      $grandTotal = 0;
+
+      foreach ($iuseItem as $iuseItem) {
+        $product = Product::getRow(['id' => $iuseItem->product_id]);
+        $markOnPrice = getMarkonPrice((float)$product->cost, (float)$product->markon);
+
+        $grandTotal += ($markOnPrice * $iuseItem->quantity);
+
+        if (!Stock::update((int)$iuse->id, ['price' => $markOnPrice])) {
+          return false;
+        }
+
+        $synced++;
+      }
+
+      if (!self::update((int)$iuse->id, ['grand_total' => $grandTotal])) {
+        return false;
+      }
+    }
+
+    return $synced;
   }
 
   /**

@@ -182,7 +182,7 @@ class FileUpload
 
     $data = [
       'filename'  => ($filename ?? $this->getName()),
-      'hashname'  => ($hashname ?? uuid()),
+      'hashname'  => ($hashname ?? _uid()),
       'mime'      => $this->getType(),
       'data'      => file_get_contents($this->getTempName()),
       'size'      => $this->getSize()

@@ -61,11 +61,10 @@ class StockOpnameItem
           ];
 
           $totalLost += $subTotal;
+          $totalLost *= -1; // Convert to minus.
         } else {
           $status = 'checked';
         }
-
-        // $totalLost += $subTotal;
       } else if (($firstQty + $rejectQty) == $realQty) { // Excellent.
         // Nothing todo.
       }
@@ -97,6 +96,7 @@ class StockOpnameItem
     }
 
     if ($status == 'checked') {
+      // Nothing.
     } else if (!$status && ($adjustPlus || $adjustLost)) {
       $status = 'good';
     } else if (!$status && !$adjustPlus) {
@@ -248,6 +248,22 @@ class StockOpnameItem
   public static function select(string $columns, $escape = true)
   {
     return DB::table('stock_opname_items')->select($columns, $escape);
+  }
+
+  public static function sync(array $where)
+  {
+    $soItems = self::get($where);
+    $synced = 0;
+
+    foreach ($soItems as $item) {
+      $subTotal = ((($item->last_qty ?? $item->first_qty) - $item->quantity + $item->reject_qty) * $item->price);
+
+      if (self::update((int)$item->id, ['subtotal' => $subTotal])) {
+        $synced++;
+      }
+    }
+
+    return $synced;
   }
 
   /**
